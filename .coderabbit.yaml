@@ -28,7 +28,9 @@ reviews:
     - '!.vscode/**'
     - '!.idea/**'
     - '!.agents/**'
+    - '!.agent/**'
     - '!.cursor/**'
+    - '!.claude/**'
   request_changes_workflow: false
   high_level_summary: true
   poem: true
