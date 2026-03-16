@@ -1,0 +1,52 @@
+# Dependencies
+# Installed via package managers, never edited manually
+node_modules
+.pnpm-store
+
+# Build outputs
+# Compiled application artifacts that can be recreated
+.next
+out
+build
+dist
+
+# Cache
+# Tooling and framework caches for faster runs
+.cache
+.turbo
+.vercel
+
+# Logs
+# Runtime and tooling logs useful only during debugging
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Environment files
+# Local configuration with secrets or machine-specific values
+.env*
+
+# Lockfiles
+# Exact dependency versions for reproducible installs
+package-lock.json
+pnpm-lock.yaml
+
+# Generated files
+# Automatically created by tooling or test runners
+next-env.d.ts
+coverage
+*.tsbuildinfo
+
+# OS files
+# Metadata files created by operating systems
+.DS_Store
+Thumbs.db
+
+# IDE
+# Editor configuration and metadata
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea
+.agents
+.cursor
