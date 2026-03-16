@@ -4,6 +4,8 @@ Purpose: Create a high-quality Pull Request using the repo’s PR template if it
 
 Do exactly the following:
 
+ALWAYS DO A DRAFT PR!
+
 1. Preconditions & tooling
    * Verify Git is available: `git --version`.
    * Verify GitHub CLI is available: `gh --version`.
