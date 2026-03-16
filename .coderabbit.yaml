@@ -45,6 +45,9 @@ reviews:
       - WIP
       - DO NOT MERGE
       - DRAFT
-    drafts: false
+    drafts: true
+  pre_merge_checks:
+    docstrings:
+      mode: off
 chat:
   auto_reply: true
