@@ -13,7 +13,27 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 - **GitHub CLI** — optional, for skills; brew install gh then gh auth login
 - **CodeRabbit CLI** — optional, for skills; `brew install coderabbit` then `coderabbit auth login`
 
-First, run the development server:
+### Quick commands
+
+| Command           | Description                                      |
+| ----------------- | ------------------------------------------------ |
+| `pnpm dev`        | Run the local development server.                |
+| `pnpm build`      | Create an optimized production build.            |
+| `pnpm start`      | Start the production server from the build.      |
+| `pnpm lint`       | Run ESLint and fail on any warnings or errors.   |
+| `pnpm lint:fix`   | Run ESLint and automatically fix fixable issues. |
+| `pnpm format`     | Check formatting with Prettier.                  |
+| `pnpm format:fix` | Rewrite files to match Prettier formatting.      |
+| `pnpm type-check` | Run Next typegen and TypeScript type checking.   |
+| `pnpm validate`   | Run lint, format check, and type-check together. |
+
+First, instal packages:
+
+```bash
+pnpm install
+```
+
+Second, run the development server
 
 ```bash
 pnpm dev
