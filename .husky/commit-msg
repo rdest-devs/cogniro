@@ -1,0 +1,2 @@
+echo "Running commit-msg hook..."
+pnpm dlx commitlint --edit "$1"

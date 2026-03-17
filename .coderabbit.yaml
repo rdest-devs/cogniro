@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+# CodeRabbit is an AI-powered code reviewer that cuts review time and bugs in half
+
+language: en-US
+early_access: false
+reviews:
+  profile: chill
+  # Ignore the same paths as ESLint and Prettier (node_modules, build outputs, lockfiles, etc.)
+  path_filters:
+    - '!node_modules/**'
+    - '!.pnpm-store/**'
+    - '!.next/**'
+    - '!out/**'
+    - '!build/**'
+    - '!dist/**'
+    - '!.cache/**'
+    - '!.turbo/**'
+    - '!.vercel/**'
+    - '!*.log'
+    - '!*.tsbuildinfo'
+    - '!.env*'
+    - '!package-lock.json'
+    - '!pnpm-lock.yaml'
+    - '!next-env.d.ts'
+    - '!coverage/**'
+    - '!.DS_Store'
+    - '!.vscode/**'
+    - '!.idea/**'
+    - '!.agents/**'
+    - '!.agent/**'
+    - '!.cursor/**'
+    - '!.claude/**'
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: true
+  review_status: true
+  collapse_walkthrough: false
+  path_instructions:
+    - path: '**/*.{ts,tsx}'
+      instructions: 'Review the Typescript and React code for conformity with best practices in React, and Typescript. Highlight any deviations.'
+  auto_review:
+    enabled: true
+    ignore_title_keywords:
+      - WIP
+      - DO NOT MERGE
+      - DRAFT
+    drafts: true
+  pre_merge_checks:
+    docstrings:
+      mode: off
+chat:
+  auto_reply: true
