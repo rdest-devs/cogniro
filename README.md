@@ -27,7 +27,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 | `pnpm type-check` | Run Next typegen and TypeScript type checking.   |
 | `pnpm validate`   | Run lint, format check, and type-check together. |
 
-First, instal packages:
+First, install packages:
 
 ```bash
 pnpm install
