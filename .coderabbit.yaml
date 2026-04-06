@@ -37,8 +37,10 @@ reviews:
   review_status: true
   collapse_walkthrough: false
   path_instructions:
-    - path: '**/*.{ts,tsx}'
+    - path: 'frontend/**/*.{ts,tsx}'
       instructions: 'Review the Typescript and React code for conformity with best practices in React, and Typescript. Highlight any deviations.'
+    - path: 'backend/**/*.py'
+      instructions: 'Review the Python code for conformity with best practices in FastAPI, Pydantic, and Python. Check for type hints, proper use of async/await, dependency injection patterns, and Pydantic model validation. Highlight any deviations.'
   auto_review:
     enabled: true
     ignore_title_keywords:
