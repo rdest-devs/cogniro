@@ -13,14 +13,6 @@ FastAPI backend for the Cogniro project.
 uv sync
 ```
 
-## Development
-
-```bash
-uv run uvicorn main:app --reload
-```
-
-API docs available at [http://localhost:8000/docs](http://localhost:8000/docs).
-
 ## Linting & formatting
 
 ```bash

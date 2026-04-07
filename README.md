@@ -37,7 +37,6 @@ See [frontend/README.md](frontend/README.md) for details.
 ```bash
 cd backend
 uv sync
-uv run uvicorn main:app --reload
 ```
 
 ## Git hooks

@@ -36,6 +36,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# next-image-export-optimizer
+/public/images/nextImageExportOptimizer/
+**/next-image-export-optimizer-hashes.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
