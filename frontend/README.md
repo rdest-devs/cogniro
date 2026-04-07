@@ -2,7 +2,7 @@
 
 Quiz app for WI
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This is a [Next.js](https://nextjs.org) project bootstrapped with `[create-next-app](https://nextjs.org/docs/app/api-reference/cli/create-next-app)`.
 
 ## Getting Started
 
@@ -43,11 +43,11 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This project uses `[next/font](https://nextjs.org/docs/app/building-your-application/optimizing/fonts)` to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Static export & images
 
-This app builds as a fully static site (`output: 'export'`) so it can be hosted on any plain HTTP server (Apache, Nginx, GitHub Pages, S3, etc.) without a Node runtime. Image optimization is handled at build time by [`next-image-export-optimizer`](https://github.com/Niels-IO/next-image-export-optimizer), which generates a responsive `srcset` (resized + WEBP-converted variants) and tiny blurred placeholders into `out/nextImageExportOptimizer/`.
+This app builds as a fully static site (`output: 'export'`) so it can be hosted on any plain HTTP server (Apache, Nginx, GitHub Pages, S3, etc.) without a Node runtime. Image optimization is handled at build time by `[next-image-export-optimizer](https://github.com/Niels-IO/next-image-export-optimizer)`, which generates a responsive `srcset` (resized + WEBP-converted variants) and tiny blurred placeholders into `out/nextImageExportOptimizer/`.
 
 `pnpm build` runs `next build` and then the optimizer in sequence. The optimizer hashes source images, so unchanged images are skipped on subsequent builds.
 
@@ -106,7 +106,7 @@ Then use the URL as `src`:
 <ExportedImage src="https://example.com/banner.jpg" alt="Banner" width={1200} height={600} />
 ```
 
-The optimizer downloads each URL during `pnpm build` and bakes the optimized variants into the static export. Adjust `nextImageExportOptimizer_remoteImageCacheTTL` in [`next.config.ts`](frontend/next.config.ts) if you want the local cache to expire (default `0` = always re-fetch).
+The optimizer downloads each URL during `pnpm build` and bakes the optimized variants into the static export. Adjust `nextImageExportOptimizer_remoteImageCacheTTL` in `[next.config.ts](./next.config.ts)` if you want the local cache to expire (default `0` = always re-fetch).
 
 ### Common props
 
@@ -121,7 +121,7 @@ The optimizer downloads each URL during `pnpm build` and bakes the optimized var
 
 After `pnpm build` upload the contents of `frontend/out/` to the document root. With `trailingSlash: true` the optimizer emits each route as `route/index.html`, so directory-based servers resolve URLs without rewrite rules.
 
-If you deploy under a sub-path (e.g. `username.github.io/cogniro/`), set `basePath: '/cogniro'` in [`next.config.ts`](frontend/next.config.ts) **and** pass `basePath="/cogniro"` to every `<ExportedImage />` instance.
+If you deploy under a sub-path (e.g. `username.github.io/cogniro/`), set `basePath: '/cogniro'` in `[next.config.ts](./next.config.ts)` **and** pass `basePath="/cogniro"` to every `<ExportedImage />` instance.
 
 ## Learn More
 
