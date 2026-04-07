@@ -4,7 +4,7 @@ Monorepo for the Cogniro project.
 
 ## Structure
 
-```
+```text
 cogniro/
 ├── frontend/   # Next.js web application
 ├── backend/    # Python (FastAPI) backend
@@ -13,7 +13,8 @@ cogniro/
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) (v20+)
-- [pnpm](https://pnpm.io/) (v9+)
+- [pnpm](https://pnpm.io/) 10+
+- [Python](https://www.python.org/) (>=3.14)
 - [uv](https://docs.astral.sh/uv/) (for backend)
 
 ## Getting started

@@ -18,8 +18,8 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 | Command           | Description                                      |
 | ----------------- | ------------------------------------------------ |
 | `pnpm dev`        | Run the local development server.                |
-| `pnpm build`      | Create an optimized production build.            |
-| `pnpm start`      | Start the production server from the build.      |
+| `pnpm build`      | Build the static export into `out/`.             |
+| `pnpm start`      | Serve the exported `out/` directory locally.     |
 | `pnpm lint`       | Run ESLint and fail on any warnings or errors.   |
 | `pnpm lint:fix`   | Run ESLint and automatically fix fixable issues. |
 | `pnpm format`     | Check formatting with Prettier.                  |
