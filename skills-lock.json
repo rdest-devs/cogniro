@@ -14,7 +14,7 @@
     "brainstorming": {
       "source": "obra/superpowers",
       "sourceType": "github",
-      "computedHash": "13b0b2aa645c340d54fb7e91d7ff5d1417a4d10c9d4c381b4b0fd629a6398155"
+      "computedHash": "8df9b47092524833138b58682d03f2e153a242e550d1693657afdbee0cc9cdb0"
     },
     "code-review": {
       "source": "coderabbitai/skills",
@@ -31,6 +31,16 @@
       "sourceType": "github",
       "computedHash": "2f709d1a2c7564f8ce6a9bb707e7f5451117ba80f8e8e2302662c29bc61246a6"
     },
+    "fastapi-expert": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "computedHash": "1cf755bb184def33f9aff86940c10a6f1ffbea56ed05d41f35ce4ab4dbe08ed7"
+    },
+    "fastapi-templates": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "8fdfb9bad6aef892b4f16ef3b07ef5eea3b0497d37eeaeddb07244d657cc8711"
+    },
     "finishing-a-development-branch": {
       "source": "obra/superpowers",
       "sourceType": "github",
@@ -44,12 +54,7 @@
     "next-best-practices": {
       "source": "vercel-labs/next-skills",
       "sourceType": "github",
-      "computedHash": "515ba75178bd44875812d9a560bdf14651f86709f89cf1d4f209638e879807f3"
-    },
-    "nextjs-app-router-patterns": {
-      "source": "wshobson/agents",
-      "sourceType": "github",
-      "computedHash": "d2f0a7065f7418fdb3ae88559f1f1426f40c26f2b5aebcd394797418d4bb3b04"
+      "computedHash": "db85045827ebeb83ac8dbc992b69188755eeb74dcf01cbf5e694d58aa494a106"
     },
     "receiving-code-review": {
       "source": "obra/superpowers",
@@ -60,6 +65,11 @@
       "source": "obra/superpowers",
       "sourceType": "github",
       "computedHash": "246e65cd72a7e360987d94e6c61564ce6d71c6361d1784d529d70e4cbbe8522d"
+    },
+    "ruff": {
+      "source": "astral-sh/claude-code-plugins",
+      "sourceType": "github",
+      "computedHash": "905f1c2b66e722ab534d7cbeceafb6ee37d32e3bfe51f3e68c661c51eb19a776"
     },
     "subagent-driven-development": {
       "source": "obra/superpowers",
@@ -76,6 +86,11 @@
       "sourceType": "github",
       "computedHash": "126f1ebf6ccd414f42544f6e83d8cc5adb089e1108eaffb7c400701e37eecd9f"
     },
+    "ty": {
+      "source": "astral-sh/claude-code-plugins",
+      "sourceType": "github",
+      "computedHash": "5d82b319a84d296fae47f2664228bfac1a36dd832cb487b485a65ec36b3df21f"
+    },
     "using-git-worktrees": {
       "source": "obra/superpowers",
       "sourceType": "github",
@@ -84,12 +99,17 @@
     "using-superpowers": {
       "source": "obra/superpowers",
       "sourceType": "github",
-      "computedHash": "5ed84a512f8664cc440ff26b19a0087eae6b2979e9e79cb26366b7f7b134e758"
+      "computedHash": "e0eced9fbb205c212f420aded0c6f2bf5d5f059254679a8459b4fe72390160be"
+    },
+    "uv": {
+      "source": "astral-sh/claude-code-plugins",
+      "sourceType": "github",
+      "computedHash": "b1ca9e9826d906f6ee6ea172da50018ec13bb622ac9ba7204bda8b10e7fc8d0a"
     },
     "vercel-react-best-practices": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
-      "computedHash": "afeca00ac2f492d88fdd010e73d91719a5b57c564bb4a73325b0bd77e11323ab"
+      "computedHash": "43ca6c197f8ec13055079da7053232d477068b03ca443f9ac1bc819b95cdd432"
     },
     "verification-before-completion": {
       "source": "obra/superpowers",
@@ -99,12 +119,12 @@
     "writing-plans": {
       "source": "obra/superpowers",
       "sourceType": "github",
-      "computedHash": "9f61b9b7da1eabc3254d7d0dc079c2a7512c26a42d26e9aca598f0355ecf1dee"
+      "computedHash": "bfaed11054ad8021c66860244e2d2e0d1eca483ae9f5fbfcb956e99c61f5c3d7"
     },
     "writing-skills": {
       "source": "obra/superpowers",
       "sourceType": "github",
-      "computedHash": "7cd0c064b5a62ffdc9cfff539a7b4d8d4a7792c8f0d544436bea021f08632e7b"
+      "computedHash": "c0a92e629e39ea91b1f54da67a6aa92723008a8ef5b500c6de078f55485937c7"
     }
   }
 }
