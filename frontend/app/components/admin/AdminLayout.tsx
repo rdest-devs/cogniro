@@ -11,7 +11,7 @@ export default function AdminLayout({
   children,
 }: AdminLayoutProps) {
   return (
-    <div className="flex h-screen w-full bg-[var(--page-bg)]">
+    <div className="flex h-full w-full bg-[var(--page-bg)]">
       <Sidebar activeItem={activeItem} />
 
       <div className="flex flex-1 flex-col">

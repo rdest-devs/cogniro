@@ -55,7 +55,7 @@ export default function Ordering({
           const isDragging = dragging === i;
           return (
             <div
-              key={`${i}-${item}`}
+              key={item}
               draggable
               onDragStart={() => setDragging(i)}
               onDragOver={(e) => {

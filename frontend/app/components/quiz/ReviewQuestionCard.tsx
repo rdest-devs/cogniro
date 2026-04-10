@@ -105,7 +105,14 @@ export default function ReviewQuestionCard({
               {a.text}
             </span>
             {a.yourAnswer && (
-              <span className="ml-auto text-[11px] font-medium text-[var(--wrong-fg)]">
+              <span
+                className={cn(
+                  'ml-auto text-[11px] font-medium',
+                  a.state === 'correct-selected'
+                    ? 'text-[var(--correct-fg)]'
+                    : 'text-[var(--wrong-fg)]',
+                )}
+              >
                 Twoja odpowiedź
               </span>
             )}

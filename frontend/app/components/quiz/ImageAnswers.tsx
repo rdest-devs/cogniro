@@ -45,13 +45,13 @@ export default function ImageAnswers({
 
       <div className="flex flex-col gap-2.5">
         {rows.map((row, rowIdx) => (
-          <div key={rowIdx} className="flex gap-2.5">
+          <div key={row.map((a) => a.label).join('|')} className="flex gap-2.5">
             {row.map((answer, colIdx) => {
               const idx = rowIdx * 2 + colIdx;
               const isSelected = selected === idx;
               return (
                 <button
-                  key={idx}
+                  key={answer.label}
                   onClick={() => setSelected(idx)}
                   className={cn(
                     'flex flex-1 cursor-pointer flex-col overflow-hidden rounded-2xl transition-all',

@@ -112,9 +112,9 @@ export const quizResultsDemo = {
 };
 
 export const attemptReviewDemo = {
-  correctCount: 7,
-  wrongCount: 3,
-  scorePercent: 70,
+  correctCount: 1,
+  wrongCount: 1,
+  scorePercent: 50,
   questions: [
     {
       number: 1,
