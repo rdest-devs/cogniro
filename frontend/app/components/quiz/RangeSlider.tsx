@@ -55,7 +55,7 @@ export default function RangeSlider({
         <QuestionCard question={question} hint={hint} />
 
         {/* Value Display */}
-        <div className="flex w-full flex-col gap-6">
+        <div className="flex w-full flex-col items-center gap-6">
           <div className="flex items-center gap-1">
             <span className="text-5xl font-extrabold text-[var(--orange)]">
               {value}
