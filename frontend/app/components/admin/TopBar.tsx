@@ -17,7 +17,7 @@ export default function TopBar({
   onCreateQuiz,
 }: TopBarProps) {
   return (
-    <div className="flex h-16 w-full items-center justify-between border-b border-[var(--border)] bg-[var(--card-bg)] px-8">
+    <header className="flex h-16 w-full items-center justify-between border-b border-[var(--border)] bg-[var(--card-bg)] px-8">
       <ExportedImage
         src={logoUrl}
         alt="Logo"
@@ -46,6 +46,6 @@ export default function TopBar({
           Stwórz nowy quiz
         </button>
       </div>
-    </div>
+    </header>
   );
 }

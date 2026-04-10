@@ -1,8 +1,11 @@
 'use client';
 
-import { FileCheck, RotateCcw, Trophy } from 'lucide-react';
+import { FileCheck, RotateCcw } from 'lucide-react';
 
 import type { RankingEntry } from '@/app/types';
+
+import RankingRow from './RankingRow';
+import ScoreCircle from './ScoreCircle';
 
 interface QuizResultsProps {
   scorePercent: number;
@@ -14,12 +17,6 @@ interface QuizResultsProps {
   onReview?: () => void;
   onBack?: () => void;
 }
-
-const medalColors = {
-  gold: '#FFD700',
-  silver: '#A8A8A8',
-  bronze: '#CD7F32',
-};
 
 export default function QuizResults({
   scorePercent,
@@ -34,94 +31,37 @@ export default function QuizResults({
   return (
     <div className="flex min-h-full w-full max-w-[390px] flex-col bg-[var(--page-bg)]">
       <div className="flex flex-1 flex-col gap-6 px-6 pt-4 pb-8">
-        {/* Score Header */}
-        <div className="flex flex-col items-center gap-4">
+        <section className="flex flex-col items-center gap-4">
           <span className="text-sm font-medium text-[var(--text-muted)]">
             Twój wynik
           </span>
-
-          {/* Score Circle */}
-          <div className="flex h-40 w-40 items-center justify-center rounded-full bg-gradient-to-b from-[var(--orange)] to-[#F8BD4D]">
-            <div className="flex h-[136px] w-[136px] flex-col items-center justify-center rounded-full bg-[var(--page-bg)]">
-              <span className="text-[42px] font-extrabold text-[var(--orange)]">
-                {scorePercent}%
-              </span>
-              <span className="text-sm font-medium text-[var(--text-muted)]">
-                {scoreCorrect} / {scoreTotal}
-              </span>
-            </div>
-          </div>
-
+          <ScoreCircle
+            percent={scorePercent}
+            correct={scoreCorrect}
+            total={scoreTotal}
+          />
           <p className="max-w-[280px] text-center text-[15px] leading-[1.5] font-medium text-[var(--text-dark)]">
             {message}
           </p>
-        </div>
+        </section>
 
-        {/* Leaderboard */}
-        <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card-bg)]">
+        <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card-bg)]">
           <div className="px-4 py-3.5">
-            <span className="text-[15px] font-bold text-[var(--text-dark)]">
+            <h2 className="text-[15px] font-bold text-[var(--text-dark)]">
               Ranking Wydziałowy
-            </span>
+            </h2>
           </div>
           <div className="h-px bg-[var(--border)]" />
-
           {ranking.map((entry, idx) => (
-            <div key={entry.position}>
-              <div
-                className={`flex items-center gap-3 px-4 py-3 ${
-                  entry.isYou ? 'bg-[var(--highlight-bg)]' : ''
-                }`}
-              >
-                {entry.medal ? (
-                  <Trophy
-                    size={20}
-                    color={medalColors[entry.medal]}
-                    fill={medalColors[entry.medal]}
-                  />
-                ) : (
-                  <span
-                    className={`w-5 text-center text-sm ${
-                      entry.isYou
-                        ? 'font-bold text-[var(--primary-blue)]'
-                        : 'font-medium text-[var(--text-muted)]'
-                    }`}
-                  >
-                    {entry.position}
-                  </span>
-                )}
-                <span
-                  className={`flex-1 text-sm ${
-                    entry.isYou
-                      ? 'font-bold text-[var(--primary-blue)]'
-                      : entry.medal === 'gold'
-                        ? 'font-semibold text-[var(--text-dark)]'
-                        : 'font-medium text-[var(--text-dark)]'
-                  }`}
-                >
-                  {entry.name}
-                </span>
-                <span
-                  className={`text-sm font-bold ${
-                    entry.isYou
-                      ? 'text-[var(--primary-blue)]'
-                      : entry.medal === 'gold'
-                        ? 'text-[var(--orange)]'
-                        : 'font-semibold text-[var(--text-muted)]'
-                  }`}
-                >
-                  {entry.score}
-                </span>
-              </div>
-              {idx < ranking.length - 1 && (
-                <div className="h-px bg-[var(--border)]" />
-              )}
-            </div>
+            <RankingRow
+              key={entry.position}
+              entry={entry}
+              isLast={idx === ranking.length - 1}
+            />
           ))}
-        </div>
+        </section>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col items-center gap-3">
+        <nav className="flex flex-col items-center gap-3">
           <button
             onClick={onRetry}
             className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-[var(--primary-blue)] bg-[var(--page-bg)] px-6 py-3.5 transition-opacity hover:opacity-90"
@@ -148,7 +88,7 @@ export default function QuizResults({
           >
             Wróć do strony Wydziału
           </button>
-        </div>
+        </nav>
       </div>
     </div>
   );

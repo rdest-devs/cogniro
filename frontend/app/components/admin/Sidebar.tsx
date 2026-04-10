@@ -1,27 +1,20 @@
 'use client';
 
-import { BarChart3, FileText, Search, Settings } from 'lucide-react';
-
 import { cn } from '@/lib/cn';
+
+import { menuItems } from './constants';
 
 interface SidebarProps {
   activeItem?: string;
   onNavigate?: (item: string) => void;
 }
 
-const menuItems = [
-  { id: 'quizy', label: 'Moje Quizy', icon: FileText },
-  { id: 'statystyki', label: 'Statystyki', icon: BarChart3 },
-  { id: 'przegladaj', label: 'Przeglądaj Wszystkie', icon: Search },
-  { id: 'ustawienia', label: 'Ustawienia', icon: Settings },
-];
-
 export default function Sidebar({
   activeItem = 'quizy',
   onNavigate,
 }: SidebarProps) {
   return (
-    <div className="flex h-full w-[260px] flex-col bg-[var(--sidebar-bg)]">
+    <aside className="flex h-full w-[260px] flex-col bg-[var(--sidebar-bg)]">
       <div className="h-px w-full bg-white/10" />
       <nav className="flex flex-1 flex-col gap-0.5 p-4 px-2">
         <div className="px-4 pt-1 pb-2">
@@ -66,6 +59,6 @@ export default function Sidebar({
           );
         })}
       </nav>
-    </div>
+    </aside>
   );
 }
