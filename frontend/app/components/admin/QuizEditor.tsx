@@ -39,32 +39,6 @@ export default function QuizEditor({
   const [shuffle, setShuffle] = useState(shuffleQuestions);
   const [nameValue, setNameValue] = useState(quizName);
   const [timeLimitValue, setTimeLimitValue] = useState(timeLimit);
-  const [questionsState, setQuestionsState] = useState(questions);
-
-  const updateQuestion = (id: number, patch: Partial<Question>) => {
-    setQuestionsState((prev) =>
-      prev.map((q) => (q.id === id ? { ...q, ...patch } : q)),
-    );
-  };
-
-  const updateAnswer = (
-    questionId: number,
-    answerIndex: number,
-    text: string,
-  ) => {
-    setQuestionsState((prev) =>
-      prev.map((q) =>
-        q.id === questionId
-          ? {
-              ...q,
-              answers: q.answers.map((a, i) =>
-                i === answerIndex ? { ...a, text } : a,
-              ),
-            }
-          : q,
-      ),
-    );
-  };
 
   const typeColors: Record<string, string> = {
     Jednokrotny: 'bg-[var(--active)] text-white',
@@ -72,7 +46,7 @@ export default function QuizEditor({
     Obrazkowy: 'bg-[var(--orange)] text-white',
   };
 
-  const expandedQuestion = questionsState.find((q) => q.id === expandedId);
+  const expandedQuestion = questions.find((q) => q.id === expandedId);
 
   return (
     <div className="flex h-screen w-full bg-[var(--page-bg)]">
@@ -95,7 +69,7 @@ export default function QuizEditor({
                     quizName: nameValue,
                     timeLimit: timeLimitValue,
                     shuffleQuestions: shuffle,
-                    questions: questionsState,
+                    questions: questions,
                   })
                 }
                 className="flex cursor-pointer items-center gap-2 rounded-2xl bg-[var(--active)] px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
@@ -172,10 +146,10 @@ export default function QuizEditor({
             {/* Questions List */}
             <div className="flex flex-col gap-3">
               <h2 className="text-base font-bold text-[var(--text-dark)]">
-                Pytania ({questionsState.length})
+                Pytania ({questions.length})
               </h2>
 
-              {questionsState.map((q) => (
+              {questions.map((q) => (
                 <div key={q.id}>
                   {/* Collapsed question */}
                   <button
@@ -216,10 +190,7 @@ export default function QuizEditor({
                           Treść pytania
                         </label>
                         <input
-                          value={q.text}
-                          onChange={(e) =>
-                            updateQuestion(q.id, { text: e.target.value })
-                          }
+                          defaultValue={q.text}
                           className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm text-[var(--text-dark)] outline-none"
                         />
                       </div>
@@ -230,10 +201,7 @@ export default function QuizEditor({
                         </label>
                         <div className="relative w-48">
                           <select
-                            value={q.type}
-                            onChange={(e) =>
-                              updateQuestion(q.id, { type: e.target.value })
-                            }
+                            defaultValue={q.type}
                             className="w-full appearance-none rounded-xl border border-[var(--border)] bg-white px-3 py-2 pr-8 text-sm text-[var(--text-dark)] outline-none"
                           >
                             <option>Jednokrotny</option>
@@ -282,10 +250,7 @@ export default function QuizEditor({
                                 )}
                               </div>
                               <input
-                                value={a.text}
-                                onChange={(e) =>
-                                  updateAnswer(q.id, i, e.target.value)
-                                }
+                                defaultValue={a.text}
                                 className={cn(
                                   'flex-1 rounded-xl border px-3 py-2 text-sm outline-none',
                                   a.isCorrect
