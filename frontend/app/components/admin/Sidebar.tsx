@@ -36,6 +36,7 @@ export default function Sidebar({
             <button
               key={item.id}
               onClick={() => onNavigate?.(item.id)}
+              aria-current={isActive ? 'page' : undefined}
               className={cn(
                 'flex w-full cursor-pointer items-center gap-3 rounded-xl py-3 pr-5 pl-6 transition-colors',
                 isActive

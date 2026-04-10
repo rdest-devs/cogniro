@@ -53,7 +53,7 @@ export default function MultipleChoice({
         <div className="flex flex-col gap-3">
           {answers.map((answer, i) => (
             <CheckboxAnswer
-              key={answer}
+              key={`${i}-${answer}`}
               label={answer}
               selected={selected.has(i)}
               onClick={() => toggle(i)}

@@ -60,7 +60,10 @@ export default function AdminPanel({ quizzes }: AdminPanelProps) {
                   <span className="text-xs text-[var(--text-muted)]">
                     Utworzony: {quiz.createdAt}
                   </span>
-                  <button className="cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-dark)]">
+                  <button
+                    aria-label="Więcej opcji"
+                    className="cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-dark)]"
+                  >
                     ···
                   </button>
                 </div>
@@ -68,7 +71,10 @@ export default function AdminPanel({ quizzes }: AdminPanelProps) {
             ))}
 
             {/* Add New Card */}
-            <button className="flex cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-[var(--border)] bg-transparent py-12 text-3xl text-[var(--text-muted)] transition-colors hover:border-[var(--primary-blue)] hover:text-[var(--primary-blue)]">
+            <button
+              aria-label="Dodaj nowy quiz"
+              className="flex cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-[var(--border)] bg-transparent py-12 text-3xl text-[var(--text-muted)] transition-colors hover:border-[var(--primary-blue)] hover:text-[var(--primary-blue)]"
+            >
               +
             </button>
           </div>

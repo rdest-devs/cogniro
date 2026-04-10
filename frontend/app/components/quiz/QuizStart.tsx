@@ -60,8 +60,9 @@ export default function QuizStart({
 
         {/* Start Button */}
         <button
-          onClick={() => onStart?.(name)}
-          className="w-full cursor-pointer rounded-2xl bg-[var(--orange)] px-6 py-4 text-center text-base font-bold text-white transition-opacity hover:opacity-90"
+          onClick={() => name.trim() && onStart?.(name.trim())}
+          disabled={!name.trim()}
+          className="w-full cursor-pointer rounded-2xl bg-[var(--orange)] px-6 py-4 text-center text-base font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Rozpocznij przygodę
         </button>

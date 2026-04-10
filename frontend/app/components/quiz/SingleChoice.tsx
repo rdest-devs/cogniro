@@ -42,7 +42,7 @@ export default function SingleChoice({
         <div className="flex flex-col gap-3">
           {answers.map((answer, i) => (
             <RadioAnswer
-              key={answer}
+              key={`${i}-${answer}`}
               label={answer}
               selected={selected === i}
               onClick={() => setSelected(i)}

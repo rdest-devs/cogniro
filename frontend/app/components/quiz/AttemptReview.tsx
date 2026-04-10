@@ -99,9 +99,9 @@ export default function AttemptReview({
 
             {/* Answers */}
             <div className="flex flex-col gap-2">
-              {q.answers.map((a) => (
+              {q.answers.map((a, i) => (
                 <div
-                  key={a.text}
+                  key={`${i}-${a.text}`}
                   className={cn(
                     'flex items-center gap-2.5 rounded-xl px-3.5 py-2.5',
                     a.state === 'correct-selected' &&

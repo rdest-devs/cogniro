@@ -92,23 +92,21 @@ export default function SliderQuestion({
             </div>
 
             {/* Tick labels */}
-            {ticks && (
-              <div className="mt-1 flex w-full justify-between px-1">
-                {ticks.map((tick) => (
-                  <span
-                    key={tick}
-                    className={cn(
-                      'text-xs',
-                      tick === value
-                        ? 'font-bold text-[var(--orange)]'
-                        : 'font-medium text-[var(--text-muted)]',
-                    )}
-                  >
-                    {tick}
-                  </span>
-                ))}
-              </div>
-            )}
+            <div className="mt-1 flex w-full justify-between px-1">
+              {ticks.map((tick) => (
+                <span
+                  key={tick}
+                  className={cn(
+                    'text-xs',
+                    tick === value
+                      ? 'font-bold text-[var(--orange)]'
+                      : 'font-medium text-[var(--text-muted)]',
+                  )}
+                >
+                  {tick}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
 

@@ -12,7 +12,7 @@ export interface QuizCard {
 export interface QuizInfo {
   id: string;
   title: string;
-  status: string;
+  status: QuizStatus;
   date: string;
   participants: number;
   avgScore: number;

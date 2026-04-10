@@ -44,7 +44,7 @@ export default function ImageQuestion({
         <div className="flex flex-col gap-2.5">
           {answers.map((answer, i) => (
             <RadioAnswer
-              key={answer}
+              key={`${i}-${answer}`}
               label={answer}
               selected={selected === i}
               onClick={() => setSelected(i)}
