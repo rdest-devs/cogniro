@@ -70,6 +70,7 @@ export default function SliderQuestion({
             value={value}
             percent={percent}
             onChange={setValue}
+            ariaLabel={question}
           />
 
           <div className="mt-1 flex w-full justify-between px-1">

@@ -69,6 +69,7 @@ export default function RangeSlider({
             percent={percent}
             onChange={setValue}
             trackHeight="h-6"
+            ariaLabel={question}
           />
 
           <div className="mt-3 flex w-full justify-between">

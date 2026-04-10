@@ -25,8 +25,12 @@ export default function AttemptReview({
     <div className="flex min-h-full w-full max-w-[390px] flex-col bg-[var(--page-bg)]">
       <header className="flex w-full items-center justify-between px-6 pt-4">
         <button
+          type="button"
           onClick={onBack}
-          className="flex cursor-pointer items-center gap-2"
+          aria-disabled={!onBack}
+          className={`flex items-center gap-2 ${
+            onBack ? 'cursor-pointer' : 'cursor-default'
+          }`}
         >
           <ArrowLeft size={20} className="text-[var(--text-dark)]" />
           <span className="text-sm font-semibold text-[var(--text-dark)]">

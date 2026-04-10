@@ -6,6 +6,7 @@ interface SliderTrackProps {
   percent: number;
   onChange: (value: number) => void;
   trackHeight?: string;
+  ariaLabel?: string;
 }
 
 export default function SliderTrack({
@@ -16,6 +17,7 @@ export default function SliderTrack({
   percent,
   onChange,
   trackHeight = 'h-10',
+  ariaLabel,
 }: SliderTrackProps) {
   return (
     <div className={`relative ${trackHeight} w-full`}>
@@ -32,6 +34,7 @@ export default function SliderTrack({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
+        aria-label={ariaLabel}
         className="absolute top-0 h-full w-full cursor-pointer opacity-0"
       />
       <div

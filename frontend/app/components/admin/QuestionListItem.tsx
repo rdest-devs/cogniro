@@ -19,10 +19,15 @@ export default function QuestionListItem({
   isExpanded,
   onToggle,
 }: QuestionListItemProps) {
+  const panelId = `question-panel-${q.id}`;
+
   return (
     <article>
       <button
+        type="button"
         onClick={onToggle}
+        aria-expanded={isExpanded}
+        aria-controls={panelId}
         className={cn(
           'flex w-full cursor-pointer items-center gap-3 rounded-2xl border p-4 transition-colors',
           isExpanded
@@ -40,14 +45,17 @@ export default function QuestionListItem({
       </button>
 
       {isExpanded && (
-        <div className="mt-2 flex flex-col gap-4 rounded-2xl border border-[var(--orange)] bg-[var(--selected-bg)] p-5">
+        <div
+          id={panelId}
+          className="mt-2 flex flex-col gap-4 rounded-2xl border border-[var(--orange)] bg-[var(--selected-bg)] p-5"
+        >
           <label className="flex flex-col gap-1">
             <span className="text-[13px] font-medium text-[var(--text-muted)]">
               Treść pytania
             </span>
             <input
               defaultValue={q.text}
-              className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm text-[var(--text-dark)] outline-none"
+              className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm text-[var(--text-dark)] outline-none focus:border-[var(--primary-blue)]"
             />
           </label>
 
@@ -58,7 +66,7 @@ export default function QuestionListItem({
             <div className="relative w-48">
               <select
                 defaultValue={q.type}
-                className="w-full appearance-none rounded-xl border border-[var(--border)] bg-white px-3 py-2 pr-8 text-sm text-[var(--text-dark)] outline-none"
+                className="w-full appearance-none rounded-xl border border-[var(--border)] bg-white px-3 py-2 pr-8 text-sm text-[var(--text-dark)] outline-none focus:border-[var(--primary-blue)]"
               >
                 <option>Jednokrotny</option>
                 <option>Wielokrotny</option>
@@ -108,7 +116,7 @@ export default function QuestionListItem({
                   <input
                     defaultValue={a.text}
                     className={cn(
-                      'flex-1 rounded-xl border px-3 py-2 text-sm outline-none',
+                      'flex-1 rounded-xl border px-3 py-2 text-sm outline-none focus:border-[var(--primary-blue)]',
                       a.isCorrect
                         ? 'border-[var(--orange)] bg-[var(--selected-bg)]'
                         : 'border-[var(--border)] bg-white',

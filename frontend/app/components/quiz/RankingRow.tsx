@@ -22,11 +22,15 @@ export default function RankingRow({ entry, isLast }: RankingRowProps) {
         }`}
       >
         {entry.medal ? (
-          <Trophy
-            size={20}
-            color={medalColors[entry.medal]}
-            fill={medalColors[entry.medal]}
-          />
+          <>
+            <span className="sr-only">{entry.position}</span>
+            <Trophy
+              size={20}
+              color={medalColors[entry.medal]}
+              fill={medalColors[entry.medal]}
+              aria-hidden="true"
+            />
+          </>
         ) : (
           <span
             className={`w-5 text-center text-sm ${
@@ -50,11 +54,11 @@ export default function RankingRow({ entry, isLast }: RankingRowProps) {
           {entry.name}
         </span>
         <span
-          className={`text-sm font-bold ${
+          className={`text-sm ${
             entry.isYou
-              ? 'text-[var(--primary-blue)]'
+              ? 'font-bold text-[var(--primary-blue)]'
               : entry.medal === 'gold'
-                ? 'text-[var(--orange)]'
+                ? 'font-bold text-[var(--orange)]'
                 : 'font-semibold text-[var(--text-muted)]'
           }`}
         >

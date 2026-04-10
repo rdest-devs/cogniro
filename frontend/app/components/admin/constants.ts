@@ -17,4 +17,6 @@ export const typeColors: Record<string, string> = {
   Jednokrotny: 'bg-[var(--active)] text-white',
   Wielokrotny: 'bg-[var(--primary-blue)] text-white',
   Obrazkowy: 'bg-[var(--orange)] text-white',
+  Kolejność: 'bg-[var(--sidebar-bg)] text-white',
+  Suwak: 'bg-[var(--text-muted)] text-white',
 };
