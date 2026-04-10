@@ -9,20 +9,20 @@ import RadioAnswer from './RadioAnswer';
 import SubmitButton from './SubmitButton';
 
 interface SingleChoiceProps {
-  questionNumber?: number;
-  totalQuestions?: number;
-  time?: string;
-  question?: string;
-  answers?: string[];
+  questionNumber: number;
+  totalQuestions: number;
+  time: string;
+  question: string;
+  answers: string[];
   onSubmit?: (selectedIndex: number) => void;
 }
 
 export default function SingleChoice({
-  questionNumber = 3,
-  totalQuestions = 10,
-  time = '0:42',
-  question = 'Który protokół jest używany do bezpiecznego przesyłania danych w sieci?',
-  answers = ['HTTP', 'HTTPS', 'FTP', 'SMTP'],
+  questionNumber,
+  totalQuestions,
+  time,
+  question,
+  answers,
   onSubmit,
 }: SingleChoiceProps) {
   const [selected, setSelected] = useState<number | null>(null);

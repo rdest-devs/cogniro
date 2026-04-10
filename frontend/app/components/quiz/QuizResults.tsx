@@ -2,20 +2,14 @@
 
 import { FileCheck, RotateCcw, Trophy } from 'lucide-react';
 
-interface RankingEntry {
-  position: number;
-  name: string;
-  score: string;
-  isYou?: boolean;
-  medal?: 'gold' | 'silver' | 'bronze';
-}
+import type { RankingEntry } from '@/app/types';
 
 interface QuizResultsProps {
-  scorePercent?: number;
-  scoreCorrect?: number;
-  scoreTotal?: number;
-  message?: string;
-  ranking?: RankingEntry[];
+  scorePercent: number;
+  scoreCorrect: number;
+  scoreTotal: number;
+  message: string;
+  ranking: RankingEntry[];
   onRetry?: () => void;
   onReview?: () => void;
   onBack?: () => void;
@@ -28,17 +22,11 @@ const medalColors = {
 };
 
 export default function QuizResults({
-  scorePercent = 78,
-  scoreCorrect = 8,
-  scoreTotal = 10,
-  message = 'Świetny wynik! Jesteś w czołówce wydziału.',
-  ranking = [
-    { position: 1, name: 'Anna Kowalska', score: '96%', medal: 'gold' },
-    { position: 2, name: 'Piotr Nowak', score: '91%', medal: 'silver' },
-    { position: 3, name: 'Maja Wiśniewska', score: '85%', medal: 'bronze' },
-    { position: 4, name: 'Ty', score: '78%', isYou: true },
-    { position: 5, name: 'Kamil Zieliński', score: '72%' },
-  ],
+  scorePercent,
+  scoreCorrect,
+  scoreTotal,
+  message,
+  ranking,
   onRetry,
   onReview,
   onBack,

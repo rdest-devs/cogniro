@@ -2,65 +2,22 @@
 
 import { Calendar, Eye, Pencil, Plus, Trash2, Users } from 'lucide-react';
 
+import type { QuizInfo, ResultRow } from '@/app/types';
 import { cn } from '@/lib/cn';
 
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 
-interface QuizInfo {
-  id: string;
-  title: string;
-  status: string;
-  date: string;
-  participants: number;
-  avgScore: number;
-}
-
-interface ResultRow {
-  name: string;
-  score: number;
-  time: string;
-  date: string;
-}
-
 interface QuizDetailProps {
-  quizzes?: QuizInfo[];
-  selectedQuiz?: string;
-  results?: ResultRow[];
+  quizzes: QuizInfo[];
+  selectedQuiz: string;
+  results: ResultRow[];
 }
 
 export default function QuizDetail({
-  quizzes = [
-    {
-      id: '1',
-      title: 'Quiz z Informatyki',
-      status: 'Aktywny',
-      date: '12 mar 2026',
-      participants: 48,
-      avgScore: 76,
-    },
-    {
-      id: '2',
-      title: 'Algorytmy i Struktury Danych',
-      status: 'Stare',
-      date: '6 mar 2026',
-      participants: 32,
-      avgScore: 82,
-    },
-  ],
-  selectedQuiz = 'Quiz z Informatyki',
-  results = [
-    { name: 'Anna Kowalska', score: 96, time: '4:32', date: '12 mar 2026' },
-    { name: 'Piotr Nowak', score: 91, time: '5:18', date: '12 mar 2026' },
-    {
-      name: 'Maja Wiśniewska',
-      score: 85,
-      time: '6:45',
-      date: '13 mar 2026',
-    },
-    { name: 'Kamil Zieliński', score: 78, time: '7:02', date: '14 mar 2026' },
-    { name: 'Ewa Jabłońska', score: 72, time: '8:15', date: '14 mar 2026' },
-  ],
+  quizzes,
+  selectedQuiz,
+  results,
 }: QuizDetailProps) {
   const statusColors: Record<string, string> = {
     Aktywny: 'bg-[var(--active)] text-white',

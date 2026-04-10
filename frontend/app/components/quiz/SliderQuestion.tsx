@@ -10,32 +10,32 @@ import QuestionHeader from './QuestionHeader';
 import SubmitButton from './SubmitButton';
 
 interface SliderQuestionProps {
-  questionNumber?: number;
-  totalQuestions?: number;
-  time?: string;
-  question?: string;
+  questionNumber: number;
+  totalQuestions: number;
+  time: string;
+  question: string;
   hint?: string;
-  min?: number;
-  max?: number;
+  min: number;
+  max: number;
   step?: number;
-  defaultValue?: number;
-  unit?: string;
-  ticks?: number[];
+  defaultValue: number;
+  unit: string;
+  ticks: number[];
   onSubmit?: (value: number) => void;
 }
 
 export default function SliderQuestion({
-  questionNumber = 8,
-  totalQuestions = 10,
-  time = '0:38',
-  question = 'Ile bitów ma adres IPv4?',
-  hint = 'Wybierz wartość za pomocą suwaka',
-  min = 0,
-  max = 128,
+  questionNumber,
+  totalQuestions,
+  time,
+  question,
+  hint,
+  min,
+  max,
   step = 1,
-  defaultValue = 32,
-  unit = 'bitów',
-  ticks = [0, 32, 64, 96, 128],
+  defaultValue,
+  unit,
+  ticks,
   onSubmit,
 }: SliderQuestionProps) {
   const [value, setValue] = useState(defaultValue);

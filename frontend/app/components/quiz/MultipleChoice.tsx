@@ -9,22 +9,22 @@ import QuestionHeader from './QuestionHeader';
 import SubmitButton from './SubmitButton';
 
 interface MultipleChoiceProps {
-  questionNumber?: number;
-  totalQuestions?: number;
-  time?: string;
-  question?: string;
+  questionNumber: number;
+  totalQuestions: number;
+  time: string;
+  question: string;
   hint?: string;
-  answers?: string[];
+  answers: string[];
   onSubmit?: (selectedIndices: number[]) => void;
 }
 
 export default function MultipleChoice({
-  questionNumber = 5,
-  totalQuestions = 10,
-  time = '1:15',
-  question = 'Które z poniższych są językami programowania?',
-  hint = 'Wybierz wszystkie poprawne odpowiedzi',
-  answers = ['Python', 'HTML', 'Java', 'CSS'],
+  questionNumber,
+  totalQuestions,
+  time,
+  question,
+  hint,
+  answers,
   onSubmit,
 }: MultipleChoiceProps) {
   const [selected, setSelected] = useState<Set<number>>(new Set());

@@ -9,22 +9,22 @@ import RadioAnswer from './RadioAnswer';
 import SubmitButton from './SubmitButton';
 
 interface ImageQuestionProps {
-  questionNumber?: number;
-  totalQuestions?: number;
-  time?: string;
-  question?: string;
-  imageUrl?: string;
-  answers?: string[];
+  questionNumber: number;
+  totalQuestions: number;
+  time: string;
+  question: string;
+  imageUrl: string;
+  answers: string[];
   onSubmit?: (selectedIndex: number) => void;
 }
 
 export default function ImageQuestion({
-  questionNumber = 7,
-  totalQuestions = 10,
-  time = '0:58',
-  question = 'Który schemat blokowy przedstawia pętlę while?',
-  imageUrl = '/images/flowchart.png',
-  answers = ['Schemat A', 'Schemat B', 'Schemat C'],
+  questionNumber,
+  totalQuestions,
+  time,
+  question,
+  imageUrl,
+  answers,
   onSubmit,
 }: ImageQuestionProps) {
   const [selected, setSelected] = useState<number | null>(null);

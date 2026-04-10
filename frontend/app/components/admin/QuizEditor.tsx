@@ -3,30 +3,18 @@
 import { ChevronDown, Plus, Upload } from 'lucide-react';
 import { useState } from 'react';
 
+import type { Question } from '@/app/types';
 import { cn } from '@/lib/cn';
 
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 
-interface QuestionAnswer {
-  text: string;
-  isCorrect: boolean;
-}
-
-interface Question {
-  id: number;
-  text: string;
-  type: string;
-  answers: QuestionAnswer[];
-  expanded?: boolean;
-}
-
 interface QuizEditorProps {
-  quizName?: string;
-  timeLimit?: number;
-  shuffleQuestions?: boolean;
-  accessibility?: string;
-  questions?: Question[];
+  quizName: string;
+  timeLimit: number;
+  shuffleQuestions: boolean;
+  accessibility: string;
+  questions: Question[];
   onSave?: (data: {
     quizName: string;
     timeLimit: number;
@@ -37,41 +25,11 @@ interface QuizEditorProps {
 }
 
 export default function QuizEditor({
-  quizName = 'Quiz z Informatyki',
-  timeLimit = 10,
-  shuffleQuestions = true,
-  accessibility = 'Publiczny',
-  questions = [
-    {
-      id: 1,
-      text: 'Który protokół jest używany do bezpiecznego przesyłania danych?',
-      type: 'Jednokrotny',
-      answers: [
-        { text: 'HTTPS', isCorrect: true },
-        { text: 'HTTP', isCorrect: false },
-        { text: 'FTP', isCorrect: false },
-      ],
-      expanded: false,
-    },
-    {
-      id: 2,
-      text: 'Które z poniższych są językami programowania?',
-      type: 'Wielokrotny',
-      answers: [],
-      expanded: false,
-    },
-    {
-      id: 3,
-      text: 'Który schemat blokowy przedstawia pętlę while?',
-      type: 'Obrazkowy',
-      answers: [
-        { text: 'HTTPS', isCorrect: true },
-        { text: 'HTTP', isCorrect: false },
-        { text: 'FTP', isCorrect: false },
-      ],
-      expanded: true,
-    },
-  ],
+  quizName,
+  timeLimit,
+  shuffleQuestions,
+  accessibility,
+  questions,
   onSave,
   onAddQuestion,
 }: QuizEditorProps) {

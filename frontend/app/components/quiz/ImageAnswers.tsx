@@ -3,6 +3,7 @@
 import ExportedImage from 'next-image-export-optimizer';
 import { useState } from 'react';
 
+import type { ImageAnswerOption } from '@/app/types';
 import { cn } from '@/lib/cn';
 
 import ProgressBar from './ProgressBar';
@@ -10,31 +11,21 @@ import QuestionCard from './QuestionCard';
 import QuestionHeader from './QuestionHeader';
 import SubmitButton from './SubmitButton';
 
-interface ImageAnswerOption {
-  imageUrl: string;
-  label: string;
-}
-
 interface ImageAnswersProps {
-  questionNumber?: number;
-  totalQuestions?: number;
-  time?: string;
-  question?: string;
-  answers?: ImageAnswerOption[];
+  questionNumber: number;
+  totalQuestions: number;
+  time: string;
+  question: string;
+  answers: ImageAnswerOption[];
   onSubmit?: (selectedIndex: number) => void;
 }
 
 export default function ImageAnswers({
-  questionNumber = 9,
-  totalQuestions = 10,
-  time = '0:33',
-  question = 'Który z poniższych obrazków przedstawia strukturę drzewa binarnego?',
-  answers = [
-    { imageUrl: '/images/diagram-a.png', label: 'A' },
-    { imageUrl: '/images/diagram-b.png', label: 'B' },
-    { imageUrl: '/images/diagram-c.png', label: 'C' },
-    { imageUrl: '/images/diagram-d.png', label: 'D' },
-  ],
+  questionNumber,
+  totalQuestions,
+  time,
+  question,
+  answers,
   onSubmit,
 }: ImageAnswersProps) {
   const [selected, setSelected] = useState<number | null>(null);

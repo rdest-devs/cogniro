@@ -1,21 +1,13 @@
 'use client';
 
+import type { QuizCard } from '@/app/types';
 import { cn } from '@/lib/cn';
 
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 
-interface QuizCard {
-  id: string;
-  title: string;
-  questionsCount: number;
-  responsesCount: number;
-  createdAt: string;
-  status: 'Aktywny' | 'Stare' | 'Zakończony';
-}
-
 interface AdminPanelProps {
-  quizzes?: QuizCard[];
+  quizzes: QuizCard[];
 }
 
 const statusColors: Record<string, string> = {
@@ -24,42 +16,7 @@ const statusColors: Record<string, string> = {
   Zakończony: 'bg-[var(--wrong-fg)] text-white',
 };
 
-export default function AdminPanel({
-  quizzes = [
-    {
-      id: '1',
-      title: 'Quiz z Informatyki',
-      questionsCount: 10,
-      responsesCount: 48,
-      createdAt: '12 mar 2026',
-      status: 'Aktywny',
-    },
-    {
-      id: '2',
-      title: 'Algorytmy i Struktury Danych',
-      questionsCount: 15,
-      responsesCount: 32,
-      createdAt: '6 mar 2026',
-      status: 'Aktywny',
-    },
-    {
-      id: '3',
-      title: 'Bazy Danych SQL',
-      questionsCount: 8,
-      responsesCount: 0,
-      createdAt: '15 mar 2026',
-      status: 'Stare',
-    },
-    {
-      id: '4',
-      title: 'Sieci Komputerowe',
-      questionsCount: 12,
-      responsesCount: 65,
-      createdAt: '1 mar 2026',
-      status: 'Zakończony',
-    },
-  ],
-}: AdminPanelProps) {
+export default function AdminPanel({ quizzes }: AdminPanelProps) {
   return (
     <div className="flex h-screen w-full bg-[var(--page-bg)]">
       <Sidebar activeItem="quizy" />

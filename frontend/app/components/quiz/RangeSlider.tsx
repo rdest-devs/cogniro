@@ -8,30 +8,30 @@ import QuestionHeader from './QuestionHeader';
 import SubmitButton from './SubmitButton';
 
 interface RangeSliderProps {
-  questionNumber?: number;
-  totalQuestions?: number;
-  time?: string;
-  question?: string;
+  questionNumber: number;
+  totalQuestions: number;
+  time: string;
+  question: string;
   hint?: string;
-  min?: number;
-  max?: number;
-  defaultValue?: number;
-  lowLabel?: string;
-  highLabel?: string;
+  min: number;
+  max: number;
+  defaultValue: number;
+  lowLabel: string;
+  highLabel: string;
   onSubmit?: (value: number) => void;
 }
 
 export default function RangeSlider({
-  questionNumber = 5,
-  totalQuestions = 10,
-  time = '1:22',
-  question = 'Oceń swoją pewność w zakresie programowania obiektowego',
-  hint = 'Przesuń suwak, aby wybrać wartość od 1 do 10',
-  min = 1,
-  max = 10,
-  defaultValue = 7,
-  lowLabel = 'Niska pewność',
-  highLabel = 'Wysoka pewność',
+  questionNumber,
+  totalQuestions,
+  time,
+  question,
+  hint,
+  min,
+  max,
+  defaultValue,
+  lowLabel,
+  highLabel,
   onSubmit,
 }: RangeSliderProps) {
   const [value, setValue] = useState(defaultValue);

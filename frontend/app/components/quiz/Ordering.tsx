@@ -11,27 +11,22 @@ import QuestionHeader from './QuestionHeader';
 import SubmitButton from './SubmitButton';
 
 interface OrderingProps {
-  questionNumber?: number;
-  totalQuestions?: number;
-  time?: string;
-  question?: string;
+  questionNumber: number;
+  totalQuestions: number;
+  time: string;
+  question: string;
   hint?: string;
-  items?: string[];
+  items: string[];
   onSubmit?: (order: string[]) => void;
 }
 
 export default function Ordering({
-  questionNumber = 6,
-  totalQuestions = 10,
-  time = '1:05',
-  question = 'Ułóż etapy kompilacji programu w odpowiedniej kolejności',
-  hint = 'Przeciągnij elementy, aby ustalić kolejność',
-  items = [
-    'Analiza leksykalna',
-    'Analiza składniowa',
-    'Generowanie kodu',
-    'Optymalizacja',
-  ],
+  questionNumber,
+  totalQuestions,
+  time,
+  question,
+  hint,
+  items,
   onSubmit,
 }: OrderingProps) {
   const [order, setOrder] = useState(items);

@@ -2,61 +2,22 @@
 
 import { ArrowLeft, CircleCheck, CircleX } from 'lucide-react';
 
+import type { ReviewQuestion } from '@/app/types';
 import { cn } from '@/lib/cn';
 
-interface ReviewAnswer {
-  text: string;
-  state: 'correct-selected' | 'wrong-selected' | 'correct' | 'neutral';
-  yourAnswer?: boolean;
-}
-
-interface ReviewQuestion {
-  number: number;
-  text: string;
-  isCorrect: boolean;
-  answers: ReviewAnswer[];
-}
-
 interface AttemptReviewProps {
-  correctCount?: number;
-  wrongCount?: number;
-  scorePercent?: number;
-  questions?: ReviewQuestion[];
+  correctCount: number;
+  wrongCount: number;
+  scorePercent: number;
+  questions: ReviewQuestion[];
   onBack?: () => void;
 }
 
 export default function AttemptReview({
-  correctCount = 7,
-  wrongCount = 3,
-  scorePercent = 70,
-  questions = [
-    {
-      number: 1,
-      text: 'Który protokół jest używany do bezpiecznego przesyłania danych w sieci?',
-      isCorrect: true,
-      answers: [
-        { text: 'HTTP', state: 'neutral' },
-        { text: 'HTTPS', state: 'correct-selected' },
-        { text: 'FTP', state: 'neutral' },
-        { text: 'SMTP', state: 'neutral' },
-      ],
-    },
-    {
-      number: 2,
-      text: 'Które z poniższych są językami programowania?',
-      isCorrect: false,
-      answers: [
-        {
-          text: 'Python, HTML, CSS',
-          state: 'wrong-selected',
-          yourAnswer: true,
-        },
-        { text: 'Python, Java, C++', state: 'correct' },
-        { text: 'HTML, CSS, SQL', state: 'neutral' },
-        { text: 'Word, Excel, PowerPoint', state: 'neutral' },
-      ],
-    },
-  ],
+  correctCount,
+  wrongCount,
+  scorePercent,
+  questions,
   onBack,
 }: AttemptReviewProps) {
   return (

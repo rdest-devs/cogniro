@@ -4,16 +4,16 @@ import ExportedImage from 'next-image-export-optimizer';
 import { useState } from 'react';
 
 interface QuizStartProps {
-  title?: string;
-  description?: string;
-  logoUrl?: string;
+  title: string;
+  description: string;
+  logoUrl: string;
   onStart?: (name: string) => void;
 }
 
 export default function QuizStart({
-  title = 'Quiz Informatyczny',
-  description = 'Sprawdź swoją wiedzę z zakresu informatyki! Odpowiedz na pytania i zdobądź jak najwięcej punktów.',
-  logoUrl = '/images/wi-new-logo.png',
+  title,
+  description,
+  logoUrl,
   onStart,
 }: QuizStartProps) {
   const [name, setName] = useState('');

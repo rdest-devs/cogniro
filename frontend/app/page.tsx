@@ -15,6 +15,21 @@ import {
   SingleChoice,
   SliderQuestion,
 } from './components/quiz';
+import {
+  adminPanelDemo,
+  attemptReviewDemo,
+  imageAnswersDemo,
+  imageQuestionDemo,
+  multipleChoiceDemo,
+  orderingDemo,
+  quizDetailDemo,
+  quizEditorDemo,
+  quizResultsDemo,
+  quizStartDemo,
+  rangeSliderDemo,
+  singleChoiceDemo,
+  sliderQuestionDemo,
+} from './data/demo';
 
 const screens = [
   'Quiz Start',
@@ -64,19 +79,25 @@ export default function Home() {
       <div
         className={`flex flex-1 overflow-auto bg-[var(--page-bg)] ${isAdmin ? '' : 'items-center justify-center'}`}
       >
-        {current === 'Quiz Start' && <QuizStart />}
-        {current === 'Single Choice' && <SingleChoice />}
-        {current === 'Multiple Choice' && <MultipleChoice />}
-        {current === 'Image Question' && <ImageQuestion />}
-        {current === 'Image Answers' && <ImageAnswers />}
-        {current === 'Ordering' && <Ordering />}
-        {current === 'Slider' && <SliderQuestion />}
-        {current === 'Range Slider' && <RangeSlider />}
-        {current === 'Quiz Results' && <QuizResults />}
-        {current === 'Attempt Review' && <AttemptReview />}
-        {current === 'Admin Panel' && <AdminPanel />}
-        {current === 'Quiz Detail' && <QuizDetail />}
-        {current === 'Quiz Editor' && <QuizEditor />}
+        {current === 'Quiz Start' && <QuizStart {...quizStartDemo} />}
+        {current === 'Single Choice' && <SingleChoice {...singleChoiceDemo} />}
+        {current === 'Multiple Choice' && (
+          <MultipleChoice {...multipleChoiceDemo} />
+        )}
+        {current === 'Image Question' && (
+          <ImageQuestion {...imageQuestionDemo} />
+        )}
+        {current === 'Image Answers' && <ImageAnswers {...imageAnswersDemo} />}
+        {current === 'Ordering' && <Ordering {...orderingDemo} />}
+        {current === 'Slider' && <SliderQuestion {...sliderQuestionDemo} />}
+        {current === 'Range Slider' && <RangeSlider {...rangeSliderDemo} />}
+        {current === 'Quiz Results' && <QuizResults {...quizResultsDemo} />}
+        {current === 'Attempt Review' && (
+          <AttemptReview {...attemptReviewDemo} />
+        )}
+        {current === 'Admin Panel' && <AdminPanel {...adminPanelDemo} />}
+        {current === 'Quiz Detail' && <QuizDetail {...quizDetailDemo} />}
+        {current === 'Quiz Editor' && <QuizEditor {...quizEditorDemo} />}
       </div>
     </div>
   );
