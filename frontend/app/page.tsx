@@ -1,64 +1,83 @@
-import ExportedImage from 'next-image-export-optimizer';
+'use client';
+
+import { useState } from 'react';
+
+import { AdminPanel, QuizDetail, QuizEditor } from './components/admin';
+import {
+  AttemptReview,
+  ImageAnswers,
+  ImageQuestion,
+  MultipleChoice,
+  Ordering,
+  QuizResults,
+  QuizStart,
+  RangeSlider,
+  SingleChoice,
+  SliderQuestion,
+} from './components/quiz';
+
+const screens = [
+  'Quiz Start',
+  'Single Choice',
+  'Multiple Choice',
+  'Image Question',
+  'Image Answers',
+  'Ordering',
+  'Slider',
+  'Range Slider',
+  'Quiz Results',
+  'Attempt Review',
+  'Admin Panel',
+  'Quiz Detail',
+  'Quiz Editor',
+] as const;
+
+type Screen = (typeof screens)[number];
 
 export default function Home() {
+  const [current, setCurrent] = useState<Screen>('Quiz Start');
+
+  const isAdmin = ['Admin Panel', 'Quiz Detail', 'Quiz Editor'].includes(
+    current,
+  );
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between bg-white px-16 py-32 sm:items-start dark:bg-black">
-        <ExportedImage
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl leading-10 font-semibold tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{' '}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{' '}
-            or the{' '}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{' '}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="bg-foreground text-background flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 transition-colors hover:bg-[#383838] md:w-[158px] dark:hover:bg-[#ccc]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="flex h-screen flex-col">
+      {/* Navigation */}
+      <nav className="flex flex-wrap gap-2 border-b border-[var(--border)] bg-[var(--card-bg)] p-3">
+        {screens.map((screen) => (
+          <button
+            key={screen}
+            onClick={() => setCurrent(screen)}
+            className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+              current === screen
+                ? 'bg-[var(--primary-blue)] text-white'
+                : 'bg-white text-[var(--text-dark)] hover:bg-[var(--page-bg)]'
+            }`}
           >
-            <ExportedImage
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/8 px-5 transition-colors hover:border-transparent hover:bg-black/4 md:w-[158px] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+            {screen}
+          </button>
+        ))}
+      </nav>
+
+      {/* Screen */}
+      <div
+        className={`flex flex-1 overflow-auto bg-[var(--page-bg)] ${isAdmin ? '' : 'items-center justify-center'}`}
+      >
+        {current === 'Quiz Start' && <QuizStart />}
+        {current === 'Single Choice' && <SingleChoice />}
+        {current === 'Multiple Choice' && <MultipleChoice />}
+        {current === 'Image Question' && <ImageQuestion />}
+        {current === 'Image Answers' && <ImageAnswers />}
+        {current === 'Ordering' && <Ordering />}
+        {current === 'Slider' && <SliderQuestion />}
+        {current === 'Range Slider' && <RangeSlider />}
+        {current === 'Quiz Results' && <QuizResults />}
+        {current === 'Attempt Review' && <AttemptReview />}
+        {current === 'Admin Panel' && <AdminPanel />}
+        {current === 'Quiz Detail' && <QuizDetail />}
+        {current === 'Quiz Editor' && <QuizEditor />}
+      </div>
     </div>
   );
 }
