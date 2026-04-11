@@ -44,6 +44,6 @@ uv sync
 
 Managed by [Husky](https://typicode.github.io/husky/):
 
-- **pre-commit** - lint-staged (prettier for frontend, ruff for backend)
+- **pre-commit** - lint-staged (frontend eslint/prettier + type-check; backend ruff)
 - **commit-msg** - [commitlint](https://commitlint.js.org/) (conventional commits)
 - **pre-push** - full validation of both projects
