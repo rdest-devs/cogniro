@@ -11,7 +11,8 @@
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
     "type-check": "pnpm exec next typegen && tsc --noEmit",
-    "validate": "pnpm lint && pnpm format && pnpm type-check"
+    "validate": "pnpm lint && pnpm format && pnpm type-check",
+    "fix": "pnpm lint:fix && pnpm format:fix && pnpm type-check"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
