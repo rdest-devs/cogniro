@@ -10,4 +10,5 @@
   'plugins': ['prettier-plugin-tailwindcss'],
   'tailwindFunctions': ['clsx', 'cn'],
   'embeddedLanguageFormatting': 'off',
+  'endOfLine': 'auto',
 }
