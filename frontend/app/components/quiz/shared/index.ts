@@ -1,9 +1,6 @@
 export { default as CheckboxAnswer } from './CheckboxAnswer';
-export { default as ProgressBar } from './ProgressBar';
 export { default as QuestionCard } from './QuestionCard';
 export { default as QuestionHeader } from './QuestionHeader';
 export { default as QuizLayout } from './QuizLayout';
 export { default as QuizStart } from './QuizStart';
 export { default as RadioAnswer } from './RadioAnswer';
-export { default as SliderTrack } from './SliderTrack';
-export { default as SubmitButton } from './SubmitButton';

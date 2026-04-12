@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 
+import SliderTrack from '@/app/components/common/SliderTrack';
+import SubmitButton from '@/app/components/common/SubmitButton';
 import { cn } from '@/lib/cn';
 
 import QuestionCard from '../shared/QuestionCard';
 import QuizLayout from '../shared/QuizLayout';
-import SliderTrack from '../shared/SliderTrack';
-import SubmitButton from '../shared/SubmitButton';
 
 interface SliderQuestionProps {
   questionNumber: number;

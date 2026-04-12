@@ -2,11 +2,11 @@
 
 import { Calendar, Eye, Pencil, Plus, Trash2, Users } from 'lucide-react';
 
+import StatusBadge from '@/app/components/common/StatusBadge';
 import type { QuizInfo, ResultRow } from '@/app/types';
 
 import AdminLayout from '../layout/AdminLayout';
 import { statusColors } from '../shared/constants';
-import StatusBadge from '../shared/StatusBadge';
 
 interface QuizDetailProps {
   quizzes: QuizInfo[];

@@ -3,10 +3,10 @@
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 
+import ImageDropzone from '@/app/components/common/ImageDropzone';
 import type { Question } from '@/app/types';
 
 import AdminLayout from '../layout/AdminLayout';
-import ImageDropzone from './ImageDropzone';
 import QuestionListItem from './QuestionListItem';
 import QuestionPreview from './QuestionPreview';
 import QuizSettingsForm from './QuizSettingsForm';

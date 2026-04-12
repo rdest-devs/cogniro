@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 
+import SubmitButton from '@/app/components/common/SubmitButton';
+
 import QuestionCard from '../shared/QuestionCard';
 import QuizLayout from '../shared/QuizLayout';
 import RadioAnswer from '../shared/RadioAnswer';
-import SubmitButton from '../shared/SubmitButton';
 
 interface ImageQuestionProps {
   questionNumber: number;

@@ -3,12 +3,12 @@
 import ExportedImage from 'next-image-export-optimizer';
 import { useState } from 'react';
 
+import SubmitButton from '@/app/components/common/SubmitButton';
 import type { ImageAnswerOption } from '@/app/types';
 import { cn } from '@/lib/cn';
 
 import QuestionCard from '../shared/QuestionCard';
 import QuizLayout from '../shared/QuizLayout';
-import SubmitButton from '../shared/SubmitButton';
 
 interface ImageAnswersProps {
   questionNumber: number;
