@@ -3,11 +3,11 @@
 import { GripVertical } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import SubmitButton from '@/app/components/common/SubmitButton';
 import { cn } from '@/lib/cn';
 
-import QuestionCard from './QuestionCard';
-import QuizLayout from './QuizLayout';
-import SubmitButton from './SubmitButton';
+import QuestionCard from '../shared/QuestionCard';
+import QuizLayout from '../shared/QuizLayout';
 
 interface OrderingProps {
   questionNumber: number;

@@ -2,30 +2,29 @@
 
 import { useState } from 'react';
 
-import QuestionCard from './QuestionCard';
-import QuizLayout from './QuizLayout';
-import RadioAnswer from './RadioAnswer';
-import SubmitButton from './SubmitButton';
+import SubmitButton from '@/app/components/common/SubmitButton';
 
-interface ImageQuestionProps {
+import QuestionCard from '../shared/QuestionCard';
+import QuizLayout from '../shared/QuizLayout';
+import RadioAnswer from '../shared/RadioAnswer';
+
+interface SingleChoiceProps {
   questionNumber: number;
   totalQuestions: number;
   time: string;
   question: string;
-  imageUrl: string;
   answers: string[];
   onSubmit?: (selectedIndex: number) => void;
 }
 
-export default function ImageQuestion({
+export default function SingleChoice({
   questionNumber,
   totalQuestions,
   time,
   question,
-  imageUrl,
   answers,
   onSubmit,
-}: ImageQuestionProps) {
+}: SingleChoiceProps) {
   const [selected, setSelected] = useState<number | null>(null);
 
   return (
@@ -33,11 +32,10 @@ export default function ImageQuestion({
       questionNumber={questionNumber}
       totalQuestions={totalQuestions}
       time={time}
-      contentClassName="gap-5 pt-5"
     >
-      <QuestionCard question={question} imageUrl={imageUrl} />
+      <QuestionCard question={question} />
 
-      <div className="flex flex-col gap-2.5">
+      <div className="flex flex-col gap-3">
         {answers.map((answer, i) => (
           <RadioAnswer
             key={`${i}-${answer}`}

@@ -1,10 +1,10 @@
 'use client';
 
+import StatusBadge from '@/app/components/common/StatusBadge';
 import type { QuizCard } from '@/app/types';
 
-import AdminLayout from './AdminLayout';
-import { statusColors } from './constants';
-import StatusBadge from './StatusBadge';
+import AdminLayout from '../layout/AdminLayout';
+import { statusColors } from '../shared/constants';
 
 interface AdminPanelProps {
   quizzes: QuizCard[];

@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 
-import QuestionCard from './QuestionCard';
-import QuizLayout from './QuizLayout';
-import SliderTrack from './SliderTrack';
-import SubmitButton from './SubmitButton';
+import SliderTrack from '@/app/components/common/SliderTrack';
+import SubmitButton from '@/app/components/common/SubmitButton';
+import { cn } from '@/lib/cn';
 
-interface RangeSliderProps {
+import QuestionCard from '../shared/QuestionCard';
+import QuizLayout from '../shared/QuizLayout';
+
+interface SliderQuestionProps {
   questionNumber: number;
   totalQuestions: number;
   time: string;
@@ -15,13 +17,14 @@ interface RangeSliderProps {
   hint?: string;
   min: number;
   max: number;
+  step?: number;
   defaultValue: number;
-  lowLabel: string;
-  highLabel: string;
+  unit: string;
+  ticks: number[];
   onSubmit?: (value: number) => void;
 }
 
-export default function RangeSlider({
+export default function SliderQuestion({
   questionNumber,
   totalQuestions,
   time,
@@ -29,67 +32,61 @@ export default function RangeSlider({
   hint,
   min,
   max,
+  step = 1,
   defaultValue,
-  lowLabel,
-  highLabel,
+  unit,
+  ticks,
   onSubmit,
-}: RangeSliderProps) {
+}: SliderQuestionProps) {
   const [value, setValue] = useState(defaultValue);
   const range = max - min;
   const percent = range > 0 ? ((value - min) / range) * 100 : 0;
-
-  const midpoint = Math.round((min + max) / 2);
-  const tickValues = [min, midpoint, max];
 
   return (
     <QuizLayout
       questionNumber={questionNumber}
       totalQuestions={totalQuestions}
       time={time}
+      contentClassName="gap-8"
     >
       <QuestionCard question={question} hint={hint} />
 
       {/* Value Display + Slider */}
-      <div className="flex w-full flex-col items-center gap-6">
-        <p className="flex items-center gap-1">
-          <span className="text-5xl font-extrabold text-[var(--orange)]">
+      <div className="flex flex-col items-center gap-6">
+        <div className="flex h-[100px] w-[100px] flex-col items-center justify-center rounded-full border-[3px] border-[var(--orange)] bg-[var(--card-bg)]">
+          <span className="text-4xl font-extrabold text-[var(--orange)]">
             {value}
           </span>
-          <span className="text-base font-medium text-[var(--text-muted)]">
-            / {max}
+          <span className="text-xs font-medium text-[var(--text-muted)]">
+            {unit}
           </span>
-        </p>
+        </div>
 
         <div className="w-full">
           <SliderTrack
             min={min}
             max={max}
-            step={1}
+            step={step}
             value={value}
             percent={percent}
             onChange={setValue}
-            trackHeight="h-6"
             ariaLabel={question}
           />
 
-          <div className="mt-3 flex w-full justify-between">
-            {tickValues.map((tick) => (
+          <div className="mt-1 flex w-full justify-between px-1">
+            {ticks.map((tick) => (
               <span
                 key={tick}
-                className="text-xs font-medium text-[var(--text-muted)]"
+                className={cn(
+                  'text-xs',
+                  tick === value
+                    ? 'font-bold text-[var(--orange)]'
+                    : 'font-medium text-[var(--text-muted)]',
+                )}
               >
                 {tick}
               </span>
             ))}
-          </div>
-
-          <div className="mt-1 flex w-full justify-between px-1">
-            <span className="text-[11px] text-[var(--text-muted)]">
-              {lowLabel}
-            </span>
-            <span className="text-[11px] text-[var(--text-muted)]">
-              {highLabel}
-            </span>
           </div>
         </div>
       </div>

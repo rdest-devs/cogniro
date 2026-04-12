@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/cn';
 
-import { menuItems } from './constants';
+import { menuItems } from '../shared/constants';
 
 interface SidebarProps {
   activeItem?: string;

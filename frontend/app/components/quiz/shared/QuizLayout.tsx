@@ -1,6 +1,6 @@
+import ProgressBar from '@/app/components/common/ProgressBar';
 import { cn } from '@/lib/cn';
 
-import ProgressBar from './ProgressBar';
 import QuestionHeader from './QuestionHeader';
 
 interface QuizLayoutProps {

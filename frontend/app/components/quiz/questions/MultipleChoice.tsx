@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 
-import CheckboxAnswer from './CheckboxAnswer';
-import QuestionCard from './QuestionCard';
-import QuizLayout from './QuizLayout';
-import SubmitButton from './SubmitButton';
+import SubmitButton from '@/app/components/common/SubmitButton';
+
+import CheckboxAnswer from '../shared/CheckboxAnswer';
+import QuestionCard from '../shared/QuestionCard';
+import QuizLayout from '../shared/QuizLayout';
 
 interface MultipleChoiceProps {
   questionNumber: number;
