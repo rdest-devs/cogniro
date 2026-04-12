@@ -23,3 +23,6 @@ pnpm-debug.log*
 .pnpm-store
 
 .ruff_cache/
+
+# pencil
+pencil/

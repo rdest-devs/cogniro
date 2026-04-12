@@ -1,26 +1,53 @@
 @import 'tailwindcss';
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --background: #eff4fa;
+  --foreground: #212c3f;
+
+  /* Primary palette */
+  --primary-blue: #0c65af;
+  --orange: #f6a200;
+  --active: #22c55e;
+
+  /* Text */
+  --text-dark: #212c3f;
+  --text-muted: #52535d;
+  --text-light: #85b9e5;
+
+  /* Surfaces */
+  --card-bg: #e2edf8;
+  --page-bg: #eff4fa;
+  --border: #c0d4ea;
+  --highlight-bg: #d6e8f8;
+
+  /* States */
+  --selected-bg: #fef5e6;
+  --selected-border: #f6a200;
+  --correct-bg: #d1fae5;
+  --correct-fg: #065f46;
+  --wrong-bg: #fee2e2;
+  --wrong-fg: #991b1b;
+
+  /* Sidebar */
+  --sidebar-bg: #122945;
+  --sidebar-active: #0c65af;
+  --sidebar-text: #c0d4ea;
+  --sidebar-text-muted: #85b9e5;
+
+  /* Misc */
+  --gold: #ffd700;
+  --silver: #a8a8a8;
+  --bronze: #cd7f32;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), sans-serif;
 }
