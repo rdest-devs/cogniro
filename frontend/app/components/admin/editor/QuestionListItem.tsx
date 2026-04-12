@@ -5,8 +5,8 @@ import { ChevronDown } from 'lucide-react';
 import type { Question } from '@/app/types';
 import { cn } from '@/lib/cn';
 
-import { typeColors } from './constants';
-import StatusBadge from './StatusBadge';
+import { typeColors } from '../shared/constants';
+import StatusBadge from '../shared/StatusBadge';
 
 interface QuestionListItemProps {
   question: Question;

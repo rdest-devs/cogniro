@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 
-import QuestionCard from './QuestionCard';
-import QuizLayout from './QuizLayout';
-import RadioAnswer from './RadioAnswer';
-import SubmitButton from './SubmitButton';
+import QuestionCard from '../shared/QuestionCard';
+import QuizLayout from '../shared/QuizLayout';
+import RadioAnswer from '../shared/RadioAnswer';
+import SubmitButton from '../shared/SubmitButton';
 
 interface SingleChoiceProps {
   questionNumber: number;

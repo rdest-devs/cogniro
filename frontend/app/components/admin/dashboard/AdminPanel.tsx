@@ -2,9 +2,9 @@
 
 import type { QuizCard } from '@/app/types';
 
-import AdminLayout from './AdminLayout';
-import { statusColors } from './constants';
-import StatusBadge from './StatusBadge';
+import AdminLayout from '../layout/AdminLayout';
+import { statusColors } from '../shared/constants';
+import StatusBadge from '../shared/StatusBadge';
 
 interface AdminPanelProps {
   quizzes: QuizCard[];

@@ -5,7 +5,7 @@ import { useState } from 'react';
 
 import type { Question } from '@/app/types';
 
-import AdminLayout from './AdminLayout';
+import AdminLayout from '../layout/AdminLayout';
 import ImageDropzone from './ImageDropzone';
 import QuestionListItem from './QuestionListItem';
 import QuestionPreview from './QuestionPreview';

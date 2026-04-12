@@ -4,9 +4,9 @@ import { Calendar, Eye, Pencil, Plus, Trash2, Users } from 'lucide-react';
 
 import type { QuizInfo, ResultRow } from '@/app/types';
 
-import AdminLayout from './AdminLayout';
-import { statusColors } from './constants';
-import StatusBadge from './StatusBadge';
+import AdminLayout from '../layout/AdminLayout';
+import { statusColors } from '../shared/constants';
+import StatusBadge from '../shared/StatusBadge';
 
 interface QuizDetailProps {
   quizzes: QuizInfo[];

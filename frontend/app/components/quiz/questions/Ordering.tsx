@@ -5,9 +5,9 @@ import { useEffect, useState } from 'react';
 
 import { cn } from '@/lib/cn';
 
-import QuestionCard from './QuestionCard';
-import QuizLayout from './QuizLayout';
-import SubmitButton from './SubmitButton';
+import QuestionCard from '../shared/QuestionCard';
+import QuizLayout from '../shared/QuizLayout';
+import SubmitButton from '../shared/SubmitButton';
 
 interface OrderingProps {
   questionNumber: number;

@@ -6,9 +6,9 @@ import { useState } from 'react';
 import type { ImageAnswerOption } from '@/app/types';
 import { cn } from '@/lib/cn';
 
-import QuestionCard from './QuestionCard';
-import QuizLayout from './QuizLayout';
-import SubmitButton from './SubmitButton';
+import QuestionCard from '../shared/QuestionCard';
+import QuizLayout from '../shared/QuizLayout';
+import SubmitButton from '../shared/SubmitButton';
 
 interface ImageAnswersProps {
   questionNumber: number;
