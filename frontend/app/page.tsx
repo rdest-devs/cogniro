@@ -1,8 +1,7 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 
-import { AdminPanel, QuizDetail, QuizEditor } from './components/admin';
 import {
   AttemptReview,
   ImageAnswers,
@@ -16,14 +15,11 @@ import {
   SliderQuestion,
 } from './components/quiz';
 import {
-  adminPanelDemo,
   attemptReviewDemo,
   imageAnswersDemo,
   imageQuestionDemo,
   multipleChoiceDemo,
   orderingDemo,
-  quizDetailDemo,
-  quizEditorDemo,
   quizResultsDemo,
   quizStartDemo,
   rangeSliderDemo,
@@ -42,9 +38,6 @@ const screens = [
   'Range Slider',
   'Quiz Results',
   'Attempt Review',
-  'Admin Panel',
-  'Quiz Detail',
-  'Quiz Editor',
 ] as const;
 
 type Screen = (typeof screens)[number];
@@ -52,13 +45,8 @@ type Screen = (typeof screens)[number];
 export default function Home() {
   const [current, setCurrent] = useState<Screen>('Quiz Start');
 
-  const isAdmin = ['Admin Panel', 'Quiz Detail', 'Quiz Editor'].includes(
-    current,
-  );
-
   return (
     <div className="flex h-screen flex-col">
-      {/* Navigation */}
       <nav className="flex flex-wrap gap-2 border-b border-[var(--border)] bg-[var(--card-bg)] p-3">
         {screens.map((screen) => (
           <button
@@ -73,12 +61,15 @@ export default function Home() {
             {screen}
           </button>
         ))}
+        <a
+          href="/admin/"
+          className="cursor-pointer rounded-lg bg-[var(--orange)] px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
+        >
+          Admin
+        </a>
       </nav>
 
-      {/* Screen */}
-      <div
-        className={`flex flex-1 overflow-auto bg-[var(--page-bg)] ${isAdmin ? '' : 'items-center justify-center'}`}
-      >
+      <div className="flex flex-1 items-center justify-center overflow-auto bg-[var(--page-bg)]">
         {current === 'Quiz Start' && <QuizStart {...quizStartDemo} />}
         {current === 'Single Choice' && <SingleChoice {...singleChoiceDemo} />}
         {current === 'Multiple Choice' && (
@@ -95,9 +86,6 @@ export default function Home() {
         {current === 'Attempt Review' && (
           <AttemptReview {...attemptReviewDemo} />
         )}
-        {current === 'Admin Panel' && <AdminPanel {...adminPanelDemo} />}
-        {current === 'Quiz Detail' && <QuizDetail {...quizDetailDemo} />}
-        {current === 'Quiz Editor' && <QuizEditor {...quizEditorDemo} />}
       </div>
     </div>
   );

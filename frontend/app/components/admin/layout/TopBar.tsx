@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Plus } from 'lucide-react';
 import ExportedImage from 'next-image-export-optimizer';
@@ -40,10 +40,11 @@ export default function TopBar({
 
         <button
           onClick={onCreateQuiz}
-          className="flex cursor-pointer items-center gap-2 rounded-2xl bg-[var(--orange)] px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
+          disabled={!onCreateQuiz}
+          className="flex cursor-pointer items-center gap-2 rounded-2xl bg-[var(--orange)] px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Plus size={16} />
-          Stwórz nowy quiz
+          Stworz nowy quiz
         </button>
       </div>
     </header>
