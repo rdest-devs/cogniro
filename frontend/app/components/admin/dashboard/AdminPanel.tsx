@@ -18,13 +18,15 @@ export default function AdminPanel({ quizzes }: AdminPanelProps) {
         <h1 className="text-[28px] font-bold text-[var(--text-dark)]">
           Moje Quizy
         </h1>
-        <span className="text-sm font-medium text-[var(--text-muted)]">
-          {quizzes.length} quizy
-        </span>
-        <button className="flex cursor-pointer items-center gap-2 rounded-2xl bg-[var(--orange)] px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90">
-          <Plus size={16} />
-          Stwórz nowy quiz
-        </button>
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-medium text-[var(--text-muted)]">
+            {quizzes.length} quizy
+          </span>
+          <button className="flex cursor-pointer items-center gap-2 rounded-2xl bg-[var(--orange)] px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90">
+            <Plus size={16} />
+            Stwórz nowy quiz
+          </button>
+        </div>
       </header>
 
       <div className="mt-6 grid grid-cols-3 gap-4">
