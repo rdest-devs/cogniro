@@ -1,6 +1,6 @@
 'use client';
 
-import { Calendar, Eye, Pencil, Trash2, Users } from 'lucide-react';
+import { Calendar, Eye, Pencil, Plus, Trash2, Users } from 'lucide-react';
 
 import StatusBadge from '@/app/components/common/StatusBadge';
 import type { QuizInfo, ResultRow } from '@/app/types';
@@ -27,6 +27,10 @@ export default function QuizDetail({
           <h1 className="text-[28px] font-bold text-[var(--text-dark)]">
             Moje Quizy
           </h1>
+          <button className="flex cursor-pointer items-center gap-2 rounded-2xl bg-[var(--orange)] px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90">
+            <Plus size={16} />
+            Stwórz nowy quiz
+          </button>
         </header>
 
         {/* Quiz Cards */}

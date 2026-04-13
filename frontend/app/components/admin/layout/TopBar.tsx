@@ -1,6 +1,5 @@
 'use client';
 
-import { Plus } from 'lucide-react';
 import ExportedImage from 'next-image-export-optimizer';
 
 interface TopBarProps {
@@ -14,7 +13,6 @@ export default function TopBar({
   userName = 'Admin',
   userInitials = 'AB',
   logoUrl = '/images/wi-new-logo.png',
-  onCreateQuiz,
 }: TopBarProps) {
   return (
     <header className="flex h-16 w-full items-center justify-between border-b border-[var(--border)] bg-[var(--card-bg)] px-8">
@@ -37,14 +35,6 @@ export default function TopBar({
             {userName}
           </span>
         </div>
-
-        <button
-          onClick={onCreateQuiz}
-          className="flex cursor-pointer items-center gap-2 rounded-2xl bg-[var(--orange)] px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
-        >
-          <Plus size={16} />
-          Stwórz nowy quiz
-        </button>
       </div>
     </header>
   );
