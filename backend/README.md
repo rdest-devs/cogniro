@@ -19,3 +19,13 @@ uv sync
 uv run ruff check .
 uv run ruff format .
 ```
+
+## Tests
+
+```bash
+uv run pytest
+```
+
+## Quiz settings
+
+- `QUIZ_SHOW_ANSWER_REVIEW` (default: `true`) — controls whether correct/incorrect answer review is returned after quiz completion.
