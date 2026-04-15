@@ -9,24 +9,24 @@ import ScoreCircle from './ScoreCircle';
 
 interface QuizResultsProps {
   scorePercent: number;
-  scoreCorrect: number;
+  scorePoints: number;
   scoreTotal: number;
   message: string;
-  ranking: RankingEntry[];
+  ranking?: RankingEntry[];
+  showAnswerReview?: boolean;
   onRetry?: () => void;
   onReview?: () => void;
-  onBack?: () => void;
 }
 
 export default function QuizResults({
   scorePercent,
-  scoreCorrect,
+  scorePoints,
   scoreTotal,
   message,
   ranking,
+  showAnswerReview = true,
   onRetry,
   onReview,
-  onBack,
 }: QuizResultsProps) {
   return (
     <div className="flex min-h-full w-full max-w-[390px] flex-col bg-[var(--page-bg)]">
@@ -37,29 +37,50 @@ export default function QuizResults({
           </span>
           <ScoreCircle
             percent={scorePercent}
-            correct={scoreCorrect}
+            correct={scorePoints}
             total={scoreTotal}
           />
           <p className="max-w-[280px] text-center text-[15px] leading-[1.5] font-medium text-[var(--text-dark)]">
             {message}
           </p>
+          <div className="w-full max-w-[280px] rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] px-4 py-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium text-[var(--text-muted)]">
+                Punkty
+              </span>
+              <span className="font-semibold text-[var(--text-dark)]">
+                {scorePoints} / {scoreTotal}
+              </span>
+            </div>
+            <div className="my-2 h-px bg-[var(--border)]" />
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium text-[var(--text-muted)]">
+                Procent
+              </span>
+              <span className="font-semibold text-[var(--text-dark)]">
+                {scorePercent}%
+              </span>
+            </div>
+          </div>
         </section>
 
-        <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card-bg)]">
-          <div className="px-4 py-3.5">
-            <h2 className="text-[15px] font-bold text-[var(--text-dark)]">
-              Ranking Wydziałowy
-            </h2>
-          </div>
-          <div className="h-px bg-[var(--border)]" />
-          {ranking.map((entry, idx) => (
-            <RankingRow
-              key={entry.position}
-              entry={entry}
-              isLast={idx === ranking.length - 1}
-            />
-          ))}
-        </section>
+        {ranking && ranking.length > 0 && (
+          <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card-bg)]">
+            <div className="px-4 py-3.5">
+              <h2 className="text-[15px] font-bold text-[var(--text-dark)]">
+                Ranking Wydziałowy
+              </h2>
+            </div>
+            <div className="h-px bg-[var(--border)]" />
+            {ranking.map((entry, idx) => (
+              <RankingRow
+                key={entry.position}
+                entry={entry}
+                isLast={idx === ranking.length - 1}
+              />
+            ))}
+          </section>
+        )}
 
         <nav className="flex flex-col items-center gap-3">
           <button
@@ -72,22 +93,26 @@ export default function QuizResults({
             </span>
           </button>
 
-          <button
-            onClick={onReview}
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-[1.5px] border-[var(--border)] bg-[var(--card-bg)] px-6 py-3.5 transition-opacity hover:opacity-90"
-          >
-            <FileCheck size={18} className="text-[var(--text-dark)]" />
-            <span className="text-[15px] font-semibold text-[var(--text-dark)]">
-              Przejrzyj odpowiedzi
-            </span>
-          </button>
+          {showAnswerReview && (
+            <button
+              onClick={onReview}
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-[1.5px] border-[var(--border)] bg-[var(--card-bg)] px-6 py-3.5 transition-opacity hover:opacity-90"
+            >
+              <FileCheck size={18} className="text-[var(--text-dark)]" />
+              <span className="text-[15px] font-semibold text-[var(--text-dark)]">
+                Przejrzyj odpowiedzi
+              </span>
+            </button>
+          )}
 
-          <button
-            onClick={onBack}
-            className="cursor-pointer text-sm font-medium text-[var(--text-muted)] hover:underline"
+          <a
+            href="https://www.informatyka.agh.edu.pl"
+            target="_blank"
+            rel="noreferrer"
+            className="text-sm font-medium text-[var(--text-muted)] hover:underline"
           >
-            Wróć do strony Wydziału
-          </button>
+            Zobacz stronę Wydziału Informatyki AGH!
+          </a>
         </nav>
       </div>
     </div>

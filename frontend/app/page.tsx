@@ -55,10 +55,10 @@ export default function Home() {
   const isAdmin = ['Admin Panel', 'Quiz Detail', 'Quiz Editor'].includes(
     current,
   );
+  const shouldCenterVertically = !isAdmin && current !== 'Attempt Review';
 
   return (
     <div className="flex h-screen flex-col">
-      {/* Navigation */}
       <nav className="flex flex-wrap gap-2 border-b border-[var(--border)] bg-[var(--card-bg)] p-3">
         {screens.map((screen) => (
           <button
@@ -75,9 +75,8 @@ export default function Home() {
         ))}
       </nav>
 
-      {/* Screen */}
       <div
-        className={`flex flex-1 overflow-auto bg-[var(--page-bg)] ${isAdmin ? '' : 'items-center justify-center'}`}
+        className={`flex flex-1 overflow-auto bg-[var(--page-bg)] ${shouldCenterVertically ? 'items-center justify-center' : 'justify-center'}`}
       >
         {current === 'Quiz Start' && <QuizStart {...quizStartDemo} />}
         {current === 'Single Choice' && <SingleChoice {...singleChoiceDemo} />}

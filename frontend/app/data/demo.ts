@@ -99,7 +99,7 @@ export const rangeSliderDemo = {
 
 export const quizResultsDemo = {
   scorePercent: 78,
-  scoreCorrect: 8,
+  scorePoints: 8,
   scoreTotal: 10,
   message: 'Świetny wynik! Jesteś w czołówce wydziału.',
   ranking: [
