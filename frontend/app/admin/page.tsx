@@ -6,7 +6,12 @@ import { getAllAdminQuizzes, mapApiQuizStatusToLabel } from '@/lib/admin-quiz';
 
 import { AdminPanel, QuizDetail, QuizEditor } from '../components/admin';
 import { adminPanelDemo, quizDetailDemo } from '../data/demo';
-import type { AdminQuizApiListItem, QuizCard, QuizInfo } from '../types';
+import type {
+  AdminQuizApiListItem,
+  QuizCard,
+  QuizInfo,
+  ResultRow,
+} from '../types';
 
 type AdminScreen = 'panel' | 'detail' | 'editor';
 type EditorMode = 'create' | 'edit';
@@ -89,21 +94,30 @@ export default function AdminPage() {
 
   const adminCards = useMemo(
     () =>
-      adminQuizzes.length > 0
-        ? adminQuizzes.map(mapApiQuizToCard)
-        : adminPanelDemo.quizzes,
-    [adminQuizzes],
+      adminError ? adminPanelDemo.quizzes : adminQuizzes.map(mapApiQuizToCard),
+    [adminError, adminQuizzes],
   );
 
   const adminInfos = useMemo(
     () =>
-      adminQuizzes.length > 0
-        ? adminQuizzes.map(mapApiQuizToInfo)
-        : quizDetailDemo.quizzes,
-    [adminQuizzes],
+      adminError ? quizDetailDemo.quizzes : adminQuizzes.map(mapApiQuizToInfo),
+    [adminError, adminQuizzes],
   );
 
   const resolvedSelectedQuizId = selectedQuizId ?? adminInfos[0]?.id ?? null;
+
+  const resultsForSelectedQuiz = useMemo(() => {
+    if (!resolvedSelectedQuizId) {
+      return [];
+    }
+
+    const resultsByQuizId = quizDetailDemo.resultsByQuizId as Record<
+      string,
+      ResultRow[]
+    >;
+
+    return resultsByQuizId[resolvedSelectedQuizId] ?? [];
+  }, [resolvedSelectedQuizId]);
 
   const handleCreateQuiz = () => {
     setEditorMode('create');
@@ -146,7 +160,7 @@ export default function AdminPage() {
         <QuizDetail
           quizzes={adminInfos}
           selectedQuizId={resolvedSelectedQuizId}
-          results={quizDetailDemo.results}
+          resultsForQuiz={resultsForSelectedQuiz}
           onCreateQuiz={handleCreateQuiz}
           onSelectQuiz={setSelectedQuizId}
           onEditQuiz={handleEditQuiz}

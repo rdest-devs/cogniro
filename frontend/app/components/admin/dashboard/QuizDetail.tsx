@@ -11,7 +11,7 @@ import { statusColors } from '../shared/constants';
 interface QuizDetailProps {
   quizzes: QuizInfo[];
   selectedQuizId?: string | null;
-  results: ResultRow[];
+  resultsForQuiz: ResultRow[];
   onCreateQuiz?: () => void;
   onEditQuiz?: (quizId: string) => void;
   onSelectQuiz?: (quizId: string) => void;
@@ -20,7 +20,7 @@ interface QuizDetailProps {
 export default function QuizDetail({
   quizzes,
   selectedQuizId,
-  results,
+  resultsForQuiz,
   onCreateQuiz,
   onEditQuiz,
   onSelectQuiz,
@@ -124,7 +124,7 @@ export default function QuizDetail({
                 </tr>
               </thead>
               <tbody>
-                {results.map((row, index) => (
+                {resultsForQuiz.map((row, index) => (
                   <tr
                     key={`${row.name}-${index}`}
                     className="border-t border-[var(--border)]"

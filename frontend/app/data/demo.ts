@@ -202,18 +202,36 @@ export const quizDetailDemo = {
     },
   ] satisfies QuizInfo[],
   selectedQuiz: 'Quiz z Informatyki',
-  results: [
-    { name: 'Anna Kowalska', score: 96, time: '4:32', date: '12 mar 2026' },
-    { name: 'Piotr Nowak', score: 91, time: '5:18', date: '12 mar 2026' },
-    {
-      name: 'Maja Wiśniewska',
-      score: 85,
-      time: '6:45',
-      date: '13 mar 2026',
-    },
-    { name: 'Kamil Zieliński', score: 78, time: '7:02', date: '14 mar 2026' },
-    { name: 'Ewa Jabłońska', score: 72, time: '8:15', date: '14 mar 2026' },
-  ] satisfies ResultRow[],
+  resultsByQuizId: {
+    '1': [
+      { name: 'Anna Kowalska', score: 96, time: '4:32', date: '12 mar 2026' },
+      { name: 'Piotr Nowak', score: 91, time: '5:18', date: '12 mar 2026' },
+      {
+        name: 'Maja Wiśniewska',
+        score: 85,
+        time: '6:45',
+        date: '13 mar 2026',
+      },
+      {
+        name: 'Kamil Zieliński',
+        score: 78,
+        time: '7:02',
+        date: '14 mar 2026',
+      },
+      {
+        name: 'Ewa Jabłońska',
+        score: 72,
+        time: '8:15',
+        date: '14 mar 2026',
+      },
+    ],
+    '2': [
+      { name: 'Marek Dudek', score: 94, time: '3:58', date: '06 mar 2026' },
+      { name: 'Julia Kruk', score: 88, time: '4:41', date: '06 mar 2026' },
+      { name: 'Damian Wrona', score: 79, time: '5:36', date: '07 mar 2026' },
+      { name: 'Karolina Bialek', score: 73, time: '6:04', date: '07 mar 2026' },
+    ],
+  } satisfies Record<string, ResultRow[]>,
 };
 
 export const quizEditorDemo = {
