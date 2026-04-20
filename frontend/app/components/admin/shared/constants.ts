@@ -11,7 +11,6 @@ export const statusColors: Record<string, string> = {
   Aktywny: 'bg-[var(--active)] text-white',
   Stare: 'bg-[var(--orange)] text-white',
   Zakonczony: 'bg-[var(--wrong-fg)] text-white',
-  'ZakoĹ„czony': 'bg-[var(--wrong-fg)] text-white',
   active: 'bg-[var(--active)] text-white',
   completed: 'bg-[var(--wrong-fg)] text-white',
 };
