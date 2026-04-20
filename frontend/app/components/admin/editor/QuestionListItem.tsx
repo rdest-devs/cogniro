@@ -197,6 +197,9 @@ export default function QuestionListItem({
                     `${answersPath}.${answerIndex}.text` as const;
                   const answerCorrectPath =
                     `${answersPath}.${answerIndex}.isCorrect` as const;
+                  const answerInputId = `question-${index}-answer-${answerIndex}-text`;
+                  const answerLabelId = `${answerInputId}-label`;
+                  const answerText = watch(answerTextPath);
                   const isCorrect = watch(answerCorrectPath);
                   const answerError =
                     questionErrors?.answers?.[answerIndex]?.text?.message;
@@ -212,6 +215,7 @@ export default function QuestionListItem({
                           name={`question-${index}-correct`}
                           checked={isCorrect}
                           onChange={() => handleSetSingleCorrect(answerIndex)}
+                          aria-labelledby={answerLabelId}
                           className="mt-2 h-4 w-4 accent-[var(--orange)]"
                         />
                       ) : (
@@ -224,13 +228,25 @@ export default function QuestionListItem({
                               event.target.checked,
                             )
                           }
+                          aria-labelledby={answerLabelId}
                           className="mt-2 h-4 w-4 accent-[var(--orange)]"
                         />
                       )}
 
                       <div className="flex flex-1 flex-col gap-1">
+                        <label
+                          id={answerLabelId}
+                          htmlFor={answerInputId}
+                          className="sr-only"
+                        >
+                          {answerText?.trim()
+                            ? `Odpowiedz: ${answerText}`
+                            : `Odpowiedz ${answerIndex + 1}`}
+                        </label>
                         <input
+                          id={answerInputId}
                           {...register(answerTextPath)}
+                          aria-labelledby={answerLabelId}
                           className={cn(
                             'rounded-xl border px-3 py-2 text-sm outline-none focus:border-[var(--primary-blue)]',
                             isCorrect
