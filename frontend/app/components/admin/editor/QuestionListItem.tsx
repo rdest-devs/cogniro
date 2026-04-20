@@ -66,7 +66,7 @@ export default function QuestionListItem({
       setValue(
         `${answersPath}.${answerIndex}.isCorrect`,
         answerIndex === selectedAnswerIndex,
-        { shouldValidate: true },
+        { shouldValidate: true, shouldDirty: true },
       );
     });
 
@@ -76,12 +76,16 @@ export default function QuestionListItem({
   const handleSetMultipleCorrect = (answerIndex: number, checked: boolean) => {
     setValue(`${answersPath}.${answerIndex}.isCorrect`, checked, {
       shouldValidate: true,
+      shouldDirty: true,
     });
     void trigger(questionPath);
   };
 
   const handleTypeChange = (nextType: QuizQuestionType) => {
-    setValue(`${questionPath}.type`, nextType, { shouldValidate: true });
+    setValue(`${questionPath}.type`, nextType, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
 
     if (nextType === 'single_choice') {
       const answers = getValues(answersPath);
@@ -92,7 +96,7 @@ export default function QuestionListItem({
         setValue(
           `${answersPath}.${answerIndex}.isCorrect`,
           answerIndex === targetIndex,
-          { shouldValidate: true },
+          { shouldValidate: true, shouldDirty: true },
         );
       });
     }
