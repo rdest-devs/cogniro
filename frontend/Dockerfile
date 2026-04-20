@@ -25,6 +25,7 @@ RUN pnpm build
 FROM node:22-alpine AS runner
 WORKDIR /app
 RUN npm install -g serve@14
-COPY --from=build /app/frontend/out ./out
+COPY --from=build --chown=node:node /app/frontend/out ./out
+USER node
 EXPOSE 3000
 CMD ["serve", "-s", "out", "-l", "3000"]
