@@ -17,6 +17,27 @@ const questionTypeMap: Record<string, QuizQuestionType> = {
   wielokrotny: 'multiple_choice',
 };
 
+type NormalizedAnswer = {
+  id: string | undefined;
+  text: string;
+  isCorrect: boolean;
+};
+
+function padAnswersToMinTwo(answers: NormalizedAnswer[]): NormalizedAnswer[] {
+  if (answers.length >= 2) {
+    return answers;
+  }
+
+  return [
+    ...answers,
+    ...Array.from({ length: 2 - answers.length }, () => ({
+      id: undefined,
+      text: '',
+      isCorrect: false,
+    })),
+  ];
+}
+
 export function normalizeQuestionType(rawType?: string): QuizQuestionType {
   if (!rawType) {
     return 'single_choice';
@@ -36,14 +57,16 @@ export function toQuizEditorFormValues(
         : undefined,
     text: question.text ?? question.content ?? '',
     type: normalizeQuestionType(question.type),
-    answers: question.answers.map((answer) => ({
-      id:
-        answer.id !== undefined && answer.id !== null
-          ? String(answer.id)
-          : undefined,
-      text: answer.text ?? answer.content ?? '',
-      isCorrect: Boolean(answer.is_correct ?? answer.isCorrect),
-    })),
+    answers: padAnswersToMinTwo(
+      question.answers.map((answer) => ({
+        id:
+          answer.id !== undefined && answer.id !== null
+            ? String(answer.id)
+            : undefined,
+        text: answer.text ?? answer.content ?? '',
+        isCorrect: Boolean(answer.is_correct ?? answer.isCorrect),
+      })),
+    ),
   }));
 
   const values: QuizEditorFormValues = {
