@@ -90,6 +90,8 @@ export default function QuizEditor({
 
   useEffect(() => {
     let isMounted = true;
+    const missingQuizIdError =
+      'Brak identyfikatora quizu do edycji. Wroc do listy quizow i wybierz quiz ponownie.';
 
     async function loadQuizForEdit(targetQuizId: string) {
       setIsLoading(true);
@@ -120,6 +122,11 @@ export default function QuizEditor({
 
     if (mode === 'edit' && quizId) {
       void loadQuizForEdit(quizId);
+    } else if (mode === 'edit' && !quizId) {
+      setLoadError(missingQuizIdError);
+      setSaveError(missingQuizIdError);
+      setSaveSuccess(null);
+      setIsLoading(false);
     } else {
       reset(createDefaultQuizFormValues());
       setExpandedIndex(0);
@@ -147,10 +154,22 @@ export default function QuizEditor({
 
     try {
       const payload = toAdminQuizUpsertPayload(values);
-      const response =
-        mode === 'edit' && quizId
-          ? await updateAdminQuiz(quizId, payload)
-          : await createAdminQuiz(payload);
+      let response;
+
+      if (mode === 'edit') {
+        const editQuizId = quizId;
+
+        if (!editQuizId) {
+          setSaveError(
+            'Nie mozna zapisac zmian, bo brakuje identyfikatora quizu do edycji.',
+          );
+          return;
+        }
+
+        response = await updateAdminQuiz(editQuizId, payload);
+      } else {
+        response = await createAdminQuiz(payload);
+      }
 
       const resolvedQuizId = response.id ?? quizId;
       setSaveSuccess('Zmiany zostaly zapisane.');
