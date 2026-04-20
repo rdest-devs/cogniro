@@ -16,6 +16,8 @@ EXPOSE 3000
 CMD ["pnpm", "dev"]
 
 FROM deps AS build
+ARG NEXT_PUBLIC_BACKEND_URL
+ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
 COPY frontend ./frontend
 WORKDIR /app/frontend
 RUN pnpm build
