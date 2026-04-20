@@ -44,6 +44,7 @@ type Screen = (typeof screens)[number];
 
 export default function Home() {
   const [current, setCurrent] = useState<Screen>('Quiz Start');
+  const shouldCenterVertically = current !== 'Attempt Review';
 
   return (
     <div className="flex h-screen flex-col">
@@ -69,7 +70,9 @@ export default function Home() {
         </a>
       </nav>
 
-      <div className="flex flex-1 items-center justify-center overflow-auto bg-[var(--page-bg)]">
+      <div
+        className={`flex flex-1 overflow-auto bg-[var(--page-bg)] ${shouldCenterVertically ? 'items-center justify-center' : 'justify-center'}`}
+      >
         {current === 'Quiz Start' && <QuizStart {...quizStartDemo} />}
         {current === 'Single Choice' && <SingleChoice {...singleChoiceDemo} />}
         {current === 'Multiple Choice' && (

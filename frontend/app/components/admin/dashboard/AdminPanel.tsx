@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { RefreshCcw } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 import StatusBadge from '@/app/components/common/StatusBadge';
 import type { QuizCard } from '@/app/types';
@@ -31,7 +32,6 @@ export default function AdminPanel({
         <h1 className="text-[28px] font-bold text-[var(--text-dark)]">
           Moje Quizy
         </h1>
-
         <div className="flex items-center gap-3">
           <span className="text-sm font-medium text-[var(--text-muted)]">
             {quizzes.length} quizy
@@ -46,6 +46,15 @@ export default function AdminPanel({
               Odswiez
             </button>
           )}
+          <button
+            type="button"
+            onClick={onCreateQuiz}
+            disabled={!onCreateQuiz}
+            className="flex cursor-pointer items-center gap-2 rounded-2xl bg-[var(--orange)] px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Plus size={16} />
+            Stworz nowy quiz
+          </button>
         </div>
       </header>
 

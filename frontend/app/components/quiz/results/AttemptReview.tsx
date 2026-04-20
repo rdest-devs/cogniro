@@ -22,7 +22,7 @@ export default function AttemptReview({
   onBack,
 }: AttemptReviewProps) {
   return (
-    <div className="flex min-h-full w-full max-w-[390px] flex-col bg-[var(--page-bg)]">
+    <div className="flex h-full w-full max-w-[390px] flex-col overflow-hidden bg-[var(--page-bg)]">
       <header className="flex w-full items-center justify-between px-6 pt-4">
         <button
           type="button"
@@ -61,7 +61,7 @@ export default function AttemptReview({
         </span>
       </div>
 
-      <section className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 pb-6">
+      <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 pb-6">
         {questions.map((q) => (
           <ReviewQuestionCard key={q.number} question={q} />
         ))}
