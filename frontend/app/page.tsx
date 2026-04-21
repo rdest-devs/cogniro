@@ -1,5 +1,6 @@
-﻿'use client';
+'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
 import {
@@ -62,12 +63,12 @@ export default function Home() {
             {screen}
           </button>
         ))}
-        <a
-          href="/admin/"
+        <Link
+          href="/admin"
           className="cursor-pointer rounded-lg bg-[var(--orange)] px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
         >
           Admin
-        </a>
+        </Link>
       </nav>
 
       <div
