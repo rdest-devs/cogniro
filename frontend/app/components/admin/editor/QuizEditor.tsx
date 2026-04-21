@@ -146,8 +146,18 @@ export default function QuizEditor({
   const watchedShuffle = watch('shuffleQuestions');
   const watchedShowAnswers = watch('showAnswersAfter');
   const watchedShowLeaderboard = watch('showLeaderboardAfter');
+  const hasBlockingLoadError =
+    mode === 'edit' && Boolean(quizId) && Boolean(loadError);
 
   const onSubmit = handleSubmit(async (values) => {
+    if (hasBlockingLoadError) {
+      setSaveError(
+        loadError ?? 'Nie mozna zapisac zmian po bledzie ladowania quizu.',
+      );
+      setSaveSuccess(null);
+      return;
+    }
+
     setIsSaving(true);
     setSaveError(null);
     setSaveSuccess(null);
@@ -230,7 +240,13 @@ export default function QuizEditor({
 
                 <button
                   type="submit"
-                  disabled={isLoading || isSaving || !isValid || !isDirty}
+                  disabled={
+                    isLoading ||
+                    isSaving ||
+                    !isValid ||
+                    !isDirty ||
+                    hasBlockingLoadError
+                  }
                   className="flex cursor-pointer items-center gap-2 rounded-2xl bg-[var(--active)] px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {isSaving ? (
