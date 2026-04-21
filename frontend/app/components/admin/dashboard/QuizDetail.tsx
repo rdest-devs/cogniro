@@ -33,7 +33,7 @@ export default function QuizDetail({
       <div className="flex flex-col gap-6">
         <header className="flex items-center justify-between">
           <h1 className="text-[28px] font-bold text-[var(--text-dark)]">
-            Szczegoly quizow
+            Szczegoóły quizów
           </h1>
         </header>
 
@@ -61,7 +61,7 @@ export default function QuizDetail({
                   </span>
                   <span className="flex items-center gap-1">
                     <Users size={14} />
-                    {quiz.participants} uczestnikow
+                    {quiz.participants} uczestników
                   </span>
                 </div>
               </button>

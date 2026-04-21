@@ -138,7 +138,7 @@ export default function QuestionListItem({
           onClick={onRemove}
           disabled={!canRemove}
           className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--wrong-fg)] disabled:cursor-not-allowed disabled:opacity-40"
-          aria-label={`Usun pytanie ${index + 1}`}
+          aria-label={`Usuń pytanie ${index + 1}`}
         >
           <Trash2 size={16} />
         </button>
@@ -153,7 +153,7 @@ export default function QuestionListItem({
             <div className="flex flex-col gap-4">
               <label className="flex flex-col gap-1">
                 <span className="text-[13px] font-medium text-[var(--text-muted)]">
-                  Tresc pytania
+                  Treść pytania
                 </span>
                 <input
                   {...register(`${questionPath}.text`)}

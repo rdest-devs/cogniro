@@ -57,7 +57,7 @@ export default function AdminPanel({
             className="flex cursor-pointer items-center gap-2 rounded-2xl bg-[var(--orange)] px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Plus size={16} />
-            Stworz nowy quiz
+            Stwórz nowy quiz
           </button>
         </div>
       </header>
@@ -71,7 +71,7 @@ export default function AdminPanel({
       <div className="mt-6 grid grid-cols-3 gap-4">
         {isLoading ? (
           <div className="col-span-3 rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] p-8 text-center text-sm text-[var(--text-muted)]">
-            Ladowanie quizow...
+            Ładowanie quizów...
           </div>
         ) : (
           quizzes.map((quiz) => (
@@ -88,7 +88,7 @@ export default function AdminPanel({
                 {quiz.title}
               </h3>
               <p className="text-[13px] text-[var(--text-muted)]">
-                {quiz.questionsCount} pytan · {quiz.responsesCount} odpowiedzi
+                {quiz.questionsCount} pytań · {quiz.responsesCount} odpowiedzi
               </p>
               <footer className="flex items-center justify-between">
                 <span className="text-xs text-[var(--text-muted)]">

@@ -33,11 +33,11 @@ interface QuizEditorProps {
 function toUiErrorMessage(error: unknown): string {
   if (error instanceof AdminQuizApiError) {
     if (error.status === 401 || error.status === 403) {
-      return 'Sesja administratora wygasla. Zaloguj sie ponownie.';
+      return 'Sesja administratora wygasła. Zaloguj się ponownie.';
     }
 
     if (error.reason) {
-      return `Blad API: ${error.reason}`;
+      return `Bład API: ${error.reason}`;
     }
 
     return error.message;
@@ -91,7 +91,7 @@ export default function QuizEditor({
   useEffect(() => {
     let isMounted = true;
     const missingQuizIdError =
-      'Brak identyfikatora quizu do edycji. Wroc do listy quizow i wybierz quiz ponownie.';
+      'Brak identyfikatora quizu do edycji. Wróć do listy quizow i wybierz quiz ponownie.';
 
     async function loadQuizForEdit(targetQuizId: string) {
       setIsLoading(true);
@@ -152,7 +152,7 @@ export default function QuizEditor({
   const onSubmit = handleSubmit(async (values) => {
     if (hasBlockingLoadError) {
       setSaveError(
-        loadError ?? 'Nie mozna zapisac zmian po bledzie ladowania quizu.',
+        loadError ?? 'Nie można zapisać zmian po błedzie ładowania quizu.',
       );
       setSaveSuccess(null);
       return;
@@ -171,7 +171,7 @@ export default function QuizEditor({
 
         if (!editQuizId) {
           setSaveError(
-            'Nie mozna zapisac zmian, bo brakuje identyfikatora quizu do edycji.',
+            'Nie można zapisać zmian, bo brakuje identyfikatora quizu do edycji.',
           );
           return;
         }
@@ -182,6 +182,7 @@ export default function QuizEditor({
       }
 
       const resolvedQuizId = response.id ?? quizId;
+      reset(values);
       setSaveSuccess('Zmiany zostaly zapisane.');
 
       if (resolvedQuizId) {
@@ -223,7 +224,7 @@ export default function QuizEditor({
                   {mode === 'edit' ? 'Edycja quizu' : 'Tworzenie quizu'}
                 </h1>
                 <p className="text-sm text-[var(--text-muted)]">
-                  Jeden widok CRUD pytan i odpowiedzi
+                  Jeden widok CRUD pytań i odpowiedzi
                 </p>
               </div>
 
@@ -234,7 +235,7 @@ export default function QuizEditor({
                     onClick={onCancel}
                     className="cursor-pointer rounded-2xl border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--text-dark)]"
                   >
-                    Wroc
+                    Wróć
                   </button>
                 )}
 
@@ -324,7 +325,7 @@ export default function QuizEditor({
 
               {isLoading ? (
                 <div className="rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] px-4 py-6 text-center text-sm text-[var(--text-muted)]">
-                  Ladowanie danych quizu...
+                  Ładowanie danych quizu...
                 </div>
               ) : (
                 questionFields.map((field, index) => (

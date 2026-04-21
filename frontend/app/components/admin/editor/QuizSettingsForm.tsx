@@ -40,7 +40,7 @@ export default function QuizSettingsForm({
       <div className="flex gap-4">
         <label className="flex flex-1 flex-col gap-1">
           <span className="text-[13px] font-medium text-[var(--text-muted)]">
-            Tytul quizu
+            Tytuł quizu
           </span>
           <input
             value={title}
@@ -123,7 +123,7 @@ export default function QuizSettingsForm({
             />
           </button>
           <span className="text-sm text-[var(--text-dark)]">
-            Pokaz odpowiedzi po quizie
+            Pokaż odpowiedzi po quizie
           </span>
         </label>
 
@@ -148,7 +148,7 @@ export default function QuizSettingsForm({
             />
           </button>
           <span className="text-sm text-[var(--text-dark)]">
-            Pokaz ranking po quizie
+            Pokaż ranking po quizie
           </span>
         </label>
       </div>

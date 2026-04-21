@@ -57,7 +57,7 @@ function toUiErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Nie udalo sie pobrac quizow administracyjnych.';
+  return 'Nie udało się pobrać quizów administracyjnych.';
 }
 
 export default function AdminPage() {

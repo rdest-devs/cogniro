@@ -6,15 +6,15 @@ interface QuestionPreviewProps {
 }
 
 const typeLabel: Record<QuizEditorQuestionForm['type'], string> = {
-  single_choice: 'Jednokrotny wybor',
-  multiple_choice: 'Wielokrotny wybor',
+  single_choice: 'Jednokrotny wybór',
+  multiple_choice: 'Wielokrotny wybór',
 };
 
 export default function QuestionPreview({ question }: QuestionPreviewProps) {
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] p-4">
       <h3 className="text-sm font-bold text-[var(--text-dark)]">
-        Podglad pytania
+        Podgląd pytania
       </h3>
       <p className="text-xs font-semibold text-[var(--text-muted)]">
         {typeLabel[question.type]}
