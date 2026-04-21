@@ -138,7 +138,7 @@ export default function QuestionListItem({
           onClick={onRemove}
           disabled={!canRemove}
           className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--wrong-fg)] disabled:cursor-not-allowed disabled:opacity-40"
-          aria-label="Usun pytanie"
+          aria-label={`Usun pytanie ${index + 1}`}
         >
           <Trash2 size={16} />
         </button>
@@ -270,7 +270,7 @@ export default function QuestionListItem({
                         onClick={() => remove(answerIndex)}
                         disabled={fields.length <= 2}
                         className="mt-0.5 flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-[var(--border)] bg-white text-[var(--wrong-fg)] disabled:cursor-not-allowed disabled:opacity-40"
-                        aria-label="Usun odpowiedz"
+                        aria-label={`Usun odpowiedz ${answerIndex + 1} w pytaniu ${index + 1}`}
                       >
                         <Trash2 size={14} />
                       </button>

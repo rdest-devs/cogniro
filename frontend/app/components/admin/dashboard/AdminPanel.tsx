@@ -26,6 +26,9 @@ export default function AdminPanel({
   onOpenQuiz,
   onRefresh,
 }: AdminPanelProps) {
+  const canCreateQuiz = Boolean(onCreateQuiz);
+  const canOpenQuiz = Boolean(onOpenQuiz);
+
   return (
     <AdminLayout onCreateQuiz={onCreateQuiz}>
       <header className="flex items-center justify-between">
@@ -49,7 +52,8 @@ export default function AdminPanel({
           <button
             type="button"
             onClick={onCreateQuiz}
-            disabled={!onCreateQuiz}
+            disabled={!canCreateQuiz}
+            aria-disabled={!canCreateQuiz}
             className="flex cursor-pointer items-center gap-2 rounded-2xl bg-[var(--orange)] px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Plus size={16} />
@@ -75,7 +79,9 @@ export default function AdminPanel({
               key={quiz.id}
               type="button"
               onClick={() => onOpenQuiz?.(quiz.id)}
-              className="flex cursor-pointer flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] p-5 text-left transition-shadow hover:shadow-md"
+              disabled={!canOpenQuiz}
+              aria-disabled={!canOpenQuiz}
+              className="flex cursor-pointer flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] p-5 text-left transition-shadow hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:shadow-none"
             >
               <StatusBadge label={quiz.status} colorMap={statusColors} />
               <h3 className="text-base font-bold text-[var(--text-dark)]">
@@ -99,8 +105,10 @@ export default function AdminPanel({
         <button
           type="button"
           onClick={onCreateQuiz}
+          disabled={!canCreateQuiz}
+          aria-disabled={!canCreateQuiz}
           aria-label="Dodaj nowy quiz"
-          className="flex cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-[var(--border)] bg-transparent py-12 text-3xl text-[var(--text-muted)] transition-colors hover:border-[var(--primary-blue)] hover:text-[var(--primary-blue)]"
+          className="flex cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-[var(--border)] bg-transparent py-12 text-3xl text-[var(--text-muted)] transition-colors hover:border-[var(--primary-blue)] hover:text-[var(--primary-blue)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[var(--border)] disabled:hover:text-[var(--text-muted)]"
         >
           +
         </button>
