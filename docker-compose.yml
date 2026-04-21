@@ -11,17 +11,6 @@ services:
     volumes:
       - ./backend:/app
       - backend_venv:/app/.venv
-    develop:
-      watch:
-        - action: sync
-          path: ./backend
-          target: /app
-          ignore:
-            - .venv/
-            - __pycache__/
-            - "*.pyc"
-        - action: rebuild
-          path: ./backend/pyproject.toml
 
   frontend:
     build:
@@ -32,19 +21,16 @@ services:
       - "3000:3000"
     environment:
       NEXT_PUBLIC_BACKEND_URL: http://localhost:8000
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./frontend:/app/frontend
+      - frontend_node_modules:/app/frontend/node_modules
+      - frontend_next:/app/frontend/.next
     depends_on:
       - backend
-    develop:
-      watch:
-        - action: sync
-          path: ./frontend
-          target: /app/frontend
-          ignore:
-            - node_modules/
-            - .next/
-            - out/
-        - action: rebuild
-          path: ./frontend/package.json
 
 volumes:
   backend_venv:
+  frontend_node_modules:
+  frontend_next:

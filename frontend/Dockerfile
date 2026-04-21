@@ -13,7 +13,10 @@ FROM deps AS dev
 COPY frontend ./frontend
 WORKDIR /app/frontend
 EXPOSE 3000
-CMD ["pnpm", "dev"]
+# --webpack: Turbopack (Next.js 16 default) has no polling mode and misses
+# file events through Docker bind mounts on Windows. Webpack + polling env
+# vars set in docker-compose.yml is the reliable path for in-container dev.
+CMD ["pnpm", "exec", "next", "dev", "--webpack"]
 
 FROM deps AS build
 ARG NEXT_PUBLIC_BACKEND_URL
