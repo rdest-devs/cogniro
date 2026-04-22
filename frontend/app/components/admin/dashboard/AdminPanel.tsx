@@ -1,7 +1,6 @@
 'use client';
 
-import { RefreshCcw } from 'lucide-react';
-import { Plus } from 'lucide-react';
+import { Plus, RefreshCcw } from 'lucide-react';
 
 import StatusBadge from '@/app/components/common/StatusBadge';
 import type { QuizCard } from '@/app/types';
