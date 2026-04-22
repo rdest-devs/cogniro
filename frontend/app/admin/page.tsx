@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -76,13 +76,15 @@ export default function AdminPage() {
     try {
       const quizzes = await getAllAdminQuizzes();
       setAdminQuizzes(quizzes);
-      setSelectedQuizId((previousId) => previousId ?? quizzes[0]?.id ?? null);
+      setSelectedQuizId((previousId) =>
+        previousId && quizzes.some((quiz) => quiz.id === previousId)
+          ? previousId
+          : (quizzes[0]?.id ?? null),
+      );
     } catch (error) {
       setAdminError(toUiErrorMessage(error));
       setAdminQuizzes([]);
-      setSelectedQuizId(
-        (previousId) => previousId ?? adminPanelDemo.quizzes[0]?.id ?? null,
-      );
+      setSelectedQuizId(adminPanelDemo.quizzes[0]?.id ?? null);
     } finally {
       setAdminLoading(false);
     }
