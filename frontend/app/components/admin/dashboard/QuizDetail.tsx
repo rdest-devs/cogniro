@@ -110,7 +110,7 @@ export default function QuizDetail({
               <thead className="bg-[var(--primary-blue)]">
                 <tr>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-white">
-                    Imie
+                    Imię
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-white">
                     Wynik
