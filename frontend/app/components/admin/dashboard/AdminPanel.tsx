@@ -95,7 +95,7 @@ export default function AdminPanel({
                   Utworzony: {quiz.createdAt}
                 </span>
                 <span className="text-xs font-semibold text-[var(--primary-blue)]">
-                  Szczegoly
+                  Szczegóły
                 </span>
               </footer>
             </button>
