@@ -91,7 +91,7 @@ export default function QuizEditor({
   useEffect(() => {
     let isMounted = true;
     const missingQuizIdError =
-      'Brak identyfikatora quizu do edycji. Wróć do listy quizow i wybierz quiz ponownie.';
+      'Brak identyfikatora quizu do edycji. Wróć do listy quizów i wybierz quiz ponownie.';
 
     async function loadQuizForEdit(targetQuizId: string) {
       setIsLoading(true);
