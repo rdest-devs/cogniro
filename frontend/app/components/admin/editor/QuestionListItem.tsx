@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
