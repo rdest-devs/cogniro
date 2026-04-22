@@ -124,6 +124,10 @@ export const adminQuizUpsertPayloadSchema = z.object({
 
 export const adminQuizSaveResponseSchema = z
   .object({
-    id: z.string().optional(),
+    id: apiIdSchema.optional(),
   })
-  .passthrough();
+  .passthrough()
+  .transform((data) => ({
+    ...data,
+    id: data.id === undefined ? undefined : String(data.id),
+  }));
