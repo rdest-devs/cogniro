@@ -47,7 +47,7 @@ function toUiErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Wystapil nieoczekiwany blad.';
+  return 'Wystąpił nieoczekiwany błąd.';
 }
 
 export default function QuizEditor({
