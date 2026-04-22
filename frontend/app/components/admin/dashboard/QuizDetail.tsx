@@ -93,7 +93,7 @@ export default function QuizDetail({
                   className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--wrong-fg)] px-3 py-2 text-xs font-semibold text-[var(--wrong-fg)] hover:bg-[var(--wrong-fg)] hover:text-white"
                 >
                   <Trash2 size={14} />
-                  Usun
+                  Usuń
                 </button>
               </nav>
             </article>
