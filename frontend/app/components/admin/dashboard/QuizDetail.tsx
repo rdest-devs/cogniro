@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Calendar, Eye, Pencil, Trash2, Users } from 'lucide-react';
 
