@@ -20,7 +20,7 @@ export default function QuestionPreview({ question }: QuestionPreviewProps) {
         {typeLabel[question.type]}
       </p>
       <p className="text-sm text-[var(--text-dark)]">
-        {question.text || 'Brak tresci pytania'}
+        {question.text || 'Brak treści pytania'}
       </p>
 
       <div className="flex flex-col gap-2">
