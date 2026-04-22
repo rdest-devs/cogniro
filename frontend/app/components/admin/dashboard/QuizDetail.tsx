@@ -33,7 +33,7 @@ export default function QuizDetail({
       <div className="flex flex-col gap-6">
         <header className="flex items-center justify-between">
           <h1 className="text-[28px] font-bold text-[var(--text-dark)]">
-            Szczegoóły quizów
+            Szczegóły quizów
           </h1>
         </header>
 
