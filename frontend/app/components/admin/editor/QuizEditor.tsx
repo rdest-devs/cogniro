@@ -37,7 +37,7 @@ function toUiErrorMessage(error: unknown): string {
     }
 
     if (error.reason) {
-      return `Bład API: ${error.reason}`;
+      return `Błąd API: ${error.reason}`;
     }
 
     return error.message;
