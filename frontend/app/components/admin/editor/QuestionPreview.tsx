@@ -1,4 +1,4 @@
-﻿import type { QuizEditorQuestionForm } from '@/app/types';
+import type { QuizEditorQuestionForm } from '@/app/types';
 import { cn } from '@/lib/cn';
 
 interface QuestionPreviewProps {
