@@ -1,4 +1,4 @@
-﻿import { BarChart3, FileText, Search, Settings } from 'lucide-react';
+import { BarChart3, FileText, Search, Settings } from 'lucide-react';
 
 export const menuItems = [
   { id: 'quizy', label: 'Moje Quizy', icon: FileText },
