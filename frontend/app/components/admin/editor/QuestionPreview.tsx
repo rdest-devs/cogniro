@@ -34,7 +34,7 @@ export default function QuestionPreview({ question }: QuestionPreviewProps) {
                 : 'border-[var(--border)] bg-white',
             )}
           >
-            {answer.text || 'Pusta odpowiedz'}
+            {answer.text || 'Pusta odpowiedź'}
           </div>
         ))}
       </div>
