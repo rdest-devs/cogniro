@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { ChevronDown, LogOut, Plus } from 'lucide-react';
 import ExportedImage from 'next-image-export-optimizer';
