@@ -90,7 +90,7 @@ export const adminQuizApiDetailsSchema = z
 
 export const adminQuizApiListItemSchema = z
   .object({
-    id: z.string(),
+    id: apiIdSchema.transform((value) => String(value)),
     title: z.string(),
     status: z.string(),
     created_at: z.string(),
