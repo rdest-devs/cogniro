@@ -330,7 +330,7 @@ export default function QuizEditor({
               ) : (
                 questionFields.map((field, index) => (
                   <QuestionListItem
-                    key={`${field.id}-${index}`}
+                    key={field.id}
                     index={index}
                     isExpanded={expandedIndex === index}
                     onToggle={() =>
