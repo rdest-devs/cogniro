@@ -145,13 +145,15 @@ export default function QuizEditor({
   const watchedShuffle = watch('shuffleQuestions');
   const watchedShowAnswers = watch('showAnswersAfter');
   const watchedShowLeaderboard = watch('showLeaderboardAfter');
+  const isMissingQuizId = mode === 'edit' && !quizId;
   const hasBlockingLoadError =
-    mode === 'edit' && Boolean(quizId) && Boolean(loadError);
+    mode === 'edit' && (isMissingQuizId || Boolean(loadError));
 
   const onSubmit = handleSubmit(async (values) => {
     if (hasBlockingLoadError) {
       setSaveError(
-        loadError ?? 'Nie można zapisać zmian po błędzie ładowania quizu.',
+        loadError ??
+          'Nie można zapisać zmian, bo brakuje identyfikatora quizu do edycji.',
       );
       setSaveSuccess(null);
       return;
