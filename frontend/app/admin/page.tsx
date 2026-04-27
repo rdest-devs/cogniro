@@ -41,13 +41,15 @@ function mapApiQuizToCard(quiz: AdminQuizApiListItem): QuizCard {
 }
 
 function mapApiQuizToInfo(quiz: AdminQuizApiListItem): QuizInfo {
-  return {
+  const quizInfo: QuizInfo = {
     id: quiz.id,
     title: quiz.title,
     status: mapApiQuizStatusToLabel(quiz.status) as QuizInfo['status'],
     date: formatDate(quiz.created_at),
     participants: quiz.participants_count,
   };
+
+  return quizInfo;
 }
 
 function toUiErrorMessage(error: unknown): string {
