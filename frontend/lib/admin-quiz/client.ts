@@ -46,7 +46,12 @@ function getAdminToken(): string | null {
     return null;
   }
 
-  return window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY);
+  try {
+    const token = window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY)?.trim();
+    return token ? token : null;
+  } catch {
+    return null;
+  }
 }
 
 function unwrapResponsePayload(payload: unknown): unknown {

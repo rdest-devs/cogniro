@@ -152,7 +152,7 @@ export default function QuizEditor({
   const onSubmit = handleSubmit(async (values) => {
     if (hasBlockingLoadError) {
       setSaveError(
-        loadError ?? 'Nie można zapisać zmian po błedzie ładowania quizu.',
+        loadError ?? 'Nie można zapisać zmian po błędzie ładowania quizu.',
       );
       setSaveSuccess(null);
       return;
@@ -183,7 +183,7 @@ export default function QuizEditor({
 
       const resolvedQuizId = response.id ?? quizId;
       reset(values);
-      setSaveSuccess('Zmiany zostaly zapisane.');
+      setSaveSuccess('Zmiany zostały zapisane.');
 
       if (resolvedQuizId) {
         onSaved?.(resolvedQuizId);

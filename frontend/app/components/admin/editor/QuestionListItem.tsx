@@ -244,8 +244,8 @@ export default function QuestionListItem({
                           className="sr-only"
                         >
                           {answerText?.trim()
-                            ? `Odpowiedz: ${answerText}`
-                            : `Odpowiedz ${answerIndex + 1}`}
+                            ? `Odpowiedź: ${answerText}`
+                            : `Odpowiedź ${answerIndex + 1}`}
                         </label>
                         <input
                           id={answerInputId}
@@ -270,7 +270,7 @@ export default function QuestionListItem({
                         onClick={() => remove(answerIndex)}
                         disabled={fields.length <= 2}
                         className="mt-0.5 flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-[var(--border)] bg-white text-[var(--wrong-fg)] disabled:cursor-not-allowed disabled:opacity-40"
-                        aria-label={`Usun odpowiedz ${answerIndex + 1} w pytaniu ${index + 1}`}
+                        aria-label={`Usuń odpowiedź ${answerIndex + 1} w pytaniu ${index + 1}`}
                       >
                         <Trash2 size={14} />
                       </button>
@@ -284,7 +284,7 @@ export default function QuestionListItem({
                   className="mt-1 flex cursor-pointer items-center gap-2 self-start rounded-xl border border-dashed border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--primary-blue)]"
                 >
                   <Plus size={14} />
-                  Dodaj odpowiedz
+                  Dodaj odpowiedź
                 </button>
 
                 {questionErrors?.answers?.message && (
