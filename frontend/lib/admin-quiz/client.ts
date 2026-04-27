@@ -107,7 +107,9 @@ async function requestWithSchema<T>(
   const token = getAdminToken();
   const headers = new Headers(init?.headers);
 
-  headers.set('Content-Type', 'application/json');
+  if (init?.body !== undefined) {
+    headers.set('Content-Type', 'application/json');
+  }
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }

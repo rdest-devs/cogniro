@@ -83,14 +83,18 @@ export default function QuizDetail({
                 </button>
                 <button
                   type="button"
-                  className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--orange)] px-3 py-2 text-xs font-semibold text-[var(--orange)] hover:bg-[var(--orange)] hover:text-white"
+                  disabled
+                  title="Funkcja niedostępna"
+                  className="flex cursor-not-allowed items-center gap-1.5 rounded-xl border border-[var(--orange)] px-3 py-2 text-xs font-semibold text-[var(--orange)] opacity-40"
                 >
                   <Eye size={14} />
                   Wyniki
                 </button>
                 <button
                   type="button"
-                  className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--wrong-fg)] px-3 py-2 text-xs font-semibold text-[var(--wrong-fg)] hover:bg-[var(--wrong-fg)] hover:text-white"
+                  disabled
+                  title="Funkcja niedostępna"
+                  className="flex cursor-not-allowed items-center gap-1.5 rounded-xl border border-[var(--wrong-fg)] px-3 py-2 text-xs font-semibold text-[var(--wrong-fg)] opacity-40"
                 >
                   <Trash2 size={14} />
                   Usuń

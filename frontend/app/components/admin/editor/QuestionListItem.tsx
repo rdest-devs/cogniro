@@ -287,9 +287,11 @@ export default function QuestionListItem({
                   Dodaj odpowiedź
                 </button>
 
-                {questionErrors?.answers?.message && (
+                {(questionErrors?.answers?.message ??
+                  questionErrors?.answers?.root?.message) && (
                   <span className="text-xs text-[var(--wrong-fg)]">
-                    {questionErrors.answers.message}
+                    {questionErrors.answers.message ??
+                      questionErrors.answers.root?.message}
                   </span>
                 )}
               </fieldset>

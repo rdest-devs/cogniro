@@ -65,7 +65,9 @@ export default function QuizSettingsForm({
               const parsed = Number(rawValue);
 
               onTimeLimitChange(
-                rawValue === '' || !Number.isFinite(parsed) ? null : parsed,
+                rawValue === '' || !Number.isFinite(parsed) || parsed <= 0
+                  ? null
+                  : parsed,
               );
             }}
             placeholder="bez limitu"

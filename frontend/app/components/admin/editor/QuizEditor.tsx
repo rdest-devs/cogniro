@@ -124,7 +124,6 @@ export default function QuizEditor({
       void loadQuizForEdit(quizId);
     } else if (mode === 'edit' && !quizId) {
       setLoadError(missingQuizIdError);
-      setSaveError(missingQuizIdError);
       setSaveSuccess(null);
       setIsLoading(false);
     } else {
@@ -177,12 +176,14 @@ export default function QuizEditor({
         }
 
         response = await updateAdminQuiz(editQuizId, payload);
+        const refreshed = await getAdminQuiz(editQuizId);
+        reset(toQuizEditorFormValues(refreshed));
       } else {
         response = await createAdminQuiz(payload);
+        reset(values);
       }
 
       const resolvedQuizId = response.id ?? quizId;
-      reset(values);
       setSaveSuccess('Zmiany zostały zapisane.');
 
       if (resolvedQuizId) {

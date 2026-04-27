@@ -17,6 +17,12 @@ interface AdminPanelProps {
   onRefresh?: () => void;
 }
 
+function pluralizeQuiz(n: number): string {
+  if (n === 1) return 'quiz';
+  if (n >= 2 && n <= 4) return 'quizy';
+  return 'quizów';
+}
+
 export default function AdminPanel({
   quizzes,
   isLoading = false,
@@ -36,7 +42,7 @@ export default function AdminPanel({
         </h1>
         <div className="flex items-center gap-3">
           <span className="text-sm font-medium text-[var(--text-muted)]">
-            {quizzes.length} quizy
+            {quizzes.length} {pluralizeQuiz(quizzes.length)}
           </span>
           {onRefresh && (
             <button
