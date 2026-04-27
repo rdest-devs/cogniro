@@ -1,0 +1,36 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      target: dev
+    ports:
+      - "8000:8000"
+    environment:
+      QUIZ_SHOW_ANSWER_REVIEW: "true"
+      WATCHFILES_FORCE_POLLING: "true"
+    volumes:
+      - ./backend:/app:z
+      - backend_venv:/app/.venv
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      target: dev
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_BACKEND_URL: http://localhost:8000
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./frontend:/app/frontend:z
+      - frontend_node_modules:/app/frontend/node_modules
+      - frontend_next:/app/frontend/.next
+    depends_on:
+      - backend
+
+volumes:
+  backend_venv:
+  frontend_node_modules:
+  frontend_next:

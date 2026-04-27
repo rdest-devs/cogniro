@@ -1,0 +1,34 @@
+# syntax=docker/dockerfile:1.7
+
+FROM node:22-alpine AS base
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+
+FROM base AS deps
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY frontend/package.json ./frontend/
+RUN pnpm install --frozen-lockfile --filter @cogniro/frontend...
+
+FROM deps AS dev
+COPY frontend ./frontend
+WORKDIR /app/frontend
+EXPOSE 3000
+# --webpack: Turbopack (Next.js 16 default) has no polling mode and misses
+# file events through Docker bind mounts on Windows. Webpack + polling env
+# vars set in docker-compose.yml is the reliable path for in-container dev.
+CMD ["pnpm", "exec", "next", "dev", "--webpack"]
+
+FROM deps AS build
+ARG NEXT_PUBLIC_BACKEND_URL
+ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
+COPY frontend ./frontend
+WORKDIR /app/frontend
+RUN pnpm build
+
+FROM node:22-alpine AS runner
+WORKDIR /app
+RUN npm install -g serve@14
+COPY --from=build --chown=node:node /app/frontend/out ./out
+USER node
+EXPOSE 3000
+CMD ["serve", "-s", "out", "-l", "3000"]
