@@ -124,7 +124,7 @@ export default function QuestionListItem({
           <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[var(--orange)] text-sm font-bold text-white">
             {index + 1}
           </span>
-          <span className="flex-1 text-left text-sm font-medium text-[var(--text-dark)]">
+          <span className="flex-1 truncate text-left text-sm font-medium text-[var(--text-dark)]">
             {questionText || `Pytanie ${index + 1}`}
           </span>
           <StatusBadge

@@ -82,11 +82,12 @@ export default function QuizSettingsForm({
       </div>
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <label className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             role="switch"
             aria-checked={shuffleQuestions}
+            aria-label="Wymieszaj pytania"
             onClick={onShuffleQuestionsToggle}
             className={cn(
               'flex h-5 w-9 cursor-pointer items-center rounded-full p-0.5 transition-colors',
@@ -102,16 +103,17 @@ export default function QuizSettingsForm({
               )}
             />
           </button>
-          <span className="text-sm text-[var(--text-dark)]">
+          <span aria-hidden="true" className="text-sm text-[var(--text-dark)]">
             Wymieszaj pytania
           </span>
-        </label>
+        </div>
 
-        <label className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             role="switch"
             aria-checked={showAnswersAfter}
+            aria-label="Pokaż odpowiedzi po quizie"
             onClick={onShowAnswersAfterToggle}
             className={cn(
               'flex h-5 w-9 cursor-pointer items-center rounded-full p-0.5 transition-colors',
@@ -127,16 +129,17 @@ export default function QuizSettingsForm({
               )}
             />
           </button>
-          <span className="text-sm text-[var(--text-dark)]">
+          <span aria-hidden="true" className="text-sm text-[var(--text-dark)]">
             Pokaż odpowiedzi po quizie
           </span>
-        </label>
+        </div>
 
-        <label className="flex items-center gap-2 lg:col-span-2">
+        <div className="flex items-center gap-2 lg:col-span-2">
           <button
             type="button"
             role="switch"
             aria-checked={showLeaderboardAfter}
+            aria-label="Pokaż ranking po quizie"
             onClick={onShowLeaderboardAfterToggle}
             className={cn(
               'flex h-5 w-9 cursor-pointer items-center rounded-full p-0.5 transition-colors',
@@ -152,10 +155,10 @@ export default function QuizSettingsForm({
               )}
             />
           </button>
-          <span className="text-sm text-[var(--text-dark)]">
+          <span aria-hidden="true" className="text-sm text-[var(--text-dark)]">
             Pokaż ranking po quizie
           </span>
-        </label>
+        </div>
       </div>
     </section>
   );

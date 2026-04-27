@@ -25,8 +25,9 @@ export default function QuizDetail({
   onEditQuiz,
   onSelectQuiz,
 }: QuizDetailProps) {
-  const selectedQuiz =
-    quizzes.find((quiz) => quiz.id === selectedQuizId) ?? quizzes[0];
+  const selectedQuiz = selectedQuizId
+    ? quizzes.find((quiz) => quiz.id === selectedQuizId)
+    : quizzes[0];
 
   return (
     <AdminLayout onCreateQuiz={onCreateQuiz}>
@@ -128,27 +129,38 @@ export default function QuizDetail({
                 </tr>
               </thead>
               <tbody>
-                {resultsForQuiz.map((row, index) => (
-                  <tr
-                    key={`${row.name}-${index}`}
-                    className="border-t border-[var(--border)]"
-                  >
-                    <td className="px-4 py-3 text-sm font-medium text-[var(--text-dark)]">
-                      {row.name}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="rounded-md bg-[var(--orange)] px-2 py-0.5 text-xs font-bold text-white">
-                        {row.score}%
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-[var(--text-muted)]">
-                      {row.time}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-[var(--text-muted)]">
-                      {row.date}
+                {resultsForQuiz.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-4 py-8 text-center text-sm text-[var(--text-muted)]"
+                    >
+                      Brak wyników dla tego quizu.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  resultsForQuiz.map((row, index) => (
+                    <tr
+                      key={`${row.name}-${index}`}
+                      className="border-t border-[var(--border)]"
+                    >
+                      <td className="px-4 py-3 text-sm font-medium text-[var(--text-dark)]">
+                        {row.name}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="rounded-md bg-[var(--orange)] px-2 py-0.5 text-xs font-bold text-white">
+                          {row.score}%
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-[var(--text-muted)]">
+                        {row.time}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-[var(--text-muted)]">
+                        {row.date}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </section>

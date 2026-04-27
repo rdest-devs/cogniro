@@ -224,9 +224,6 @@ export default function QuizEditor({
                 <h1 className="text-2xl font-bold text-[var(--text-dark)]">
                   {mode === 'edit' ? 'Edycja quizu' : 'Tworzenie quizu'}
                 </h1>
-                <p className="text-sm text-[var(--text-muted)]">
-                  Jeden widok CRUD pytań i odpowiedzi
-                </p>
               </div>
 
               <div className="flex items-center gap-2">
@@ -262,19 +259,31 @@ export default function QuizEditor({
             </header>
 
             {loadError && (
-              <div className="rounded-2xl border border-[var(--wrong-fg)] bg-[var(--selected-bg)] px-4 py-3 text-sm text-[var(--wrong-fg)]">
+              <div
+                role="alert"
+                aria-live="assertive"
+                className="rounded-2xl border border-[var(--wrong-fg)] bg-[var(--selected-bg)] px-4 py-3 text-sm text-[var(--wrong-fg)]"
+              >
                 {loadError}
               </div>
             )}
 
             {saveError && (
-              <div className="rounded-2xl border border-[var(--wrong-fg)] bg-[var(--selected-bg)] px-4 py-3 text-sm text-[var(--wrong-fg)]">
+              <div
+                role="alert"
+                aria-live="assertive"
+                className="rounded-2xl border border-[var(--wrong-fg)] bg-[var(--selected-bg)] px-4 py-3 text-sm text-[var(--wrong-fg)]"
+              >
                 {saveError}
               </div>
             )}
 
             {saveSuccess && (
-              <div className="rounded-2xl border border-[var(--active)] bg-white px-4 py-3 text-sm text-[var(--active)]">
+              <div
+                role="status"
+                aria-live="polite"
+                className="rounded-2xl border border-[var(--active)] bg-white px-4 py-3 text-sm text-[var(--active)]"
+              >
                 {saveSuccess}
               </div>
             )}
