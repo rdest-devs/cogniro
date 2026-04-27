@@ -67,11 +67,13 @@ export default function QuizDetail({
                 </div>
               </button>
 
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--orange)]">
-                <span className="text-sm font-bold text-white">
-                  {quiz.avgScore}%
-                </span>
-              </div>
+              {quiz.avgScore !== undefined && (
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--orange)]">
+                  <span className="text-sm font-bold text-white">
+                    {quiz.avgScore}%
+                  </span>
+                </div>
+              )}
 
               <nav className="flex items-center gap-2">
                 <button

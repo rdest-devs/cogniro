@@ -73,10 +73,14 @@ export default function AdminPanel({
         </div>
       )}
 
-      <div className="mt-6 grid grid-cols-3 gap-4">
+      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {isLoading ? (
-          <div className="col-span-3 rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] p-8 text-center text-sm text-[var(--text-muted)]">
+          <div className="col-span-full rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] p-8 text-center text-sm text-[var(--text-muted)]">
             Ładowanie quizów...
+          </div>
+        ) : quizzes.length === 0 ? (
+          <div className="col-span-full rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] p-8 text-center text-sm text-[var(--text-muted)]">
+            Brak quizów. Stwórz pierwszy quiz.
           </div>
         ) : (
           quizzes.map((quiz) => (
@@ -93,7 +97,10 @@ export default function AdminPanel({
                 {quiz.title}
               </h3>
               <p className="text-[13px] text-[var(--text-muted)]">
-                {quiz.questionsCount} pytań · {quiz.responsesCount} odpowiedzi
+                {quiz.questionsCount !== undefined
+                  ? `${quiz.questionsCount} pytań · `
+                  : ''}
+                {quiz.responsesCount} odpowiedzi
               </p>
               <footer className="flex items-center justify-between">
                 <span className="text-xs text-[var(--text-muted)]">

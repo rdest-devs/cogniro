@@ -34,7 +34,6 @@ function mapApiQuizToCard(quiz: AdminQuizApiListItem): QuizCard {
   return {
     id: quiz.id,
     title: quiz.title,
-    questionsCount: 0,
     responsesCount: quiz.participants_count,
     createdAt: formatDate(quiz.created_at),
     status: mapApiQuizStatusToLabel(quiz.status) as QuizCard['status'],
@@ -48,7 +47,6 @@ function mapApiQuizToInfo(quiz: AdminQuizApiListItem): QuizInfo {
     status: mapApiQuizStatusToLabel(quiz.status) as QuizInfo['status'],
     date: formatDate(quiz.created_at),
     participants: quiz.participants_count,
-    avgScore: 0,
   };
 }
 
@@ -84,7 +82,7 @@ export default function AdminPage() {
     } catch (error) {
       setAdminError(toUiErrorMessage(error));
       setAdminQuizzes([]);
-      setSelectedQuizId(adminPanelDemo.quizzes[0]?.id ?? null);
+      setSelectedQuizId(null);
     } finally {
       setAdminLoading(false);
     }
@@ -106,7 +104,10 @@ export default function AdminPage() {
     [adminError, adminQuizzes],
   );
 
-  const resolvedSelectedQuizId = selectedQuizId ?? adminInfos[0]?.id ?? null;
+  const resolvedSelectedQuizId = useMemo(
+    () => selectedQuizId ?? adminInfos[0]?.id ?? null,
+    [selectedQuizId, adminInfos],
+  );
 
   const resultsForSelectedQuiz = useMemo(() => {
     if (!resolvedSelectedQuizId) {
@@ -121,29 +122,32 @@ export default function AdminPage() {
     return resultsByQuizId[resolvedSelectedQuizId] ?? [];
   }, [resolvedSelectedQuizId]);
 
-  const handleCreateQuiz = () => {
+  const handleCreateQuiz = useCallback(() => {
     setEditorMode('create');
     setSelectedQuizId(null);
     setScreen('editor');
-  };
+  }, []);
 
-  const handleOpenQuizDetail = (quizId: string) => {
+  const handleOpenQuizDetail = useCallback((quizId: string) => {
     setSelectedQuizId(quizId);
     setScreen('detail');
-  };
+  }, []);
 
-  const handleEditQuiz = (quizId: string) => {
+  const handleEditQuiz = useCallback((quizId: string) => {
     setEditorMode('edit');
     setSelectedQuizId(quizId);
     setScreen('editor');
-  };
+  }, []);
 
-  const handleQuizSaved = (quizId: string) => {
-    setSelectedQuizId(quizId);
-    setEditorMode('edit');
-    setScreen('detail');
-    void loadAdminQuizzes();
-  };
+  const handleQuizSaved = useCallback(
+    (quizId: string) => {
+      setSelectedQuizId(quizId);
+      setEditorMode('edit');
+      setScreen('detail');
+      void loadAdminQuizzes();
+    },
+    [loadAdminQuizzes],
+  );
 
   return (
     <div className="h-screen w-full bg-[var(--page-bg)]">
