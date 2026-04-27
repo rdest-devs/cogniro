@@ -77,7 +77,9 @@ export const adminQuizApiQuestionSchema = z
 
 export const adminQuizApiDetailsSchema = z
   .object({
-    id: z.string().optional(),
+    id: apiIdSchema
+      .optional()
+      .transform((value) => (value === undefined ? undefined : String(value))),
     title: z.string(),
     status: z.string().optional(),
     time_limit: z.coerce.number().nullable(),

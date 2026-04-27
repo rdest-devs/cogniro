@@ -44,7 +44,7 @@ Configuration:
 
 Auth/header behavior:
 
-- Always sends `Content-Type: application/json`
+- Sends `Content-Type: application/json` for requests with a JSON body
 - Sends `Authorization: Bearer <token>` if token exists in localStorage
 
 Response unwrapping strategy:
