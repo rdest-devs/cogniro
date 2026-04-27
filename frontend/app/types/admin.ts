@@ -3,7 +3,7 @@ export type QuizStatus = 'Aktywny' | 'Stare' | 'Zakończony';
 export interface QuizCard {
   id: string;
   title: string;
-  questionsCount: number;
+  questionsCount?: number;
   responsesCount: number;
   createdAt: string;
   status: QuizStatus;
@@ -15,7 +15,7 @@ export interface QuizInfo {
   status: QuizStatus;
   date: string;
   participants: number;
-  avgScore: number;
+  avgScore?: number;
 }
 
 export interface ResultRow {

@@ -1,8 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
-import { AdminPanel, QuizDetail, QuizEditor } from './components/admin';
 import {
   AttemptReview,
   ImageAnswers,
@@ -16,14 +16,11 @@ import {
   SliderQuestion,
 } from './components/quiz';
 import {
-  adminPanelDemo,
   attemptReviewDemo,
   imageAnswersDemo,
   imageQuestionDemo,
   multipleChoiceDemo,
   orderingDemo,
-  quizDetailDemo,
-  quizEditorDemo,
   quizResultsDemo,
   quizStartDemo,
   rangeSliderDemo,
@@ -42,20 +39,13 @@ const screens = [
   'Range Slider',
   'Quiz Results',
   'Attempt Review',
-  'Admin Panel',
-  'Quiz Detail',
-  'Quiz Editor',
 ] as const;
 
 type Screen = (typeof screens)[number];
 
 export default function Home() {
   const [current, setCurrent] = useState<Screen>('Quiz Start');
-
-  const isAdmin = ['Admin Panel', 'Quiz Detail', 'Quiz Editor'].includes(
-    current,
-  );
-  const shouldCenterVertically = !isAdmin && current !== 'Attempt Review';
+  const shouldCenterVertically = current !== 'Attempt Review';
 
   return (
     <div className="flex h-screen flex-col">
@@ -73,6 +63,12 @@ export default function Home() {
             {screen}
           </button>
         ))}
+        <Link
+          href="/admin"
+          className="cursor-pointer rounded-lg bg-[var(--orange)] px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
+        >
+          Admin
+        </Link>
       </nav>
 
       <div
@@ -94,9 +90,6 @@ export default function Home() {
         {current === 'Attempt Review' && (
           <AttemptReview {...attemptReviewDemo} />
         )}
-        {current === 'Admin Panel' && <AdminPanel {...adminPanelDemo} />}
-        {current === 'Quiz Detail' && <QuizDetail {...quizDetailDemo} />}
-        {current === 'Quiz Editor' && <QuizEditor {...quizEditorDemo} />}
       </div>
     </div>
   );

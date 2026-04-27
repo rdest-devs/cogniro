@@ -43,6 +43,16 @@ pnpm -C frontend dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Environment variables
+
+For admin API integration (Quiz Editor), configure:
+
+```bash
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api
+```
+
+If not provided, frontend falls back to `/api`.
+
 You can start editing the page by modifying `frontend/app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

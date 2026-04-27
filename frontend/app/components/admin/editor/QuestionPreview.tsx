@@ -1,9 +1,14 @@
-import type { Question } from '@/app/types';
+import type { QuizEditorQuestionForm } from '@/app/types';
 import { cn } from '@/lib/cn';
 
 interface QuestionPreviewProps {
-  question: Question;
+  question: QuizEditorQuestionForm;
 }
+
+const typeLabel: Record<QuizEditorQuestionForm['type'], string> = {
+  single_choice: 'Jednokrotny wybór',
+  multiple_choice: 'Wielokrotny wybór',
+};
 
 export default function QuestionPreview({ question }: QuestionPreviewProps) {
   return (
@@ -11,24 +16,28 @@ export default function QuestionPreview({ question }: QuestionPreviewProps) {
       <h3 className="text-sm font-bold text-[var(--text-dark)]">
         Podgląd pytania
       </h3>
-      <p className="text-sm text-[var(--text-dark)]">{question.text}</p>
-      {question.answers.length > 0 && (
-        <div className="flex flex-col gap-2">
-          {question.answers.map((a, i) => (
-            <div
-              key={i}
-              className={cn(
-                'rounded-xl px-3 py-2 text-sm',
-                a.isCorrect
-                  ? 'border border-[var(--orange)] bg-[var(--selected-bg)] font-semibold'
-                  : 'border border-[var(--border)] bg-white',
-              )}
-            >
-              {a.text}
-            </div>
-          ))}
-        </div>
-      )}
+      <p className="text-xs font-semibold text-[var(--text-muted)]">
+        {typeLabel[question.type]}
+      </p>
+      <p className="text-sm text-[var(--text-dark)]">
+        {question.text || 'Brak treści pytania'}
+      </p>
+
+      <div className="flex flex-col gap-2">
+        {question.answers.map((answer, index) => (
+          <div
+            key={`${answer.id ?? 'new'}-${index}`}
+            className={cn(
+              'rounded-xl border px-3 py-2 text-sm',
+              answer.isCorrect
+                ? 'border-[var(--orange)] bg-[var(--selected-bg)] font-semibold'
+                : 'border-[var(--border)] bg-white',
+            )}
+          >
+            {answer.text || 'Pusta odpowiedź'}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
