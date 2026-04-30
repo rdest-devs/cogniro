@@ -1,189 +1,58 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-import { getAllAdminQuizzes, mapApiQuizStatusToLabel } from '@/lib/admin-quiz';
+import {
+  clearStoredAdminToken,
+  getStoredAdminToken,
+  logoutAdmin,
+} from '@/lib/admin-auth/client';
 
-import { AdminPanel, QuizDetail, QuizEditor } from '../components/admin';
-import { adminPanelDemo, quizDetailDemo } from '../data/demo';
-import type {
-  AdminQuizApiListItem,
-  QuizCard,
-  QuizInfo,
-  ResultRow,
-} from '../types';
-
-type AdminScreen = 'panel' | 'detail' | 'editor';
-type EditorMode = 'create' | 'edit';
-
-function formatDate(dateInput: string): string {
-  const parsedDate = new Date(dateInput);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return dateInput;
-  }
-
-  return new Intl.DateTimeFormat('pl-PL', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(parsedDate);
-}
-
-function mapApiQuizToCard(quiz: AdminQuizApiListItem): QuizCard {
-  return {
-    id: quiz.id,
-    title: quiz.title,
-    responsesCount: quiz.participants_count,
-    createdAt: formatDate(quiz.created_at),
-    status: mapApiQuizStatusToLabel(quiz.status) as QuizCard['status'],
-  };
-}
-
-function mapApiQuizToInfo(quiz: AdminQuizApiListItem): QuizInfo {
-  const quizInfo: QuizInfo = {
-    id: quiz.id,
-    title: quiz.title,
-    status: mapApiQuizStatusToLabel(quiz.status) as QuizInfo['status'],
-    date: formatDate(quiz.created_at),
-    participants: quiz.participants_count,
-  };
-
-  return quizInfo;
-}
-
-function toUiErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'Nie udało się pobrać quizów administracyjnych.';
-}
+import AdminDashboard from './AdminDashboard';
+import AdminLogin from './AdminLogin';
 
 export default function AdminPage() {
-  const [screen, setScreen] = useState<AdminScreen>('panel');
-  const [editorMode, setEditorMode] = useState<EditorMode>('create');
-  const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
-
-  const [adminQuizzes, setAdminQuizzes] = useState<AdminQuizApiListItem[]>([]);
-  const [adminLoading, setAdminLoading] = useState(false);
-  const [adminError, setAdminError] = useState<string | null>(null);
-
-  const loadAdminQuizzes = useCallback(async () => {
-    setAdminLoading(true);
-    setAdminError(null);
-
-    try {
-      const quizzes = await getAllAdminQuizzes();
-      setAdminQuizzes(quizzes);
-      setSelectedQuizId((previousId) =>
-        previousId && quizzes.some((quiz) => quiz.id === previousId)
-          ? previousId
-          : (quizzes[0]?.id ?? null),
-      );
-    } catch (error) {
-      setAdminError(toUiErrorMessage(error));
-      setAdminQuizzes([]);
-      setSelectedQuizId(null);
-    } finally {
-      setAdminLoading(false);
-    }
-  }, []);
+  const [hydrated, setHydrated] = useState(false);
+  const [authed, setAuthed] = useState(false);
 
   useEffect(() => {
-    void loadAdminQuizzes();
-  }, [loadAdminQuizzes]);
-
-  const adminCards = useMemo(
-    () =>
-      adminError ? adminPanelDemo.quizzes : adminQuizzes.map(mapApiQuizToCard),
-    [adminError, adminQuizzes],
-  );
-
-  const adminInfos = useMemo(
-    () =>
-      adminError ? quizDetailDemo.quizzes : adminQuizzes.map(mapApiQuizToInfo),
-    [adminError, adminQuizzes],
-  );
-
-  const resolvedSelectedQuizId = useMemo(
-    () => selectedQuizId ?? adminInfos[0]?.id ?? null,
-    [selectedQuizId, adminInfos],
-  );
-
-  const resultsForSelectedQuiz = useMemo(() => {
-    if (!resolvedSelectedQuizId) {
-      return [];
-    }
-
-    const resultsByQuizId = quizDetailDemo.resultsByQuizId as Record<
-      string,
-      ResultRow[]
-    >;
-
-    return resultsByQuizId[resolvedSelectedQuizId] ?? [];
-  }, [resolvedSelectedQuizId]);
-
-  const handleCreateQuiz = useCallback(() => {
-    setEditorMode('create');
-    setSelectedQuizId(null);
-    setScreen('editor');
+    void Promise.resolve().then(() => {
+      setAuthed(getStoredAdminToken() !== null);
+      setHydrated(true);
+    });
   }, []);
 
-  const handleOpenQuizDetail = useCallback((quizId: string) => {
-    setSelectedQuizId(quizId);
-    setScreen('detail');
+  const handleLoggedIn = useCallback(() => {
+    setAuthed(true);
   }, []);
 
-  const handleEditQuiz = useCallback((quizId: string) => {
-    setEditorMode('edit');
-    setSelectedQuizId(quizId);
-    setScreen('editor');
+  const handleSessionInvalid = useCallback(() => {
+    clearStoredAdminToken();
+    setAuthed(false);
   }, []);
 
-  const handleQuizSaved = useCallback(
-    (quizId: string) => {
-      setSelectedQuizId(quizId);
-      setEditorMode('edit');
-      setScreen('detail');
-      void loadAdminQuizzes();
-    },
-    [loadAdminQuizzes],
-  );
+  const handleLogout = useCallback(() => {
+    void logoutAdmin().finally(() => {
+      setAuthed(false);
+    });
+  }, []);
+
+  if (!hydrated) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[var(--page-bg)]">
+        <p className="text-sm text-[var(--text-muted)]">Ładowanie…</p>
+      </div>
+    );
+  }
+
+  if (!authed) {
+    return <AdminLogin onSuccess={handleLoggedIn} />;
+  }
 
   return (
-    <div className="h-screen w-full bg-[var(--page-bg)]">
-      {screen === 'panel' && (
-        <AdminPanel
-          quizzes={adminCards}
-          isLoading={adminLoading}
-          error={adminError}
-          onRefresh={loadAdminQuizzes}
-          onCreateQuiz={handleCreateQuiz}
-          onOpenQuiz={handleOpenQuizDetail}
-        />
-      )}
-
-      {screen === 'detail' && (
-        <QuizDetail
-          quizzes={adminInfos}
-          selectedQuizId={resolvedSelectedQuizId}
-          resultsForQuiz={resultsForSelectedQuiz}
-          onCreateQuiz={handleCreateQuiz}
-          onSelectQuiz={setSelectedQuizId}
-          onEditQuiz={handleEditQuiz}
-        />
-      )}
-
-      {screen === 'editor' && (
-        <QuizEditor
-          mode={editorMode}
-          quizId={editorMode === 'edit' ? resolvedSelectedQuizId : null}
-          onSaved={handleQuizSaved}
-          onCancel={() => setScreen(editorMode === 'edit' ? 'detail' : 'panel')}
-          onCreateQuiz={handleCreateQuiz}
-        />
-      )}
-    </div>
+    <AdminDashboard
+      onLogout={handleLogout}
+      onSessionInvalid={handleSessionInvalid}
+    />
   );
 }

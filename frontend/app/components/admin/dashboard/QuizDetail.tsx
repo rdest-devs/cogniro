@@ -15,6 +15,7 @@ interface QuizDetailProps {
   onCreateQuiz?: () => void;
   onEditQuiz?: (quizId: string) => void;
   onSelectQuiz?: (quizId: string) => void;
+  onLogout?: () => void;
 }
 
 export default function QuizDetail({
@@ -24,13 +25,14 @@ export default function QuizDetail({
   onCreateQuiz,
   onEditQuiz,
   onSelectQuiz,
+  onLogout,
 }: QuizDetailProps) {
   const selectedQuiz = selectedQuizId
     ? quizzes.find((quiz) => quiz.id === selectedQuizId)
     : quizzes[0];
 
   return (
-    <AdminLayout onCreateQuiz={onCreateQuiz}>
+    <AdminLayout onCreateQuiz={onCreateQuiz} onLogout={onLogout}>
       <div className="flex flex-col gap-6">
         <header className="flex items-center justify-between">
           <h1 className="text-[28px] font-bold text-[var(--text-dark)]">

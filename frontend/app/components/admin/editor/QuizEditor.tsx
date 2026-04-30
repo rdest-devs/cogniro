@@ -28,6 +28,8 @@ interface QuizEditorProps {
   onSaved?: (quizId: string) => void;
   onCancel?: () => void;
   onCreateQuiz?: () => void;
+  onLogout?: () => void;
+  onSessionInvalid?: () => void;
 }
 
 function toUiErrorMessage(error: unknown): string {
@@ -56,6 +58,8 @@ export default function QuizEditor({
   onSaved,
   onCancel,
   onCreateQuiz,
+  onLogout,
+  onSessionInvalid,
 }: QuizEditorProps) {
   const [expandedIndex, setExpandedIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -112,6 +116,13 @@ export default function QuizEditor({
           return;
         }
 
+        if (
+          error instanceof AdminQuizApiError &&
+          (error.status === 401 || error.status === 403)
+        ) {
+          onSessionInvalid?.();
+        }
+
         setLoadError(toUiErrorMessage(error));
       } finally {
         if (isMounted) {
@@ -138,7 +149,7 @@ export default function QuizEditor({
     return () => {
       isMounted = false;
     };
-  }, [mode, quizId, reset]);
+  }, [mode, quizId, reset, onSessionInvalid]);
 
   const watchedTitle = watch('title');
   const watchedTimeLimit = watch('timeLimit');
@@ -192,6 +203,12 @@ export default function QuizEditor({
         onSaved?.(resolvedQuizId);
       }
     } catch (error) {
+      if (
+        error instanceof AdminQuizApiError &&
+        (error.status === 401 || error.status === 403)
+      ) {
+        onSessionInvalid?.();
+      }
       setSaveError(toUiErrorMessage(error));
     } finally {
       setIsSaving(false);
@@ -217,7 +234,7 @@ export default function QuizEditor({
   };
 
   return (
-    <AdminLayout onCreateQuiz={onCreateQuiz}>
+    <AdminLayout onCreateQuiz={onCreateQuiz} onLogout={onLogout}>
       <FormProvider {...formMethods}>
         <form onSubmit={onSubmit} className="flex flex-1">
           <div className="flex flex-1 flex-col gap-5">

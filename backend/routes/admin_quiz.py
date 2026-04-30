@@ -1,10 +1,14 @@
 """Admin quiz routes (CRUD, leaderboard, block nickname)."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from routes.stubs import unimplemented
+from security.admin_auth import require_admin
 
-router = APIRouter(tags=["admin-quiz"])
+router = APIRouter(
+    tags=["admin-quiz"],
+    dependencies=[Depends(require_admin)],
+)
 
 
 @router.post("/")

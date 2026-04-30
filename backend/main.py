@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -8,6 +9,7 @@ from routes.admin_auth import router as admin_auth_router
 from routes.admin_quiz import router as admin_quiz_router
 from routes.nick import router as nick_router
 from routes.user import router as user_router
+from security.admin_auth import reload_admin_auth_config
 
 load_dotenv()
 
@@ -24,7 +26,13 @@ def _cors_allow_origins() -> list[str]:
     return [part.strip() for part in raw.split(",") if part.strip()]
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    reload_admin_auth_config()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

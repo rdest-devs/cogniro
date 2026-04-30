@@ -15,6 +15,7 @@ interface AdminPanelProps {
   onCreateQuiz?: () => void;
   onOpenQuiz?: (quizId: string) => void;
   onRefresh?: () => void;
+  onLogout?: () => void;
 }
 
 function pluralizeQuiz(n: number): string {
@@ -30,12 +31,13 @@ export default function AdminPanel({
   onCreateQuiz,
   onOpenQuiz,
   onRefresh,
+  onLogout,
 }: AdminPanelProps) {
   const canCreateQuiz = Boolean(onCreateQuiz);
   const canOpenQuiz = Boolean(onOpenQuiz);
 
   return (
-    <AdminLayout onCreateQuiz={onCreateQuiz}>
+    <AdminLayout onCreateQuiz={onCreateQuiz} onLogout={onLogout}>
       <header className="flex items-center justify-between">
         <h1 className="text-[28px] font-bold text-[var(--text-dark)]">
           Moje Quizy
