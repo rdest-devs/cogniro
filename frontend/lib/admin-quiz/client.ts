@@ -6,6 +6,7 @@ import type {
   AdminQuizSaveResponse,
   AdminQuizUpsertPayload,
 } from '@/app/types';
+import { BACKEND_BASE_URL } from '@/lib/backend-url';
 
 import {
   adminQuizApiDetailsSchema,
@@ -13,7 +14,6 @@ import {
   adminQuizSaveResponseSchema,
 } from './schemas';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? '/api';
 const ADMIN_TOKEN_STORAGE_KEY = 'cogniro_admin_token';
 
 interface ApiErrorBody {
@@ -34,9 +34,9 @@ export class AdminQuizApiError extends Error {
 }
 
 function joinApiUrl(path: string): string {
-  const base = API_BASE_URL.endsWith('/')
-    ? API_BASE_URL.slice(0, -1)
-    : API_BASE_URL;
+  const base = BACKEND_BASE_URL.endsWith('/')
+    ? BACKEND_BASE_URL.slice(0, -1)
+    : BACKEND_BASE_URL;
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   return `${base}${normalizedPath}`;
 }

@@ -7,6 +7,7 @@ This document covers the admin panel flow and all data contracts used between fr
 Key entry points:
 
 - [app/admin/page.tsx](app/admin/page.tsx)
+- [lib/backend-url.ts](lib/backend-url.ts)
 - [lib/admin-quiz/client.ts](lib/admin-quiz/client.ts)
 - [lib/admin-quiz/adapters.ts](lib/admin-quiz/adapters.ts)
 - [lib/admin-quiz/schemas.ts](lib/admin-quiz/schemas.ts)
@@ -39,7 +40,7 @@ Client implementation: [lib/admin-quiz/client.ts](lib/admin-quiz/client.ts)
 
 Configuration:
 
-- `API_BASE_URL`: `NEXT_PUBLIC_API_BASE_URL` or `/api`
+- `BACKEND_BASE_URL`: `NEXT_PUBLIC_BACKEND_URL` or `http://127.0.0.1:8000` (same module as quiz-demo)
 - `ADMIN_TOKEN_STORAGE_KEY`: `cogniro_admin_token`
 
 Auth/header behavior:

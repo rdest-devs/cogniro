@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+import { BACKEND_BASE_URL } from '@/lib/backend-url';
+
 import {
   AttemptReview,
   ImageAnswers,
@@ -183,10 +185,7 @@ export default function QuizDemoPage() {
     setSubmitError(null);
 
     try {
-      const backendBaseUrl =
-        process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://127.0.0.1:8000';
-
-      const response = await fetch(`${backendBaseUrl}/quiz/results`, {
+      const response = await fetch(`${BACKEND_BASE_URL}/quiz/results`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ answers }),
