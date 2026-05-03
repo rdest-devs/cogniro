@@ -41,7 +41,7 @@ Client implementation: [lib/admin-quiz/client.ts](lib/admin-quiz/client.ts)
 
 Configuration:
 
-- `BACKEND_BASE_URL`: `NEXT_PUBLIC_BACKEND_URL` or `http://127.0.0.1:8000` (same module as quiz-demo)
+- `BACKEND_BASE_URL`: `NEXT_PUBLIC_BACKEND_URL` or `http://localhost:8000` (same module as quiz-demo)
 - Short-lived admin access JWT is held **in JavaScript module memory only** (see `lib/admin-auth/client.ts`; not persisted in `localStorage`).
 
 Auth/header behavior:

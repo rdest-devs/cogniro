@@ -48,10 +48,10 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 Backend URL is shared by quiz-demo (`/quiz/results`) and the admin quiz API (`/admin/quiz/...`). Configure:
 
 ```bash
-NEXT_PUBLIC_BACKEND_URL=http://127.0.0.1:8000
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
 ```
 
-If not provided, the frontend defaults to `http://127.0.0.1:8000` (same as quiz-demo).
+If not provided, the frontend defaults to `http://localhost:8000` (same as quiz-demo).
 
 You can start editing the page by modifying `frontend/app/page.tsx`. The page auto-updates as you edit the file.
 
