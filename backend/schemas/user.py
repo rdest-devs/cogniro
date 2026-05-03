@@ -1,13 +1,13 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, FiniteFloat
 
 
 class SubmittedAnswer(BaseModel):
     questionId: int
     selected: list[int] = Field(default_factory=list)
     ordering: list[str] | None = None
-    value: float | None = None
+    value: FiniteFloat | None = None
 
 
 class QuizResultsRequest(BaseModel):

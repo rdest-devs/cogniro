@@ -121,6 +121,7 @@ export default function QuizEditor({
           (error.status === 401 || error.status === 403)
         ) {
           onSessionInvalid?.();
+          return;
         }
 
         setLoadError(toUiErrorMessage(error));
@@ -208,6 +209,7 @@ export default function QuizEditor({
         (error.status === 401 || error.status === 403)
       ) {
         onSessionInvalid?.();
+        return;
       }
       setSaveError(toUiErrorMessage(error));
     } finally {

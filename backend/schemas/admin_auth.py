@@ -1,11 +1,9 @@
 """Admin auth request/response models."""
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 
 class AdminLoginRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
-
     password: str = Field(min_length=1, max_length=512)
 
 

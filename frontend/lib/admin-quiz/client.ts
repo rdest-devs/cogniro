@@ -6,6 +6,10 @@ import type {
   AdminQuizSaveResponse,
   AdminQuizUpsertPayload,
 } from '@/app/types';
+import {
+  getStoredAdminToken,
+  refreshAdminToken,
+} from '@/lib/admin-auth/client';
 import { BACKEND_BASE_URL } from '@/lib/backend-url';
 
 import {
@@ -14,9 +18,8 @@ import {
   adminQuizSaveResponseSchema,
 } from './schemas';
 
-const ADMIN_TOKEN_STORAGE_KEY = 'cogniro_admin_token';
-
 interface ApiErrorBody {
+  detail?: string;
   error?: string;
   reason?: string;
 }
@@ -39,19 +42,6 @@ function joinApiUrl(path: string): string {
     : BACKEND_BASE_URL;
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   return `${base}${normalizedPath}`;
-}
-
-function getAdminToken(): string | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  try {
-    const token = window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY)?.trim();
-    return token ? token : null;
-  } catch {
-    return null;
-  }
 }
 
 function unwrapResponsePayload(payload: unknown): unknown {
@@ -103,8 +93,9 @@ async function requestWithSchema<T>(
   path: string,
   schema: z.ZodSchema<T>,
   init?: RequestInit,
+  hasRetried = false,
 ): Promise<T> {
-  const token = getAdminToken();
+  const token = getStoredAdminToken();
   const headers = new Headers(init?.headers);
 
   if (init?.body !== undefined) {
@@ -124,11 +115,27 @@ async function requestWithSchema<T>(
 
   if (!response.ok) {
     const errorBody = (payload ?? {}) as ApiErrorBody;
+    if (
+      response.status === 401 &&
+      errorBody.detail === 'token_expired' &&
+      !hasRetried
+    ) {
+      try {
+        await refreshAdminToken();
+      } catch {
+        // fall through to regular auth error
+      }
+      const refreshedToken = getStoredAdminToken();
+      if (refreshedToken) {
+        return requestWithSchema(path, schema, init, true);
+      }
+    }
+
     throw new AdminQuizApiError(
       toApiErrorMessage(response.status),
       response.status,
-      errorBody.error,
-      errorBody.reason,
+      errorBody.detail ?? errorBody.error,
+      errorBody.reason ?? errorBody.detail,
     );
   }
 
