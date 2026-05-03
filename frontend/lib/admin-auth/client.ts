@@ -86,16 +86,18 @@ export async function refreshAdminToken(): Promise<{
 
 export async function logoutAdmin(): Promise<void> {
   const token = getStoredAdminToken();
+  const init: RequestInit = {
+    method: 'POST',
+    credentials: 'include',
+  };
+  if (token) {
+    init.headers = { Authorization: `Bearer ${token}` };
+  }
+
   try {
-    if (token) {
-      await fetch(joinApiUrl(BACKEND_BASE_URL, 'admin/auth/logout'), {
-        method: 'POST',
-        credentials: 'include',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-    }
-  } catch {
-    // still clear local session
+    await fetch(joinApiUrl(BACKEND_BASE_URL, 'admin/auth/logout'), init);
+  } catch (error) {
+    console.warn('Admin logout request failed', error);
   } finally {
     clearStoredAdminToken();
   }

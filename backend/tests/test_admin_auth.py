@@ -3,15 +3,16 @@ import jwt
 from fastapi.testclient import TestClient
 
 from security.admin_auth import reload_admin_auth_config
+from tests.auth_test_constants import TEST_ADMIN_JWT_SECRET as _JWT_SECRET
+from tests.auth_test_constants import TEST_ADMIN_PASSWORD
 
 _REFRESH_COOKIE_NAME = "admin_refresh_token"
-_JWT_SECRET = "test-jwt-secret-key-minimum-32-characters-long!"
 
 
 def test_admin_login_returns_token(client: TestClient) -> None:
     response = client.post(
         "/admin/auth/login",
-        json={"password": "pytest-admin-password"},
+        json={"password": TEST_ADMIN_PASSWORD},
     )
     assert response.status_code == 200
     data = response.json()
@@ -24,7 +25,7 @@ def test_admin_login_returns_token(client: TestClient) -> None:
 def test_admin_login_sets_refresh_cookie(client: TestClient) -> None:
     response = client.post(
         "/admin/auth/login",
-        json={"password": "pytest-admin-password"},
+        json={"password": TEST_ADMIN_PASSWORD},
     )
     assert response.status_code == 200
     set_cookie_header = response.headers.get("set-cookie", "")
@@ -41,7 +42,7 @@ def test_admin_login_sets_secure_refresh_cookie_when_env_enabled(
     reload_admin_auth_config()
     response = client.post(
         "/admin/auth/login",
-        json={"password": "pytest-admin-password"},
+        json={"password": TEST_ADMIN_PASSWORD},
     )
     assert response.status_code == 200
     set_cookie_header = response.headers.get("set-cookie", "")
@@ -52,7 +53,7 @@ def test_admin_login_sets_secure_refresh_cookie_when_env_enabled(
 def test_admin_refresh_returns_new_access_token(client: TestClient) -> None:
     login = client.post(
         "/admin/auth/login",
-        json={"password": "pytest-admin-password"},
+        json={"password": TEST_ADMIN_PASSWORD},
     )
     assert login.status_code == 200
     initial_access_token = login.json()["access_token"]
@@ -65,6 +66,29 @@ def test_admin_refresh_returns_new_access_token(client: TestClient) -> None:
     assert refreshed_payload["expires_in"] > 0
 
 
+def test_admin_refresh_rejects_reused_refresh_token(client: TestClient) -> None:
+    login = client.post(
+        "/admin/auth/login",
+        json={"password": TEST_ADMIN_PASSWORD},
+    )
+    assert login.status_code == 200
+    initial_refresh_token = client.cookies.get(_REFRESH_COOKIE_NAME)
+    assert initial_refresh_token is not None
+
+    refreshed = client.post("/admin/auth/refresh")
+    assert refreshed.status_code == 200
+
+    client.cookies.set(
+        _REFRESH_COOKIE_NAME,
+        initial_refresh_token,
+        path="/admin/auth",
+    )
+    replayed = client.post("/admin/auth/refresh")
+
+    assert replayed.status_code == 401
+    assert replayed.json()["detail"] == "token_revoked"
+
+
 def test_admin_refresh_rejects_missing_cookie(client: TestClient) -> None:
     response = client.post("/admin/auth/refresh")
     assert response.status_code == 401
@@ -74,7 +98,7 @@ def test_admin_refresh_rejects_missing_cookie(client: TestClient) -> None:
 def test_refresh_token_cannot_access_admin_routes(client: TestClient) -> None:
     login = client.post(
         "/admin/auth/login",
-        json={"password": "pytest-admin-password"},
+        json={"password": TEST_ADMIN_PASSWORD},
     )
     assert login.status_code == 200
     refresh_token = client.cookies.get(_REFRESH_COOKIE_NAME)
@@ -116,6 +140,40 @@ def test_admin_login_preserves_password_whitespace(
     assert response.json()["detail"] == "invalid_password"
 
 
+def test_admin_login_uses_password_env_verbatim(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ADMIN_PASSWORD", " space-sensitive ")
+    reload_admin_auth_config()
+    response = client.post(
+        "/admin/auth/login",
+        json={"password": " space-sensitive "},
+    )
+    assert response.status_code == 200
+
+
+def test_admin_tokens_use_jwt_secret_env_verbatim(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    jwt_secret = " test-jwt-secret-key-minimum-32-characters-long! "
+    monkeypatch.setenv("JWT_SECRET", jwt_secret)
+    reload_admin_auth_config()
+
+    response = client.post(
+        "/admin/auth/login",
+        json={"password": TEST_ADMIN_PASSWORD},
+    )
+    assert response.status_code == 200
+    token = response.json()["access_token"]
+
+    claims = jwt.decode(token, jwt_secret, algorithms=["HS256"])
+    assert claims["typ"] == "access"
+    with pytest.raises(jwt.InvalidSignatureError):
+        jwt.decode(token, jwt_secret.strip(), algorithms=["HS256"])
+
+
 def test_admin_quiz_requires_auth(client: TestClient) -> None:
     response = client.get("/admin/quiz/all")
     assert response.status_code == 401
@@ -124,7 +182,7 @@ def test_admin_quiz_requires_auth(client: TestClient) -> None:
 def test_admin_quiz_with_token_reaches_stub(client: TestClient) -> None:
     login = client.post(
         "/admin/auth/login",
-        json={"password": "pytest-admin-password"},
+        json={"password": TEST_ADMIN_PASSWORD},
     )
     assert login.status_code == 200
     token = login.json()["access_token"]
@@ -169,7 +227,7 @@ def test_admin_logout_revokes_token(
 def test_admin_logout_clears_refresh_cookie(client: TestClient) -> None:
     login = client.post(
         "/admin/auth/login",
-        json={"password": "pytest-admin-password"},
+        json={"password": TEST_ADMIN_PASSWORD},
     )
     assert login.status_code == 200
     token = login.json()["access_token"]
@@ -184,10 +242,30 @@ def test_admin_logout_clears_refresh_cookie(client: TestClient) -> None:
     assert "Max-Age=0" in set_cookie_header
 
 
+def test_admin_logout_clears_refresh_cookie_with_invalid_access_token(
+    client: TestClient,
+) -> None:
+    login = client.post(
+        "/admin/auth/login",
+        json={"password": TEST_ADMIN_PASSWORD},
+    )
+    assert login.status_code == 200
+
+    logout = client.post(
+        "/admin/auth/logout",
+        headers={"Authorization": "Bearer invalid-token"},
+    )
+
+    assert logout.status_code == 200
+    set_cookie_header = logout.headers.get("set-cookie", "")
+    assert f"{_REFRESH_COOKIE_NAME}=" in set_cookie_header
+    assert "Max-Age=0" in set_cookie_header
+
+
 def test_refresh_lifetime_defaults_to_7_days(client: TestClient) -> None:
     response = client.post(
         "/admin/auth/login",
-        json={"password": "pytest-admin-password"},
+        json={"password": TEST_ADMIN_PASSWORD},
     )
     assert response.status_code == 200
 
@@ -212,7 +290,7 @@ def test_refresh_lifetime_honors_env_override(
 
     response = client.post(
         "/admin/auth/login",
-        json={"password": "pytest-admin-password"},
+        json={"password": TEST_ADMIN_PASSWORD},
     )
     assert response.status_code == 200
 

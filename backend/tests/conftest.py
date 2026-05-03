@@ -2,33 +2,32 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 import sys
 
 import pytest
 from fastapi.testclient import TestClient
 
+from tests.auth_test_constants import TEST_ADMIN_JWT_SECRET, TEST_ADMIN_PASSWORD
+
 _BACKEND_ROOT = Path(__file__).resolve().parents[1]
 if str(_BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(_BACKEND_ROOT))
 
 
-@pytest.fixture(scope="session", autouse=True)
-def _default_auth_env() -> None:
-    os.environ.setdefault(
-        "JWT_SECRET",
-        "test-jwt-secret-key-minimum-32-characters-long!",
-    )
-    os.environ.setdefault("ADMIN_PASSWORD", "pytest-admin-password")
-
-
 @pytest.fixture(autouse=True)
 def _admin_auth_per_test(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pin admin auth env so tests do not depend on the host shell or CI globals."""
     from security.admin_auth import (
         clear_revoked_tokens_for_tests,
         reload_admin_auth_config,
     )
+
+    monkeypatch.setenv("ADMIN_PASSWORD", TEST_ADMIN_PASSWORD)
+    monkeypatch.setenv("JWT_SECRET", TEST_ADMIN_JWT_SECRET)
+    monkeypatch.delenv("ADMIN_REFRESH_COOKIE_SECURE", raising=False)
+    monkeypatch.delenv("ADMIN_REFRESH_EXPIRE_DAYS", raising=False)
+    monkeypatch.delenv("JWT_EXPIRE_MINUTES", raising=False)
 
     clear_revoked_tokens_for_tests()
     reload_admin_auth_config()

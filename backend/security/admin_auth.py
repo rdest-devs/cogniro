@@ -40,7 +40,7 @@ def reload_admin_auth_config() -> None:
     global _password_hash, _jwt_secret, _jwt_expire_minutes
     global _refresh_expire_days, _refresh_cookie_secure
 
-    raw_pw = (os.getenv("ADMIN_PASSWORD") or "").strip()
+    raw_pw = os.getenv("ADMIN_PASSWORD")
     if raw_pw:
         _password_hash = bcrypt.hashpw(
             raw_pw.encode("utf-8"),
@@ -49,7 +49,8 @@ def reload_admin_auth_config() -> None:
     else:
         _password_hash = None
 
-    _jwt_secret = (os.getenv("JWT_SECRET") or "").strip() or None
+    raw_jwt_secret = os.getenv("JWT_SECRET")
+    _jwt_secret = raw_jwt_secret if raw_jwt_secret else None
 
     raw_minutes = os.getenv("JWT_EXPIRE_MINUTES", "15")
     try:
@@ -131,9 +132,9 @@ def decode_admin_token(token: str, *, expected_type: str = "access") -> dict:
     """Decode and validate an admin JWT.
 
     `expected_type` must match the token `typ` claim:
-    - `access` tokens are accepted for protected admin routes and checked
-      against in-memory revocation via `jti`.
+    - `access` tokens are accepted for protected admin routes.
     - `refresh` tokens are accepted for refresh endpoint logic.
+    Both token types are checked against in-memory revocation via `jti`.
     """
     if not _jwt_secret:
         raise HTTPException(
@@ -174,7 +175,7 @@ def decode_admin_token(token: str, *, expected_type: str = "access") -> dict:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="invalid_token",
         )
-    if expected_type == "access" and jti in _revoked_jtis:
+    if jti in _revoked_jtis:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="token_revoked",
@@ -183,7 +184,7 @@ def decode_admin_token(token: str, *, expected_type: str = "access") -> dict:
 
 
 def revoke_token_jti(jti: str) -> None:
-    """Mark an access-token `jti` as revoked for this process lifetime."""
+    """Mark a token `jti` as revoked for this process lifetime."""
     _revoked_jtis.add(jti)
 
 

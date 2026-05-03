@@ -1,8 +1,6 @@
 """Admin auth routes (login, logout)."""
 
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 
 from schemas.admin_auth import (
     AdminLoginRequest,
@@ -15,7 +13,6 @@ from security.admin_auth import (
     create_access_token,
     create_refresh_token,
     decode_admin_token,
-    require_admin,
     revoke_token_jti,
     set_refresh_cookie,
     verify_password,
@@ -56,7 +53,8 @@ async def admin_auth_refresh(
             detail="missing_refresh_token",
         )
 
-    decode_admin_token(refresh_token, expected_type="refresh")
+    refresh_claims = decode_admin_token(refresh_token, expected_type="refresh")
+    revoke_token_jti(refresh_claims["jti"])
     access_token, access_expires_in = create_access_token()
     rotated_refresh_token, refresh_max_age = create_refresh_token()
     response.set_cookie(**set_refresh_cookie(rotated_refresh_token, refresh_max_age))
@@ -69,11 +67,27 @@ async def admin_auth_refresh(
 
 @router.post("/auth/logout", response_model=AdminLogoutResponse)
 async def admin_auth_logout(
-    claims: Annotated[dict, Depends(require_admin)],
+    request: Request,
     response: Response,
 ) -> AdminLogoutResponse:
-    jti = claims.get("jti")
-    if isinstance(jti, str):
-        revoke_token_jti(jti)
+    authorization = request.headers.get("authorization", "")
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() == "bearer" and token:
+        try:
+            claims = decode_admin_token(token, expected_type="access")
+        except HTTPException:
+            pass
+        else:
+            revoke_token_jti(claims["jti"])
+
+    refresh_token = request.cookies.get(REFRESH_COOKIE_NAME)
+    if refresh_token:
+        try:
+            refresh_claims = decode_admin_token(refresh_token, expected_type="refresh")
+        except HTTPException:
+            pass
+        else:
+            revoke_token_jti(refresh_claims["jti"])
+
     response.delete_cookie(**clear_refresh_cookie())
     return AdminLogoutResponse(ok=True)

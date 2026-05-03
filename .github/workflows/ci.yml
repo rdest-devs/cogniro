@@ -25,6 +25,9 @@ jobs:
       - name: Validate (lint + format + type-check)
         run: pnpm -C frontend validate
 
+      - name: Test
+        run: pnpm -C frontend test
+
       - name: Build
         run: pnpm -C frontend build
 
