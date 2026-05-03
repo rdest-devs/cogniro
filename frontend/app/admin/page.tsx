@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 
 import {
   clearStoredAdminToken,
-  getStoredAdminToken,
   logoutAdmin,
+  refreshAdminToken,
 } from '@/lib/admin-auth/client';
 
 import AdminDashboard from './AdminDashboard';
@@ -16,10 +16,17 @@ export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
 
   useEffect(() => {
-    void Promise.resolve().then(() => {
-      setAuthed(getStoredAdminToken() !== null);
-      setHydrated(true);
-    });
+    void refreshAdminToken()
+      .then(() => {
+        setAuthed(true);
+      })
+      .catch(() => {
+        clearStoredAdminToken();
+        setAuthed(false);
+      })
+      .finally(() => {
+        setHydrated(true);
+      });
   }, []);
 
   const handleLoggedIn = useCallback(() => {

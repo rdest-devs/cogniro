@@ -10,7 +10,7 @@ import {
   getStoredAdminToken,
   refreshAdminToken,
 } from '@/lib/admin-auth/client';
-import { BACKEND_BASE_URL } from '@/lib/backend-url';
+import { BACKEND_BASE_URL, joinApiUrl } from '@/lib/backend-url';
 
 import {
   adminQuizApiDetailsSchema,
@@ -34,14 +34,6 @@ export class AdminQuizApiError extends Error {
     super(message);
     this.name = 'AdminQuizApiError';
   }
-}
-
-function joinApiUrl(path: string): string {
-  const base = BACKEND_BASE_URL.endsWith('/')
-    ? BACKEND_BASE_URL.slice(0, -1)
-    : BACKEND_BASE_URL;
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return `${base}${normalizedPath}`;
 }
 
 function unwrapResponsePayload(payload: unknown): unknown {
@@ -105,7 +97,7 @@ async function requestWithSchema<T>(
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const response = await fetch(joinApiUrl(path), {
+  const response = await fetch(joinApiUrl(BACKEND_BASE_URL, path), {
     ...init,
     headers,
   });
@@ -151,7 +143,7 @@ async function requestWithSchema<T>(
 }
 
 export async function getAllAdminQuizzes(): Promise<AdminQuizApiListItem[]> {
-  return requestWithSchema('/admin/quiz/all', adminQuizApiListSchema, {
+  return requestWithSchema('admin/quiz/all', adminQuizApiListSchema, {
     method: 'GET',
   });
 }
@@ -160,7 +152,7 @@ export async function getAdminQuiz(
   quizId: string,
 ): Promise<AdminQuizApiDetails> {
   return requestWithSchema(
-    `/admin/quiz/${encodeURIComponent(quizId)}`,
+    `admin/quiz/${encodeURIComponent(quizId)}`,
     adminQuizApiDetailsSchema,
     {
       method: 'GET',
@@ -171,7 +163,7 @@ export async function getAdminQuiz(
 export async function createAdminQuiz(
   payload: AdminQuizUpsertPayload,
 ): Promise<AdminQuizSaveResponse> {
-  return requestWithSchema('/admin/quiz', adminQuizSaveResponseSchema, {
+  return requestWithSchema('admin/quiz', adminQuizSaveResponseSchema, {
     method: 'POST',
     body: JSON.stringify(payload),
   });
@@ -182,7 +174,7 @@ export async function updateAdminQuiz(
   payload: AdminQuizUpsertPayload,
 ): Promise<AdminQuizSaveResponse> {
   return requestWithSchema(
-    `/admin/quiz/${encodeURIComponent(quizId)}`,
+    `admin/quiz/${encodeURIComponent(quizId)}`,
     adminQuizSaveResponseSchema,
     {
       method: 'PUT',

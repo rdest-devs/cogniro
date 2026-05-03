@@ -1,52 +1,34 @@
-import { BACKEND_BASE_URL } from '@/lib/backend-url';
+import { BACKEND_BASE_URL, joinApiUrl } from '@/lib/backend-url';
 
-const ADMIN_TOKEN_STORAGE_KEY = 'cogniro_admin_token';
-
-function joinApiUrl(path: string): string {
-  const base = BACKEND_BASE_URL.endsWith('/')
-    ? BACKEND_BASE_URL.slice(0, -1)
-    : BACKEND_BASE_URL;
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return `${base}${normalizedPath}`;
-}
+/** In-memory only; never persist admin access tokens (e.g. localStorage). */
+let adminAccessToken: string | null = null;
 
 export function getStoredAdminToken(): string | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  try {
-    const token = window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY)?.trim();
-    return token ? token : null;
-  } catch {
-    return null;
-  }
+  return adminAccessToken;
 }
 
 export function setStoredAdminToken(token: string): void {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  window.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, token);
+  const trimmed = token.trim();
+  adminAccessToken = trimmed ? trimmed : null;
 }
 
 export function clearStoredAdminToken(): void {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  window.localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
+  adminAccessToken = null;
 }
 
 export async function loginAdmin(password: string): Promise<{
   access_token: string;
   expires_in: number;
 }> {
-  const response = await fetch(joinApiUrl('/admin/auth/login'), {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password }),
-  });
+  const response = await fetch(
+    joinApiUrl(BACKEND_BASE_URL, 'admin/auth/login'),
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    },
+  );
 
   if (!response.ok) {
     let detail = 'login_failed';
@@ -61,20 +43,25 @@ export async function loginAdmin(password: string): Promise<{
     throw new Error(detail);
   }
 
-  return (await response.json()) as {
+  const payload = (await response.json()) as {
     access_token: string;
     expires_in: number;
   };
+  setStoredAdminToken(payload.access_token);
+  return payload;
 }
 
 export async function refreshAdminToken(): Promise<{
   access_token: string;
   expires_in: number;
 }> {
-  const response = await fetch(joinApiUrl('/admin/auth/refresh'), {
-    method: 'POST',
-    credentials: 'include',
-  });
+  const response = await fetch(
+    joinApiUrl(BACKEND_BASE_URL, 'admin/auth/refresh'),
+    {
+      method: 'POST',
+      credentials: 'include',
+    },
+  );
   if (!response.ok) {
     clearStoredAdminToken();
     let detail = 'refresh_failed';
@@ -101,7 +88,7 @@ export async function logoutAdmin(): Promise<void> {
   const token = getStoredAdminToken();
   try {
     if (token) {
-      await fetch(joinApiUrl('/admin/auth/logout'), {
+      await fetch(joinApiUrl(BACKEND_BASE_URL, 'admin/auth/logout'), {
         method: 'POST',
         credentials: 'include',
         headers: { Authorization: `Bearer ${token}` },

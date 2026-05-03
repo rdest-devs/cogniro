@@ -17,6 +17,8 @@ _jwt_secret: str | None = None
 # Keep admin tokens short-lived because logout revocation is process-local.
 _jwt_expire_minutes: int = 15
 _refresh_expire_days: int = 7
+# When true, refresh token is only sent over HTTPS (set in production).
+_refresh_cookie_secure: bool = False
 # Single-server revocation cache; cleared on restart and not shared across workers.
 _revoked_jtis: set[str] = set()
 REFRESH_COOKIE_NAME = "admin_refresh_token"
@@ -33,8 +35,10 @@ def reload_admin_auth_config() -> None:
     - Reads `JWT_SECRET` for signing and verifying admin tokens.
     - Reads `JWT_EXPIRE_MINUTES` for short-lived access tokens.
     - Reads `ADMIN_REFRESH_EXPIRE_DAYS` for refresh-token cookie lifetime.
+    - Reads `ADMIN_REFRESH_COOKIE_SECURE` for the refresh cookie `Secure` flag.
     """
-    global _password_hash, _jwt_secret, _jwt_expire_minutes, _refresh_expire_days
+    global _password_hash, _jwt_secret, _jwt_expire_minutes
+    global _refresh_expire_days, _refresh_cookie_secure
 
     raw_pw = (os.getenv("ADMIN_PASSWORD") or "").strip()
     if raw_pw:
@@ -62,6 +66,9 @@ def reload_admin_auth_config() -> None:
         _refresh_expire_days = 7
     if _refresh_expire_days < 1:
         _refresh_expire_days = 7
+
+    raw_secure = (os.getenv("ADMIN_REFRESH_COOKIE_SECURE") or "").strip().lower()
+    _refresh_cookie_secure = raw_secure in {"1", "true", "yes", "on"}
 
 
 def verify_password(plain: str) -> bool:
@@ -188,7 +195,7 @@ def set_refresh_cookie(token: str, max_age_seconds: int) -> dict[str, object]:
         "max_age": max_age_seconds,
         "httponly": True,
         "samesite": "lax",
-        "secure": False,
+        "secure": _refresh_cookie_secure,
         "path": _REFRESH_COOKIE_PATH,
     }
 
@@ -198,6 +205,9 @@ def clear_refresh_cookie() -> dict[str, object]:
     return {
         "key": REFRESH_COOKIE_NAME,
         "path": _REFRESH_COOKIE_PATH,
+        "httponly": True,
+        "samesite": "lax",
+        "secure": _refresh_cookie_secure,
     }
 
 

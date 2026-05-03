@@ -3,7 +3,7 @@
 import ExportedImage from 'next-image-export-optimizer';
 import { useState } from 'react';
 
-import { loginAdmin, setStoredAdminToken } from '@/lib/admin-auth/client';
+import { loginAdmin } from '@/lib/admin-auth/client';
 import { getAdminLoginErrorMessage } from '@/lib/admin-auth/error-message';
 
 interface AdminLoginProps {
@@ -21,8 +21,7 @@ export default function AdminLogin({ onSuccess }: AdminLoginProps) {
     setSubmitting(true);
 
     try {
-      const result = await loginAdmin(password);
-      setStoredAdminToken(result.access_token);
+      await loginAdmin(password);
       onSuccess();
     } catch (error) {
       setError(getAdminLoginErrorMessage(error));

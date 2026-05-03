@@ -7,6 +7,7 @@ This document covers the admin panel flow and all data contracts used between fr
 Key entry points:
 
 - [app/admin/page.tsx](app/admin/page.tsx)
+- [lib/admin-auth/client.ts](lib/admin-auth/client.ts)
 - [lib/backend-url.ts](lib/backend-url.ts)
 - [lib/admin-quiz/client.ts](lib/admin-quiz/client.ts)
 - [lib/admin-quiz/adapters.ts](lib/admin-quiz/adapters.ts)
@@ -41,12 +42,13 @@ Client implementation: [lib/admin-quiz/client.ts](lib/admin-quiz/client.ts)
 Configuration:
 
 - `BACKEND_BASE_URL`: `NEXT_PUBLIC_BACKEND_URL` or `http://127.0.0.1:8000` (same module as quiz-demo)
-- `ADMIN_TOKEN_STORAGE_KEY`: `cogniro_admin_token`
+- Short-lived admin access JWT is held **in JavaScript module memory only** (see `lib/admin-auth/client.ts`; not persisted in `localStorage`).
 
 Auth/header behavior:
 
 - Sends `Content-Type: application/json` for requests with a JSON body
-- Sends `Authorization: Bearer <token>` if token exists in localStorage
+- Sends `Authorization: Bearer <access_token>` when a token is present in admin auth module memory after login or `/admin/auth/refresh`
+- Silent re-auth uses `/admin/auth/refresh` with `credentials: 'include'` and the HttpOnly refresh cookie set by the backend
 
 Response unwrapping strategy:
 

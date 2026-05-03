@@ -30,6 +30,23 @@ def test_admin_login_sets_refresh_cookie(client: TestClient) -> None:
     set_cookie_header = response.headers.get("set-cookie", "")
     assert f"{_REFRESH_COOKIE_NAME}=" in set_cookie_header
     assert "HttpOnly" in set_cookie_header
+    assert "Secure" not in set_cookie_header
+
+
+def test_admin_login_sets_secure_refresh_cookie_when_env_enabled(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ADMIN_REFRESH_COOKIE_SECURE", "true")
+    reload_admin_auth_config()
+    response = client.post(
+        "/admin/auth/login",
+        json={"password": "pytest-admin-password"},
+    )
+    assert response.status_code == 200
+    set_cookie_header = response.headers.get("set-cookie", "")
+    assert f"{_REFRESH_COOKIE_NAME}=" in set_cookie_header
+    assert "Secure" in set_cookie_header
 
 
 def test_admin_refresh_returns_new_access_token(client: TestClient) -> None:
