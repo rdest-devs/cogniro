@@ -1,5 +1,7 @@
 """Admin auth routes (login, logout)."""
 
+import asyncio
+
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
 from schemas.admin_auth import (
@@ -26,7 +28,7 @@ async def admin_auth_login(
     body: AdminLoginRequest,
     response: Response,
 ) -> AdminTokenResponse:
-    if not verify_password(body.password):
+    if not await asyncio.to_thread(verify_password, body.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="invalid_password",

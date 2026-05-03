@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from tests.auth_test_constants import TEST_ADMIN_JWT_SECRET, TEST_ADMIN_PASSWORD
+
 from pathlib import Path
+from collections.abc import Iterator
 import sys
 
 import pytest
 from fastapi.testclient import TestClient
-
-from tests.auth_test_constants import TEST_ADMIN_JWT_SECRET, TEST_ADMIN_PASSWORD
 
 _BACKEND_ROOT = Path(__file__).resolve().parents[1]
 if str(_BACKEND_ROOT) not in sys.path:
@@ -35,7 +36,7 @@ def _admin_auth_per_test(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture
-def client() -> TestClient:
+def client() -> Iterator[TestClient]:
     from main import app
 
     with TestClient(app) as test_client:

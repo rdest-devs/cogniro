@@ -34,6 +34,38 @@ def test_admin_login_sets_refresh_cookie(client: TestClient) -> None:
     assert "Secure" not in set_cookie_header
 
 
+def test_admin_login_runs_password_verification_off_event_loop(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import types
+
+    import routes.admin_auth as admin_auth_route
+
+    calls = []
+
+    async def fake_to_thread(func, *args, **kwargs):
+        calls.append((func, args, kwargs))
+        return func(*args, **kwargs)
+
+    monkeypatch.setattr(
+        admin_auth_route,
+        "asyncio",
+        types.SimpleNamespace(to_thread=fake_to_thread),
+        raising=False,
+    )
+
+    response = client.post(
+        "/admin/auth/login",
+        json={"password": TEST_ADMIN_PASSWORD},
+    )
+
+    assert response.status_code == 200
+    assert calls == [
+        (admin_auth_route.verify_password, (TEST_ADMIN_PASSWORD,), {}),
+    ]
+
+
 def test_admin_login_sets_secure_refresh_cookie_when_env_enabled(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,

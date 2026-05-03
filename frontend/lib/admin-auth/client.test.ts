@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { BACKEND_BASE_URL, joinApiUrl } from '../backend-url';
 import {
   clearStoredAdminToken,
   getStoredAdminToken,
@@ -24,7 +25,10 @@ test('logoutAdmin posts logout even when no access token is stored', async () =>
     await logoutAdmin();
 
     assert.equal(calls.length, 1);
-    assert.equal(calls[0][0], 'http://localhost:8000/admin/auth/logout');
+    assert.equal(
+      calls[0][0],
+      joinApiUrl(BACKEND_BASE_URL, 'admin/auth/logout'),
+    );
     assert.equal(calls[0][1]?.method, 'POST');
     assert.equal(calls[0][1]?.credentials, 'include');
     assert.equal(new Headers(calls[0][1]?.headers).get('Authorization'), null);

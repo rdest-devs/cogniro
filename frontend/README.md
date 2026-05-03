@@ -45,7 +45,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## Environment variables
 
-Backend URL is shared by quiz-demo (`/quiz/results`) and the admin quiz API (`/admin/quiz/...`). Configure:
+Backend URL is shared by quiz-demo (`POST /quiz/results`), admin auth (`POST /admin/auth/login`, `POST /admin/auth/refresh`), and the admin quiz API (`GET /admin/quiz/all`, `GET`/`PUT /admin/quiz/{id}`, `POST /admin/quiz`). Paths are built with `joinApiUrl` and `BACKEND_BASE_URL` from `frontend/lib/backend-url.ts`. Configure:
 
 ```bash
 NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
