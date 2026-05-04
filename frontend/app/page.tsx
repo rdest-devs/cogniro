@@ -48,7 +48,7 @@ export default function Home() {
   const shouldCenterVertically = current !== 'Attempt Review';
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-dvh flex-col overflow-hidden">
       <nav className="flex flex-wrap gap-2 border-b border-[var(--border)] bg-[var(--card-bg)] p-3">
         {screens.map((screen) => (
           <button
@@ -72,7 +72,7 @@ export default function Home() {
       </nav>
 
       <div
-        className={`flex flex-1 overflow-auto bg-[var(--page-bg)] ${shouldCenterVertically ? 'items-center justify-center' : 'justify-center'}`}
+        className={`flex min-h-0 flex-1 overflow-auto bg-[var(--page-bg)] ${shouldCenterVertically ? 'items-center justify-center' : 'justify-center'}`}
       >
         {current === 'Quiz Start' && <QuizStart {...quizStartDemo} />}
         {current === 'Single Choice' && <SingleChoice {...singleChoiceDemo} />}
