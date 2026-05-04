@@ -152,7 +152,7 @@ export default function AdminPage() {
   );
 
   return (
-    <div className="h-screen w-full bg-[var(--page-bg)]">
+    <div className="fixed inset-0 overflow-hidden bg-[var(--page-bg)]">
       {screen === 'panel' && (
         <AdminPanel
           quizzes={adminCards}

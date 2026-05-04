@@ -13,12 +13,14 @@ export default function AdminLayout({
   onCreateQuiz,
 }: AdminLayoutProps) {
   return (
-    <div className="flex h-full w-full bg-[var(--page-bg)]">
+    <div className="flex h-full w-full overflow-hidden bg-[var(--page-bg)]">
       <Sidebar activeItem={activeItem} />
 
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col">
         <TopBar onCreateQuiz={onCreateQuiz} />
-        <main className="flex-1 overflow-y-auto p-8">{children}</main>
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-8">
+          {children}
+        </main>
       </div>
     </div>
   );

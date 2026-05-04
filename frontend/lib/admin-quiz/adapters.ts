@@ -57,6 +57,7 @@ export function toQuizEditorFormValues(
         : undefined,
     text: question.text ?? question.content ?? '',
     type: normalizeQuestionType(question.type),
+    image: question.image,
     answers: padAnswersToMinTwo(
       question.answers.map((answer) => ({
         id:
@@ -65,6 +66,7 @@ export function toQuizEditorFormValues(
             : undefined,
         text: answer.text ?? answer.content ?? '',
         isCorrect: Boolean(answer.is_correct ?? answer.isCorrect),
+        image: answer.image,
       })),
     ),
   }));
@@ -96,10 +98,12 @@ export function toAdminQuizUpsertPayload(
     questions: values.questions.map((question) => ({
       id: question.id,
       text: question.text.trim(),
+      image: question.image,
       type: question.type,
       answers: question.answers.map((answer) => ({
         id: answer.id,
         text: answer.text.trim(),
+        image: answer.image,
         is_correct: answer.isCorrect,
       })),
     })),
