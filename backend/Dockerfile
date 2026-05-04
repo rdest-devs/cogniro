@@ -22,6 +22,7 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1 \
     PATH="/app/.venv/bin:$PATH"
 RUN adduser --system --group --no-create-home app
+RUN mkdir -p /var/lib/cogniro && chown -R app:app /var/lib/cogniro
 COPY --from=prod-deps --chown=app:app /app/.venv ./.venv
 COPY --chown=app:app . .
 USER app
