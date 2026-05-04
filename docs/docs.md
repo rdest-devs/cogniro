@@ -43,6 +43,7 @@ Configuration:
 
 - `BACKEND_BASE_URL`: `NEXT_PUBLIC_BACKEND_URL` or `http://localhost:8000` (same module as quiz-demo)
 - Short-lived admin access JWT is held **in JavaScript module memory only** (see `lib/admin-auth/client.ts`; not persisted in `localStorage`).
+- Quiz media URLs are resolved on the frontend with `lib/media-url.ts`, using `NEXT_PUBLIC_MEDIA_PUBLIC_PREFIX` when needed.
 
 Auth/header behavior:
 

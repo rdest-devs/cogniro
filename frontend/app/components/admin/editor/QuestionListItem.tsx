@@ -1,11 +1,15 @@
 'use client';
 
-import { ChevronDown, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, Loader2, Plus, Trash2, Upload } from 'lucide-react';
+import type { ChangeEvent } from 'react';
+import { useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 
 import StatusBadge from '@/app/components/common/StatusBadge';
 import type { QuizEditorFormValues, QuizQuestionType } from '@/app/types';
+import { AdminQuizApiError, uploadAdminAsset } from '@/lib/admin-quiz';
 import { cn } from '@/lib/cn';
+import { resolveMediaUrl } from '@/lib/media-url';
 
 import { typeColors } from '../shared/constants';
 import QuestionPreview from './QuestionPreview';
@@ -28,6 +32,18 @@ const typeLabelMap: Record<QuizQuestionType, string> = {
   multiple_choice: 'Wielokrotny',
 };
 
+function toUploadErrorMessage(error: unknown): string {
+  if (error instanceof AdminQuizApiError) {
+    return error.message;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'Nie udało się przesłać obrazu.';
+}
+
 export default function QuestionListItem({
   index,
   isExpanded,
@@ -45,6 +61,9 @@ export default function QuestionListItem({
     formState: { errors },
   } = useFormContext<QuizEditorFormValues>();
 
+  const [uploadingKeys, setUploadingKeys] = useState<Set<string>>(new Set());
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   const questionPath = `questions.${index}` as const;
   const answersPath = `${questionPath}.answers` as const;
 
@@ -56,6 +75,7 @@ export default function QuestionListItem({
   const questionText = watch(`${questionPath}.text` as const);
   const questionType =
     watch(`${questionPath}.type` as const) ?? ('single_choice' as const);
+  const questionImage = watch(`${questionPath}.image` as const);
   const questionAnswers = watch(answersPath);
   const questionErrors = errors.questions?.[index];
 
@@ -103,6 +123,70 @@ export default function QuestionListItem({
 
     void trigger(questionPath);
   };
+
+  const addUploadingKey = (key: string) =>
+    setUploadingKeys((prev) => new Set(prev).add(key));
+  const removeUploadingKey = (key: string) =>
+    setUploadingKeys((prev) => {
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+
+  const handleQuestionImageUpload = async (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    const selectedFile = event.target.files?.[0];
+    event.currentTarget.value = '';
+
+    if (!selectedFile) {
+      return;
+    }
+
+    setUploadError(null);
+    addUploadingKey('question');
+
+    try {
+      const uploadedImage = await uploadAdminAsset(selectedFile);
+      setValue(`${questionPath}.image`, uploadedImage, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      void trigger(questionPath);
+    } catch (error) {
+      setUploadError(toUploadErrorMessage(error));
+    } finally {
+      removeUploadingKey('question');
+    }
+  };
+
+  const handleAnswerImageUpload =
+    (answerIndex: number) => async (event: ChangeEvent<HTMLInputElement>) => {
+      const selectedFile = event.target.files?.[0];
+      event.currentTarget.value = '';
+
+      if (!selectedFile) {
+        return;
+      }
+
+      const key = `answer-${answerIndex}`;
+      setUploadError(null);
+      addUploadingKey(key);
+
+      try {
+        const uploadedImage = await uploadAdminAsset(selectedFile);
+        const imagePath = `${answersPath}.${answerIndex}.image` as const;
+        setValue(imagePath, uploadedImage, {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+        void trigger(questionPath);
+      } catch (error) {
+        setUploadError(toUploadErrorMessage(error));
+      } finally {
+        removeUploadingKey(key);
+      }
+    };
 
   const panelId = `question-panel-${index}`;
 
@@ -166,6 +250,58 @@ export default function QuestionListItem({
                 )}
               </label>
 
+              <div className="flex flex-col gap-2">
+                <span className="text-[13px] font-medium text-[var(--text-muted)]">
+                  Obraz pytania (opcjonalnie)
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--text-dark)]">
+                    {uploadingKeys.has('question') ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Upload size={14} />
+                    )}
+                    Prześlij obraz
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                      disabled={uploadingKeys.has('question')}
+                      onChange={handleQuestionImageUpload}
+                    />
+                  </label>
+                  {questionImage && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setValue(`${questionPath}.image`, undefined, {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        });
+                        void trigger(questionPath);
+                      }}
+                      className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--wrong-fg)]"
+                    >
+                      Usuń obraz
+                    </button>
+                  )}
+                </div>
+                {questionImage && (
+                  <div className="rounded-xl border border-[var(--border)] bg-white p-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={resolveMediaUrl(questionImage.thumbUrl)}
+                      alt={questionImage.alt || 'Podgląd obrazu pytania'}
+                      width={questionImage.width}
+                      height={questionImage.height}
+                      loading="lazy"
+                      decoding="async"
+                      className="max-h-40 w-full rounded-lg object-contain"
+                    />
+                  </div>
+                )}
+              </div>
+
               <label className="flex flex-col gap-1">
                 <span className="text-[13px] font-medium text-[var(--text-muted)]">
                   Typ pytania
@@ -201,9 +337,12 @@ export default function QuestionListItem({
                     `${answersPath}.${answerIndex}.text` as const;
                   const answerCorrectPath =
                     `${answersPath}.${answerIndex}.isCorrect` as const;
+                  const answerImagePath =
+                    `${answersPath}.${answerIndex}.image` as const;
                   const answerInputId = `question-${index}-answer-${answerIndex}-text`;
                   const answerLabelId = `${answerInputId}-label`;
                   const answerText = watch(answerTextPath);
+                  const answerImage = watch(answerImagePath);
                   const isCorrect = watch(answerCorrectPath);
                   const answerError =
                     questionErrors?.answers?.[answerIndex]?.text?.message;
@@ -237,7 +376,7 @@ export default function QuestionListItem({
                         />
                       )}
 
-                      <div className="flex flex-1 flex-col gap-1">
+                      <div className="flex flex-1 flex-col gap-2">
                         <label
                           id={answerLabelId}
                           htmlFor={answerInputId}
@@ -262,6 +401,60 @@ export default function QuestionListItem({
                           <span className="text-xs text-[var(--wrong-fg)]">
                             {answerError}
                           </span>
+                        )}
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--text-dark)]">
+                            {uploadingKeys.has(`answer-${answerIndex}`) ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                              <Upload size={14} />
+                            )}
+                            Obraz odpowiedzi
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp"
+                              className="hidden"
+                              disabled={uploadingKeys.has(
+                                `answer-${answerIndex}`,
+                              )}
+                              onChange={handleAnswerImageUpload(answerIndex)}
+                            />
+                          </label>
+
+                          {answerImage && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setValue(answerImagePath, undefined, {
+                                  shouldDirty: true,
+                                  shouldValidate: true,
+                                });
+                                void trigger(questionPath);
+                              }}
+                              className="rounded-xl border border-[var(--border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--wrong-fg)]"
+                            >
+                              Usuń obraz
+                            </button>
+                          )}
+                        </div>
+
+                        {answerImage && (
+                          <div className="rounded-lg border border-[var(--border)] bg-white p-2">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={resolveMediaUrl(answerImage.thumbUrl)}
+                              alt={
+                                answerImage.alt ||
+                                `Podgląd obrazu odpowiedzi ${answerIndex + 1}`
+                              }
+                              width={answerImage.width}
+                              height={answerImage.height}
+                              loading="lazy"
+                              decoding="async"
+                              className="max-h-28 w-full rounded-md object-contain"
+                            />
+                          </div>
                         )}
                       </div>
 
@@ -290,16 +483,26 @@ export default function QuestionListItem({
                 {(questionErrors?.answers?.message ??
                   questionErrors?.answers?.root?.message) && (
                   <span className="text-xs text-[var(--wrong-fg)]">
-                    {questionErrors.answers.message ??
-                      questionErrors.answers.root?.message}
+                    {questionErrors.answers?.message ??
+                      questionErrors.answers?.root?.message}
                   </span>
                 )}
               </fieldset>
+
+              {uploadError && (
+                <div
+                  role="alert"
+                  className="rounded-xl border border-[var(--wrong-fg)] bg-white px-3 py-2 text-xs text-[var(--wrong-fg)]"
+                >
+                  {uploadError}
+                </div>
+              )}
             </div>
 
             <QuestionPreview
               question={{
                 text: questionText ?? '',
+                image: questionImage,
                 type: questionType,
                 answers: questionAnswers ?? [],
               }}
