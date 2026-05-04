@@ -29,8 +29,8 @@ export default function QuizResults({
   onReview,
 }: QuizResultsProps) {
   return (
-    <div className="flex min-h-full w-full max-w-[390px] flex-col bg-[var(--page-bg)]">
-      <div className="flex flex-1 flex-col gap-6 px-6 pt-4 pb-8">
+    <div className="flex h-full w-full max-w-[390px] flex-col bg-[var(--page-bg)]">
+      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 pt-4 pb-8">
         <section className="flex flex-col items-center gap-4">
           <span className="text-sm font-medium text-[var(--text-muted)]">
             Twój wynik

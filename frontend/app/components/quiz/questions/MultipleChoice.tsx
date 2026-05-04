@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import SubmitButton from '@/app/components/common/SubmitButton';
+import type { QuizChoiceAnswer, QuizImage } from '@/app/types';
+import { cn } from '@/lib/cn';
+import { resolveMediaUrl } from '@/lib/media-url';
 
 import CheckboxAnswer from '../shared/CheckboxAnswer';
 import QuestionCard from '../shared/QuestionCard';
@@ -14,7 +17,8 @@ interface MultipleChoiceProps {
   time: string;
   question: string;
   hint?: string;
-  answers: string[];
+  questionImage?: QuizImage;
+  answers: Array<string | QuizChoiceAnswer>;
   onSubmit?: (selectedIndices: number[]) => void;
 }
 
@@ -24,10 +28,18 @@ export default function MultipleChoice({
   time,
   question,
   hint,
+  questionImage,
   answers,
   onSubmit,
 }: MultipleChoiceProps) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const normalizedAnswers = useMemo(
+    () =>
+      answers.map((answer) =>
+        typeof answer === 'string' ? { text: answer } : answer,
+      ),
+    [answers],
+  );
 
   const toggle = (index: number) => {
     setSelected((prev) => {
@@ -44,17 +56,59 @@ export default function MultipleChoice({
       totalQuestions={totalQuestions}
       time={time}
     >
-      <QuestionCard question={question} hint={hint} />
+      <QuestionCard
+        question={question}
+        hint={hint}
+        image={questionImage}
+        imageLoading="eager"
+      />
 
       <div className="flex flex-col gap-3">
-        {answers.map((answer, i) => (
-          <CheckboxAnswer
-            key={`${i}-${answer}`}
-            label={answer}
-            selected={selected.has(i)}
-            onClick={() => toggle(i)}
-          />
-        ))}
+        {normalizedAnswers.map((answer, i) => {
+          const hasImage = Boolean(answer.image);
+          const label = answer.text?.trim() || `Odpowiedź ${i + 1}`;
+
+          if (!hasImage) {
+            return (
+              <CheckboxAnswer
+                key={`${i}-${label}`}
+                label={label}
+                selected={selected.has(i)}
+                onClick={() => toggle(i)}
+              />
+            );
+          }
+
+          return (
+            <button
+              key={`${i}-${label}`}
+              type="button"
+              onClick={() => toggle(i)}
+              className={cn(
+                'cursor-pointer rounded-2xl border p-3 text-left transition-colors',
+                selected.has(i)
+                  ? 'border-[var(--selected-border)] bg-[var(--selected-bg)]'
+                  : 'border-[var(--border)] bg-[var(--card-bg)]',
+              )}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={resolveMediaUrl(answer.image?.thumbUrl ?? '')}
+                width={answer.image?.width}
+                height={answer.image?.height}
+                alt={answer.image?.alt || label}
+                loading="lazy"
+                decoding="async"
+                className="w-full rounded-xl bg-white object-contain"
+              />
+              {answer.text?.trim() && (
+                <p className="mt-2 text-sm font-medium text-[var(--text-dark)]">
+                  {answer.text.trim()}
+                </p>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       <SubmitButton

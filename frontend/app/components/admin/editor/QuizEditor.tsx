@@ -219,8 +219,8 @@ export default function QuizEditor({
   return (
     <AdminLayout onCreateQuiz={onCreateQuiz}>
       <FormProvider {...formMethods}>
-        <form onSubmit={onSubmit} className="flex flex-1">
-          <div className="flex flex-1 flex-col gap-5">
+        <form onSubmit={onSubmit} className="flex min-h-0 w-full flex-1">
+          <div className="flex min-h-0 flex-1 flex-col gap-5">
             <header className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-[var(--text-dark)]">
