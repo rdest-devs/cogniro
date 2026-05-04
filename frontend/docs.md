@@ -39,7 +39,7 @@ Client implementation: [lib/admin-quiz/client.ts](lib/admin-quiz/client.ts)
 
 Configuration:
 
-- `API_BASE_URL`: `NEXT_PUBLIC_API_BASE_URL` or `/api`
+- `API_BASE_URL`: `NEXT_PUBLIC_API_BASE_URL` or `NEXT_PUBLIC_BACKEND_URL` (fallback: `http://127.0.0.1:8000`)
 - `ADMIN_TOKEN_STORAGE_KEY`: `cogniro_admin_token`
 
 Auth/header behavior:
