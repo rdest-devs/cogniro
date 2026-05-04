@@ -1,13 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
+import { resolveMediaUrl } from '@/lib/media-url';
 import { BACKEND_BASE_URL, joinApiUrl } from '@/lib/backend-url';
 
 import {
   AttemptReview,
-  ImageAnswers,
-  ImageQuestion,
   MultipleChoice,
   Ordering,
   QuizResults,
@@ -16,7 +15,7 @@ import {
   SingleChoice,
   SliderQuestion,
 } from '../components/quiz';
-import type { ImageAnswerOption, ReviewQuestion } from '../types';
+import type { QuizChoiceAnswer, QuizImage, ReviewQuestion } from '../types';
 
 const quizStartData = {
   title: 'Quiz Informatyczny',
@@ -30,21 +29,9 @@ type QuizQuestion =
       id: number;
       type: 'single' | 'multiple';
       question: string;
-      answers: string[];
+      image?: QuizImage;
+      answers: QuizChoiceAnswer[];
       hint?: string;
-    }
-  | {
-      id: number;
-      type: 'image-question';
-      question: string;
-      imageUrl: string;
-      answers: string[];
-    }
-  | {
-      id: number;
-      type: 'image-answers';
-      question: string;
-      answers: ImageAnswerOption[];
     }
   | {
       id: number;
@@ -87,34 +74,95 @@ type SubmittedAnswer = {
 const questions: QuizQuestion[] = [
   {
     id: 1,
-    type: 'single' as const,
+    type: 'single',
     question:
       'Który protokół jest używany do bezpiecznego przesyłania danych w sieci?',
-    answers: ['HTTP', 'HTTPS', 'FTP', 'SMTP'],
+    answers: [
+      { text: 'HTTP' },
+      { text: 'HTTPS' },
+      { text: 'FTP' },
+      { text: 'SMTP' },
+    ],
   },
   {
     id: 2,
-    type: 'multiple' as const,
+    type: 'multiple',
     question: 'Które z poniższych są językami programowania?',
     hint: 'Wybierz wszystkie poprawne odpowiedzi',
-    answers: ['Python', 'HTML', 'Java', 'CSS'],
+    answers: [
+      { text: 'Python' },
+      { text: 'HTML' },
+      { text: 'Java' },
+      { text: 'CSS' },
+    ],
   },
   {
     id: 3,
-    type: 'image-question',
-    question: 'Który schemat blokowy przedstawia pętlę while?',
-    imageUrl: '/images/flowchart.png',
-    answers: ['Schemat A', 'Schemat B', 'Schemat C'],
+    type: 'single',
+    question: 'Co przedstawia ten schemat?',
+    image: {
+      assetId: 'demo_flowchart',
+      url: '/images/flowchart.png',
+      thumbUrl: '/images/flowchart.png',
+      width: 720,
+      height: 405,
+      alt: 'Schemat blokowy',
+    },
+    answers: [
+      { text: 'Pętla while' },
+      { text: 'Instrukcja switch' },
+      { text: 'Sortowanie bąbelkowe' },
+    ],
   },
   {
     id: 4,
-    type: 'image-answers',
+    type: 'single',
     question: 'Który obraz przedstawia strukturę drzewa binarnego?',
     answers: [
-      { imageUrl: '/images/diagram-a.png', label: 'A' },
-      { imageUrl: '/images/diagram-b.png', label: 'B' },
-      { imageUrl: '/images/diagram-c.png', label: 'C' },
-      { imageUrl: '/images/diagram-d.png', label: 'D' },
+      {
+        text: 'A',
+        image: {
+          assetId: 'demo_diagram_a',
+          url: '/images/diagram-a.png',
+          thumbUrl: '/images/diagram-a.png',
+          width: 256,
+          height: 256,
+          alt: 'Diagram A – lista jednokierunkowa',
+        },
+      },
+      {
+        text: 'B',
+        image: {
+          assetId: 'demo_diagram_b',
+          url: '/images/diagram-b.png',
+          thumbUrl: '/images/diagram-b.png',
+          width: 256,
+          height: 256,
+          alt: 'Diagram B – tablica haszująca',
+        },
+      },
+      {
+        text: 'C',
+        image: {
+          assetId: 'demo_diagram_c',
+          url: '/images/diagram-c.png',
+          thumbUrl: '/images/diagram-c.png',
+          width: 256,
+          height: 256,
+          alt: 'Diagram C – drzewo binarne',
+        },
+      },
+      {
+        text: 'D',
+        image: {
+          assetId: 'demo_diagram_d',
+          url: '/images/diagram-d.png',
+          thumbUrl: '/images/diagram-d.png',
+          width: 256,
+          height: 256,
+          alt: 'Diagram D – stos',
+        },
+      },
     ],
   },
   {
@@ -167,6 +215,48 @@ interface QuizResultsApiResponse {
 
 type View = 'start' | 'question' | 'results' | 'review';
 
+function getQuestionImageUrls(question: QuizQuestion): string[] {
+  if (question.type !== 'single' && question.type !== 'multiple') {
+    return [];
+  }
+
+  const urls: string[] = [];
+
+  if (question.image?.url) {
+    urls.push(question.image.url);
+  }
+
+  for (const answer of question.answers) {
+    if (answer.image?.thumbUrl) {
+      urls.push(answer.image.thumbUrl);
+    }
+  }
+
+  return urls;
+}
+
+function preloadImage(url: string): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  const img = new Image();
+  img.src = resolveMediaUrl(url);
+}
+
+function preloadQuestionImages(
+  quiz: QuizQuestion[],
+  questionIndex: number,
+): void {
+  const question = quiz[questionIndex];
+  if (!question) {
+    return;
+  }
+
+  for (const url of getQuestionImageUrls(question)) {
+    preloadImage(url);
+  }
+}
+
 export default function QuizDemoPage() {
   const [view, setView] = useState<View>('start');
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -176,9 +266,25 @@ export default function QuizDemoPage() {
   const [result, setResult] = useState<QuizResultsApiResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const initialPreloadDoneRef = useRef(false);
 
   const currentQuestion = questions[questionIndex];
   const totalQuestions = questions.length;
+
+  useEffect(() => {
+    if (view !== 'question') {
+      return;
+    }
+
+    if (!initialPreloadDoneRef.current) {
+      preloadQuestionImages(questions, 0);
+      preloadQuestionImages(questions, 1);
+      initialPreloadDoneRef.current = true;
+      return;
+    }
+
+    preloadQuestionImages(questions, questionIndex + 1);
+  }, [view, questionIndex]);
 
   const submitQuiz = async (answers: SubmittedAnswer[]) => {
     setIsSubmitting(true);
@@ -241,11 +347,12 @@ export default function QuizDemoPage() {
     setResult(null);
     setIsSubmitting(false);
     setSubmitError(null);
+    initialPreloadDoneRef.current = false;
   };
 
   if (isSubmitting) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[var(--page-bg)] px-6">
+      <div className="flex h-dvh items-center justify-center bg-[var(--page-bg)] px-6">
         <p className="text-base font-semibold text-[var(--text-dark)]">
           Przeliczanie wyniku...
         </p>
@@ -255,8 +362,15 @@ export default function QuizDemoPage() {
 
   if (view === 'start') {
     return (
-      <div className="flex h-screen items-center justify-center bg-[var(--page-bg)]">
-        <QuizStart {...quizStartData} onStart={() => setView('question')} />
+      <div className="flex h-dvh items-center justify-center bg-[var(--page-bg)]">
+        <QuizStart
+          {...quizStartData}
+          onStart={() => {
+            setQuestionIndex(0);
+            initialPreloadDoneRef.current = false;
+            setView('question');
+          }}
+        />
       </div>
     );
   }
@@ -267,10 +381,12 @@ export default function QuizDemoPage() {
     if (currentQuestion.type === 'single') {
       questionView = (
         <SingleChoice
+          key={`q-${questionIndex}`}
           questionNumber={questionIndex + 1}
           totalQuestions={totalQuestions}
           time="--:--"
           question={currentQuestion.question}
+          questionImage={currentQuestion.image}
           answers={currentQuestion.answers}
           onSubmit={(selectedIndex) =>
             handleAnswerSubmit({ selected: [selectedIndex] })
@@ -282,11 +398,13 @@ export default function QuizDemoPage() {
     if (currentQuestion.type === 'multiple') {
       questionView = (
         <MultipleChoice
+          key={`q-${questionIndex}`}
           questionNumber={questionIndex + 1}
           totalQuestions={totalQuestions}
           time="--:--"
           question={currentQuestion.question}
           hint={currentQuestion.hint}
+          questionImage={currentQuestion.image}
           answers={currentQuestion.answers}
           onSubmit={(selectedIndices) =>
             handleAnswerSubmit({ selected: selectedIndices })
@@ -295,40 +413,10 @@ export default function QuizDemoPage() {
       );
     }
 
-    if (currentQuestion.type === 'image-question') {
-      questionView = (
-        <ImageQuestion
-          questionNumber={questionIndex + 1}
-          totalQuestions={totalQuestions}
-          time="--:--"
-          question={currentQuestion.question}
-          imageUrl={currentQuestion.imageUrl}
-          answers={currentQuestion.answers}
-          onSubmit={(selectedIndex) =>
-            handleAnswerSubmit({ selected: [selectedIndex] })
-          }
-        />
-      );
-    }
-
-    if (currentQuestion.type === 'image-answers') {
-      questionView = (
-        <ImageAnswers
-          questionNumber={questionIndex + 1}
-          totalQuestions={totalQuestions}
-          time="--:--"
-          question={currentQuestion.question}
-          answers={currentQuestion.answers}
-          onSubmit={(selectedIndex) =>
-            handleAnswerSubmit({ selected: [selectedIndex] })
-          }
-        />
-      );
-    }
-
     if (currentQuestion.type === 'ordering') {
       questionView = (
         <Ordering
+          key={`q-${questionIndex}`}
           questionNumber={questionIndex + 1}
           totalQuestions={totalQuestions}
           time="--:--"
@@ -343,6 +431,7 @@ export default function QuizDemoPage() {
     if (currentQuestion.type === 'slider') {
       questionView = (
         <SliderQuestion
+          key={`q-${questionIndex}`}
           questionNumber={questionIndex + 1}
           totalQuestions={totalQuestions}
           time="--:--"
@@ -362,6 +451,7 @@ export default function QuizDemoPage() {
     if (currentQuestion.type === 'range-slider') {
       questionView = (
         <RangeSlider
+          key={`q-${questionIndex}`}
           questionNumber={questionIndex + 1}
           totalQuestions={totalQuestions}
           time="--:--"
@@ -379,7 +469,7 @@ export default function QuizDemoPage() {
 
     if (!questionView) {
       return (
-        <div className="flex h-screen items-center justify-center bg-[var(--page-bg)] px-6">
+        <div className="flex h-dvh items-center justify-center bg-[var(--page-bg)] px-6">
           <p className="text-base font-semibold text-[var(--text-dark)]">
             Nieobsługiwany typ pytania.
           </p>
@@ -388,15 +478,13 @@ export default function QuizDemoPage() {
     }
 
     return (
-      <div className="flex h-screen items-center justify-center bg-[var(--page-bg)]">
-        <div className="flex flex-col items-center gap-3">
-          {questionView}
-          {submitError && (
-            <p className="text-sm font-medium text-[var(--wrong-fg)]">
-              {submitError}
-            </p>
-          )}
-        </div>
+      <div className="relative flex h-dvh justify-center overflow-hidden bg-[var(--page-bg)]">
+        {questionView}
+        {submitError && (
+          <p className="absolute right-3 bottom-3 left-3 rounded-xl border border-[var(--wrong-fg)] bg-[var(--wrong-bg)] px-3 py-2 text-center text-sm font-medium text-[var(--wrong-fg)]">
+            {submitError}
+          </p>
+        )}
       </div>
     );
   }
@@ -407,7 +495,7 @@ export default function QuizDemoPage() {
     ).length;
 
     return (
-      <div className="flex h-screen justify-center overflow-hidden bg-[var(--page-bg)]">
+      <div className="flex h-dvh justify-center overflow-hidden bg-[var(--page-bg)]">
         <AttemptReview
           correctCount={correctCount}
           wrongCount={result.reviewQuestions.length - correctCount}
@@ -421,7 +509,7 @@ export default function QuizDemoPage() {
 
   if (view === 'results' && result) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[var(--page-bg)]">
+      <div className="flex h-dvh justify-center overflow-hidden bg-[var(--page-bg)]">
         <QuizResults
           scorePercent={result.scorePercent}
           scorePoints={result.scorePoints}
@@ -436,7 +524,7 @@ export default function QuizDemoPage() {
   }
 
   return (
-    <div className="flex h-screen items-center justify-center bg-[var(--page-bg)]">
+    <div className="flex h-dvh items-center justify-center bg-[var(--page-bg)]">
       <p className="text-base font-semibold text-[var(--text-dark)]">
         Wystąpił błąd podczas ładowania quizu.
       </p>
