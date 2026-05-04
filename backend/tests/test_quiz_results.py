@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from main import app
+from quiz_results_service import MOCK_QUESTIONS
 
 client = TestClient(app)
 
@@ -69,3 +70,13 @@ def test_quiz_results_shows_review_when_env_enabled(monkeypatch) -> None:
 
     assert data["showAnswerReview"] is True
     assert len(data["reviewQuestions"]) == 7
+
+
+def test_quiz_results_mock_questions_use_supported_choice_types() -> None:
+    choice_types = {
+        question["type"]
+        for question in MOCK_QUESTIONS
+        if question["id"] in {1, 2, 3, 4}
+    }
+
+    assert choice_types <= {"single", "multiple"}
