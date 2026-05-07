@@ -19,7 +19,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=int,
         help="bcrypt cost factor to use (default: 12)",
     )
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if not 4 <= args.rounds <= 31:
+        parser.error(
+            "argument --rounds: bcrypt cost factor must be between 4 and 31 inclusive "
+            f"(got {args.rounds})",
+        )
+    return args
 
 
 def main(argv: list[str] | None = None) -> int:

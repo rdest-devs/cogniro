@@ -142,7 +142,6 @@ def test_admin_login_runs_password_verification_off_event_loop(
         admin_auth_route,
         "asyncio",
         types.SimpleNamespace(to_thread=fake_to_thread),
-        raising=False,
     )
 
     response = client.post(
@@ -227,6 +226,26 @@ def test_revoked_token_cache_prunes_expired_jtis() -> None:
 
     assert "expired-jti" not in admin_auth._revoked_jtis
     assert "active-jti" in admin_auth._revoked_jtis
+
+
+def test_revoke_token_jti_warns_and_falls_back_for_invalid_exp(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    import security.admin_auth as admin_auth
+
+    bad_exp = {"unexpected": "shape"}
+
+    with caplog.at_level(logging.WARNING, logger="security.admin_auth"):
+        admin_auth.revoke_token_jti("bad-exp-jti", bad_exp)
+
+    assert "bad-exp-jti" in admin_auth._revoked_jtis
+    assert admin_auth._revoked_jtis["bad-exp-jti"] > int(
+        datetime.now(timezone.utc).timestamp()
+    )
+    assert any(
+        "bad-exp-jti" in r.message and repr(bad_exp) in r.message
+        for r in caplog.records
+    )
 
 
 def test_admin_refresh_rejects_missing_cookie(client: TestClient) -> None:

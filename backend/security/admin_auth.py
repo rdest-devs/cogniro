@@ -22,6 +22,9 @@ _jwt_expire_minutes: int = 15
 _REFRESH_EXPIRE_DAYS_DEFAULT = 7
 _REFRESH_EXPIRE_DAYS_MAX = 30
 _refresh_expire_days: int = 7
+_REVOCATION_FALLBACK_TTL_SECONDS = int(
+    timedelta(days=_REFRESH_EXPIRE_DAYS_MAX).total_seconds()
+)
 # When true, refresh token is only sent over HTTPS (set in production).
 _refresh_cookie_secure: bool = False
 # lax | strict | none — use none for separate-site frontends (requires Secure; enforced below).
@@ -273,8 +276,19 @@ def revoke_token_jti(jti: str, exp: Any) -> None:
     """Mark a token `jti` as revoked until the token's original expiry."""
     _prune_revoked_jtis()
     expires_at = _jwt_exp_as_timestamp(exp)
-    if expires_at is not None:
-        _revoked_jtis[jti] = expires_at
+    if expires_at is None:
+        logger.warning(
+            "Invalid token exp while revoking jti %s: %r. Using fallback expiry.",
+            jti,
+            exp,
+        )
+        expires_at = int(
+            (
+                datetime.now(timezone.utc)
+                + timedelta(seconds=_REVOCATION_FALLBACK_TTL_SECONDS)
+            ).timestamp()
+        )
+    _revoked_jtis[jti] = expires_at
 
 
 def set_refresh_cookie(token: str, max_age_seconds: int) -> dict[str, object]:
