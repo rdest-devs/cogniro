@@ -45,13 +45,13 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## Environment variables
 
-For admin API integration (Quiz Editor), configure:
+Backend URL is shared by quiz-demo (`POST /quiz/results`), admin auth (`POST /admin/auth/login`, `POST /admin/auth/refresh`), and the admin quiz API (`GET /admin/quiz/all`, `GET`/`PUT /admin/quiz/{id}`, `POST /admin/quiz`). Paths are built with `joinApiUrl` and `BACKEND_BASE_URL` from `frontend/lib/backend-url.ts`. Configure:
 
 ```bash
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
 ```
 
-If not provided, frontend falls back to `/api`.
+If not provided, the frontend defaults to `http://localhost:8000` (same as quiz-demo).
 
 You can start editing the page by modifying `frontend/app/page.tsx`. The page auto-updates as you edit the file.
 

@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+import { BACKEND_BASE_URL, joinApiUrl } from '@/lib/backend-url';
+
 import {
   AttemptReview,
   ImageAnswers,
@@ -183,14 +185,14 @@ export default function QuizDemoPage() {
     setSubmitError(null);
 
     try {
-      const backendBaseUrl =
-        process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://127.0.0.1:8000';
-
-      const response = await fetch(`${backendBaseUrl}/quiz/results`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers }),
-      });
+      const response = await fetch(
+        joinApiUrl(BACKEND_BASE_URL, 'quiz/results'),
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ answers }),
+        },
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch quiz results (${response.status})`);

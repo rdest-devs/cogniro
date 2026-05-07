@@ -6,6 +6,11 @@ import type {
   AdminQuizSaveResponse,
   AdminQuizUpsertPayload,
 } from '@/app/types';
+import {
+  getStoredAdminToken,
+  refreshAdminToken,
+} from '@/lib/admin-auth/client';
+import { BACKEND_BASE_URL, joinApiUrl } from '@/lib/backend-url';
 
 import {
   adminQuizApiDetailsSchema,
@@ -13,10 +18,8 @@ import {
   adminQuizSaveResponseSchema,
 } from './schemas';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? '/api';
-const ADMIN_TOKEN_STORAGE_KEY = 'cogniro_admin_token';
-
 interface ApiErrorBody {
+  detail?: string;
   error?: string;
   reason?: string;
 }
@@ -30,27 +33,6 @@ export class AdminQuizApiError extends Error {
   ) {
     super(message);
     this.name = 'AdminQuizApiError';
-  }
-}
-
-function joinApiUrl(path: string): string {
-  const base = API_BASE_URL.endsWith('/')
-    ? API_BASE_URL.slice(0, -1)
-    : API_BASE_URL;
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return `${base}${normalizedPath}`;
-}
-
-function getAdminToken(): string | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  try {
-    const token = window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY)?.trim();
-    return token ? token : null;
-  } catch {
-    return null;
   }
 }
 
@@ -103,8 +85,9 @@ async function requestWithSchema<T>(
   path: string,
   schema: z.ZodSchema<T>,
   init?: RequestInit,
+  hasRetried = false,
 ): Promise<T> {
-  const token = getAdminToken();
+  const token = getStoredAdminToken();
   const headers = new Headers(init?.headers);
 
   if (init?.body !== undefined) {
@@ -114,7 +97,7 @@ async function requestWithSchema<T>(
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const response = await fetch(joinApiUrl(path), {
+  const response = await fetch(joinApiUrl(BACKEND_BASE_URL, path), {
     ...init,
     headers,
   });
@@ -124,11 +107,27 @@ async function requestWithSchema<T>(
 
   if (!response.ok) {
     const errorBody = (payload ?? {}) as ApiErrorBody;
+    if (
+      response.status === 401 &&
+      errorBody.detail === 'token_expired' &&
+      !hasRetried
+    ) {
+      try {
+        await refreshAdminToken();
+      } catch {
+        // fall through to regular auth error
+      }
+      const refreshedToken = getStoredAdminToken();
+      if (refreshedToken) {
+        return requestWithSchema(path, schema, init, true);
+      }
+    }
+
     throw new AdminQuizApiError(
       toApiErrorMessage(response.status),
       response.status,
-      errorBody.error,
-      errorBody.reason,
+      errorBody.detail ?? errorBody.error,
+      errorBody.reason ?? errorBody.detail,
     );
   }
 
@@ -144,7 +143,7 @@ async function requestWithSchema<T>(
 }
 
 export async function getAllAdminQuizzes(): Promise<AdminQuizApiListItem[]> {
-  return requestWithSchema('/admin/quiz/all', adminQuizApiListSchema, {
+  return requestWithSchema('admin/quiz/all', adminQuizApiListSchema, {
     method: 'GET',
   });
 }
@@ -153,7 +152,7 @@ export async function getAdminQuiz(
   quizId: string,
 ): Promise<AdminQuizApiDetails> {
   return requestWithSchema(
-    `/admin/quiz/${encodeURIComponent(quizId)}`,
+    `admin/quiz/${encodeURIComponent(quizId)}`,
     adminQuizApiDetailsSchema,
     {
       method: 'GET',
@@ -164,7 +163,7 @@ export async function getAdminQuiz(
 export async function createAdminQuiz(
   payload: AdminQuizUpsertPayload,
 ): Promise<AdminQuizSaveResponse> {
-  return requestWithSchema('/admin/quiz', adminQuizSaveResponseSchema, {
+  return requestWithSchema('admin/quiz', adminQuizSaveResponseSchema, {
     method: 'POST',
     body: JSON.stringify(payload),
   });
@@ -175,7 +174,7 @@ export async function updateAdminQuiz(
   payload: AdminQuizUpsertPayload,
 ): Promise<AdminQuizSaveResponse> {
   return requestWithSchema(
-    `/admin/quiz/${encodeURIComponent(quizId)}`,
+    `admin/quiz/${encodeURIComponent(quizId)}`,
     adminQuizSaveResponseSchema,
     {
       method: 'PUT',

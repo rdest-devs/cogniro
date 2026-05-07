@@ -2,8 +2,10 @@
 .DS_Store
 Thumbs.db
 
-# env files
-.env*
+# env files (do not ignore .env.example — safe template for the repo)
+.env
+.env.*
+!.env.example
 
 # IDE
 .vscode/*

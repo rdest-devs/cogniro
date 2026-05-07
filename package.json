@@ -6,6 +6,7 @@
     "prepare": "husky",
     "lint-staged": "lint-staged --concurrent false",
     "validate": "pnpm -C frontend validate && pnpm -C frontend build && uv run --project backend ruff check && uv run --project backend ruff format --check",
+    "test": "pnpm -C frontend test && uv run --project backend pytest",
     "fix": "pnpm -C frontend fix && uv run --project backend ruff check --fix && uv run --project backend ruff format"
   },
   "devDependencies": {

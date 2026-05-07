@@ -1,13 +1,10 @@
 from pathlib import Path
 import sys
 
+import pytest
 from fastapi.testclient import TestClient
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-
-from main import app
-
-client = TestClient(app)
 
 
 def _full_correct_payload() -> dict:
@@ -32,7 +29,7 @@ def _full_correct_payload() -> dict:
     }
 
 
-def test_quiz_results_returns_points_and_percentage() -> None:
+def test_quiz_results_returns_points_and_percentage(client: TestClient) -> None:
     response = client.post("/quiz/results", json=_full_correct_payload())
 
     assert response.status_code == 200
@@ -47,7 +44,10 @@ def test_quiz_results_returns_points_and_percentage() -> None:
     assert data["message"]
 
 
-def test_quiz_results_hides_review_when_env_disabled(monkeypatch) -> None:
+def test_quiz_results_hides_review_when_env_disabled(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("QUIZ_SHOW_ANSWER_REVIEW", "false")
 
     response = client.post("/quiz/results", json=_full_correct_payload())
@@ -59,7 +59,10 @@ def test_quiz_results_hides_review_when_env_disabled(monkeypatch) -> None:
     assert data["reviewQuestions"] == []
 
 
-def test_quiz_results_shows_review_when_env_enabled(monkeypatch) -> None:
+def test_quiz_results_shows_review_when_env_enabled(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("QUIZ_SHOW_ANSWER_REVIEW", "true")
 
     response = client.post("/quiz/results", json=_full_correct_payload())
