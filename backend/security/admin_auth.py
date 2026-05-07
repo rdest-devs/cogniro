@@ -31,7 +31,7 @@ def reload_admin_auth_config() -> None:
     """Load admin auth configuration values from environment variables.
 
     Behavior summary:
-    - Reads `ADMIN_PASSWORD` and hashes it in memory.
+    - Reads `ADMIN_PASSWORD_HASH`, a precomputed bcrypt hash.
     - Reads `JWT_SECRET` for signing and verifying admin tokens.
     - Reads `JWT_EXPIRE_MINUTES` for short-lived access tokens.
     - Reads `ADMIN_REFRESH_EXPIRE_DAYS` for refresh-token cookie lifetime.
@@ -40,14 +40,8 @@ def reload_admin_auth_config() -> None:
     global _password_hash, _jwt_secret, _jwt_expire_minutes
     global _refresh_expire_days, _refresh_cookie_secure
 
-    raw_pw = os.getenv("ADMIN_PASSWORD")
-    if raw_pw:
-        _password_hash = bcrypt.hashpw(
-            raw_pw.encode("utf-8"),
-            bcrypt.gensalt(),
-        )
-    else:
-        _password_hash = None
+    raw_password_hash = os.getenv("ADMIN_PASSWORD_HASH")
+    _password_hash = raw_password_hash.encode("utf-8") if raw_password_hash else None
 
     raw_jwt_secret = os.getenv("JWT_SECRET")
     _jwt_secret = raw_jwt_secret if raw_jwt_secret else None

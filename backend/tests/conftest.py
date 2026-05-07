@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from tests.auth_test_constants import TEST_ADMIN_JWT_SECRET, TEST_ADMIN_PASSWORD
+from tests.auth_test_constants import hash_admin_password
 
 from pathlib import Path
 from collections.abc import Iterator
@@ -24,7 +25,8 @@ def _admin_auth_per_test(monkeypatch: pytest.MonkeyPatch) -> None:
         reload_admin_auth_config,
     )
 
-    monkeypatch.setenv("ADMIN_PASSWORD", TEST_ADMIN_PASSWORD)
+    monkeypatch.setenv("ADMIN_PASSWORD_HASH", hash_admin_password(TEST_ADMIN_PASSWORD))
+    monkeypatch.delenv("ADMIN_PASSWORD", raising=False)
     monkeypatch.setenv("JWT_SECRET", TEST_ADMIN_JWT_SECRET)
     monkeypatch.delenv("ADMIN_REFRESH_COOKIE_SECURE", raising=False)
     monkeypatch.delenv("ADMIN_REFRESH_EXPIRE_DAYS", raising=False)

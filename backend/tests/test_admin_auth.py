@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from security.admin_auth import reload_admin_auth_config
 from tests.auth_test_constants import TEST_ADMIN_JWT_SECRET as _JWT_SECRET
 from tests.auth_test_constants import TEST_ADMIN_PASSWORD
+from tests.auth_test_constants import hash_admin_password
 
 _REFRESH_COOKIE_NAME = "admin_refresh_token"
 
@@ -148,7 +149,7 @@ def test_admin_login_rejects_wrong_password(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("ADMIN_PASSWORD", "only-this-one")
+    monkeypatch.setenv("ADMIN_PASSWORD_HASH", hash_admin_password("only-this-one"))
     reload_admin_auth_config()
     response = client.post(
         "/admin/auth/login",
@@ -162,7 +163,7 @@ def test_admin_login_preserves_password_whitespace(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("ADMIN_PASSWORD", "space-sensitive")
+    monkeypatch.setenv("ADMIN_PASSWORD_HASH", hash_admin_password("space-sensitive"))
     reload_admin_auth_config()
     response = client.post(
         "/admin/auth/login",
@@ -176,7 +177,10 @@ def test_admin_login_uses_password_env_verbatim(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("ADMIN_PASSWORD", " space-sensitive ")
+    monkeypatch.setenv(
+        "ADMIN_PASSWORD_HASH",
+        hash_admin_password(" space-sensitive "),
+    )
     reload_admin_auth_config()
     response = client.post(
         "/admin/auth/login",
@@ -231,7 +235,10 @@ def test_admin_logout_revokes_token(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("ADMIN_PASSWORD", "logout-test-password")
+    monkeypatch.setenv(
+        "ADMIN_PASSWORD_HASH",
+        hash_admin_password("logout-test-password"),
+    )
     reload_admin_auth_config()
 
     login = client.post(
