@@ -1,3 +1,6 @@
+import logging
+from datetime import datetime, timedelta, timezone
+
 import pytest
 import jwt
 from fastapi.testclient import TestClient
@@ -8,6 +11,43 @@ from tests.auth_test_constants import TEST_ADMIN_PASSWORD
 from tests.auth_test_constants import hash_admin_password
 
 _REFRESH_COOKIE_NAME = "admin_refresh_token"
+
+
+def test_reload_admin_auth_logs_warning_when_jwt_secret_missing(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    monkeypatch.delenv("JWT_SECRET", raising=False)
+    monkeypatch.delenv("ENVIRONMENT", raising=False)
+    monkeypatch.delenv("ENV", raising=False)
+    with caplog.at_level(logging.WARNING, logger="security.admin_auth"):
+        reload_admin_auth_config()
+    assert any("JWT_SECRET" in r.message for r in caplog.records)
+
+
+def test_reload_admin_auth_logs_warning_when_password_hash_missing(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    monkeypatch.delenv("ADMIN_PASSWORD_HASH", raising=False)
+    monkeypatch.delenv("ENVIRONMENT", raising=False)
+    monkeypatch.delenv("ENV", raising=False)
+    with caplog.at_level(logging.WARNING, logger="security.admin_auth"):
+        reload_admin_auth_config()
+    assert any("ADMIN_PASSWORD_HASH" in r.message for r in caplog.records)
+
+
+def test_reload_admin_auth_fails_fast_in_production_when_jwt_secret_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.delenv("JWT_SECRET", raising=False)
+    monkeypatch.setenv(
+        "ADMIN_PASSWORD_HASH",
+        hash_admin_password("irrelevant-for-this-test"),
+    )
+    with pytest.raises(RuntimeError, match="JWT_SECRET"):
+        reload_admin_auth_config()
 
 
 def test_admin_login_returns_token(client: TestClient) -> None:
@@ -33,6 +73,55 @@ def test_admin_login_sets_refresh_cookie(client: TestClient) -> None:
     assert f"{_REFRESH_COOKIE_NAME}=" in set_cookie_header
     assert "HttpOnly" in set_cookie_header
     assert "Secure" not in set_cookie_header
+    assert "samesite=lax" in set_cookie_header.lower()
+
+
+def test_admin_login_refresh_cookie_samesite_strict(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("ADMIN_REFRESH_COOKIE_SAMESITE", "strict")
+    reload_admin_auth_config()
+    response = client.post(
+        "/admin/auth/login",
+        json={"password": TEST_ADMIN_PASSWORD},
+    )
+    assert response.status_code == 200
+    set_cookie_header = response.headers.get("set-cookie", "")
+    assert "samesite=strict" in set_cookie_header.lower()
+
+
+def test_admin_login_refresh_cookie_samesite_none_enables_secure(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    monkeypatch.setenv("ADMIN_REFRESH_COOKIE_SAMESITE", "none")
+    monkeypatch.delenv("ADMIN_REFRESH_COOKIE_SECURE", raising=False)
+    with caplog.at_level(logging.WARNING, logger="security.admin_auth"):
+        reload_admin_auth_config()
+    assert any("SameSite=None requires Secure" in r.message for r in caplog.records)
+    response = client.post(
+        "/admin/auth/login",
+        json={"password": TEST_ADMIN_PASSWORD},
+    )
+    assert response.status_code == 200
+    set_cookie_header = response.headers.get("set-cookie", "")
+    assert "samesite=none" in set_cookie_header.lower()
+    assert "Secure" in set_cookie_header
+
+
+def test_reload_admin_auth_invalid_samesite_logs_warning(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    monkeypatch.setenv("ADMIN_REFRESH_COOKIE_SAMESITE", "invalid")
+    monkeypatch.delenv("ENVIRONMENT", raising=False)
+    monkeypatch.delenv("ENV", raising=False)
+    with caplog.at_level(logging.WARNING, logger="security.admin_auth"):
+        reload_admin_auth_config()
+    assert any(
+        "Invalid ADMIN_REFRESH_COOKIE_SAMESITE" in r.message for r in caplog.records
+    )
 
 
 def test_admin_login_runs_password_verification_off_event_loop(
@@ -122,6 +211,24 @@ def test_admin_refresh_rejects_reused_refresh_token(client: TestClient) -> None:
     assert replayed.json()["detail"] == "token_revoked"
 
 
+def test_revoked_token_cache_prunes_expired_jtis() -> None:
+    import security.admin_auth as admin_auth
+
+    now = datetime.now(timezone.utc)
+    admin_auth._revoked_jtis["expired-jti"] = int(
+        (now - timedelta(seconds=1)).timestamp(),
+    )
+    admin_auth._revoked_jtis["active-jti"] = int(
+        (now + timedelta(minutes=5)).timestamp(),
+    )
+
+    token, _ = admin_auth.create_access_token()
+    admin_auth.decode_admin_token(token)
+
+    assert "expired-jti" not in admin_auth._revoked_jtis
+    assert "active-jti" in admin_auth._revoked_jtis
+
+
 def test_admin_refresh_rejects_missing_cookie(client: TestClient) -> None:
     response = client.post("/admin/auth/refresh")
     assert response.status_code == 401
@@ -208,6 +315,54 @@ def test_admin_tokens_use_jwt_secret_env_verbatim(
     assert claims["typ"] == "access"
     with pytest.raises(jwt.InvalidSignatureError):
         jwt.decode(token, jwt_secret.strip(), algorithms=["HS256"])
+
+
+def test_access_lifetime_is_capped_at_60_minutes(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("JWT_EXPIRE_MINUTES", "99999999")
+    reload_admin_auth_config()
+
+    response = client.post(
+        "/admin/auth/login",
+        json={"password": TEST_ADMIN_PASSWORD},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["expires_in"] == 60 * 60
+    claims = jwt.decode(
+        data["access_token"],
+        _JWT_SECRET,
+        algorithms=["HS256"],
+        options={"verify_exp": False},
+    )
+    assert claims["exp"] - claims["iat"] == 60 * 60
+
+
+def test_refresh_lifetime_is_capped_at_30_days(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ADMIN_REFRESH_EXPIRE_DAYS", "99999999")
+    reload_admin_auth_config()
+
+    response = client.post(
+        "/admin/auth/login",
+        json={"password": TEST_ADMIN_PASSWORD},
+    )
+
+    assert response.status_code == 200
+    refresh_token = client.cookies.get(_REFRESH_COOKIE_NAME)
+    assert refresh_token is not None
+    claims = jwt.decode(
+        refresh_token,
+        _JWT_SECRET,
+        algorithms=["HS256"],
+        options={"verify_exp": False},
+    )
+    assert claims["exp"] - claims["iat"] == 30 * 24 * 60 * 60
 
 
 def test_admin_quiz_requires_auth(client: TestClient) -> None:

@@ -56,7 +56,7 @@ async def admin_auth_refresh(
         )
 
     refresh_claims = decode_admin_token(refresh_token, expected_type="refresh")
-    revoke_token_jti(refresh_claims["jti"])
+    revoke_token_jti(refresh_claims["jti"], refresh_claims.get("exp"))
     access_token, access_expires_in = create_access_token()
     rotated_refresh_token, refresh_max_age = create_refresh_token()
     response.set_cookie(**set_refresh_cookie(rotated_refresh_token, refresh_max_age))
@@ -80,7 +80,7 @@ async def admin_auth_logout(
         except HTTPException:
             pass
         else:
-            revoke_token_jti(claims["jti"])
+            revoke_token_jti(claims["jti"], claims.get("exp"))
 
     refresh_token = request.cookies.get(REFRESH_COOKIE_NAME)
     if refresh_token:
@@ -89,7 +89,7 @@ async def admin_auth_logout(
         except HTTPException:
             pass
         else:
-            revoke_token_jti(refresh_claims["jti"])
+            revoke_token_jti(refresh_claims["jti"], refresh_claims.get("exp"))
 
     response.delete_cookie(**clear_refresh_cookie())
     return AdminLogoutResponse(ok=True)

@@ -29,6 +29,7 @@ def _admin_auth_per_test(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("ADMIN_PASSWORD", raising=False)
     monkeypatch.setenv("JWT_SECRET", TEST_ADMIN_JWT_SECRET)
     monkeypatch.delenv("ADMIN_REFRESH_COOKIE_SECURE", raising=False)
+    monkeypatch.delenv("ADMIN_REFRESH_COOKIE_SAMESITE", raising=False)
     monkeypatch.delenv("ADMIN_REFRESH_EXPIRE_DAYS", raising=False)
     monkeypatch.delenv("JWT_EXPIRE_MINUTES", raising=False)
 
