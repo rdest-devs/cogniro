@@ -54,6 +54,7 @@ app.include_router(nick_router)
 app.include_router(media_router)
 
 
+
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok"}
