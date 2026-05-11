@@ -1,4 +1,5 @@
 """Pytest configuration for the FastAPI backend."""
+
 from __future__ import annotations
 
 from tests.auth_test_constants import TEST_ADMIN_JWT_SECRET, TEST_ADMIN_PASSWORD

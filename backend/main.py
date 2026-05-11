@@ -58,6 +58,7 @@ app.add_middleware(
 app.include_router(admin_auth_router, prefix="/admin")
 app.include_router(nick_router)
 
+
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok"}

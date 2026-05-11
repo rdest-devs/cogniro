@@ -8,6 +8,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from quiz_results_service import MOCK_QUESTIONS
 
+
 def _full_correct_payload() -> dict:
     return {
         "answers": [
