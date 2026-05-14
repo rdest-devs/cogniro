@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { resolveMediaUrl } from '@/lib/media-url';
 import { BACKEND_BASE_URL, joinApiUrl } from '@/lib/backend-url';
+import { resolveMediaUrl } from '@/lib/media-url';
 
 import {
   AttemptReview,
