@@ -15,7 +15,7 @@ def _full_correct_payload() -> dict:
         "answers": [
             {"questionId": 1, "selected": [1]},
             {"questionId": 2, "selected": [0, 2]},
-            {"questionId": 3, "selected": [1]},
+            {"questionId": 3, "selected": [0]},
             {"questionId": 4, "selected": [2]},
             {
                 "questionId": 5,

@@ -141,6 +141,26 @@ function getErrorMessage(errorBody: ApiErrorBody, fallback: string): string {
   return fallback;
 }
 
+async function tryRefreshOn401(
+  response: Response,
+  errorBody: ApiErrorBody,
+  hasRetried: boolean,
+): Promise<boolean> {
+  if (
+    response.status !== 401 ||
+    errorBody.detail !== 'token_expired' ||
+    hasRetried
+  ) {
+    return false;
+  }
+  try {
+    await refreshAdminToken();
+  } catch {
+    return false;
+  }
+  return Boolean(getStoredAdminToken());
+}
+
 async function requestWithSchema<T>(
   path: string,
   schema: z.ZodSchema<T>,
@@ -169,20 +189,8 @@ async function requestWithSchema<T>(
     const errorBody = (payload ?? {}) as ApiErrorBody;
     const detailCode =
       typeof errorBody.detail === 'string' ? errorBody.detail : undefined;
-    if (
-      response.status === 401 &&
-      errorBody.detail === 'token_expired' &&
-      !hasRetried
-    ) {
-      try {
-        await refreshAdminToken();
-      } catch {
-        // fall through to regular auth error
-      }
-      const refreshedToken = getStoredAdminToken();
-      if (refreshedToken) {
-        return requestWithSchema(path, schema, init, true);
-      }
+    if (await tryRefreshOn401(response, errorBody, hasRetried)) {
+      return requestWithSchema(path, schema, init, true);
     }
 
     throw new AdminQuizApiError(
@@ -269,25 +277,11 @@ export async function uploadAdminAsset(
 
   if (!response.ok) {
     const errorBody = (payload ?? {}) as ApiErrorBody;
+    if (await tryRefreshOn401(response, errorBody, hasRetried)) {
+      return uploadAdminAsset(file, true);
+    }
     const detailCode =
       typeof errorBody.detail === 'string' ? errorBody.detail : undefined;
-
-    if (
-      response.status === 401 &&
-      errorBody.detail === 'token_expired' &&
-      !hasRetried
-    ) {
-      try {
-        await refreshAdminToken();
-      } catch {
-        // fall through to regular auth error
-      }
-
-      if (getStoredAdminToken()) {
-        return uploadAdminAsset(file, true);
-      }
-    }
-
     throw new AdminQuizApiError(
       getErrorMessage(errorBody, toAssetUploadErrorMessage(response.status)),
       response.status,
