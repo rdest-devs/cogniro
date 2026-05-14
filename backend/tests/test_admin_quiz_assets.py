@@ -11,6 +11,8 @@ from PIL import Image
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
+import media_asset_service
+import settings
 from main import app
 from tests.auth_test_constants import TEST_ADMIN_PASSWORD
 
@@ -51,10 +53,19 @@ def _admin_headers(client: TestClient) -> dict[str, str]:
     return {"Authorization": f"Bearer {response.json()['access_token']}"}
 
 
+def _patch_media_prefix(monkeypatch) -> str:
+    prefix = settings.normalize_media_public_prefix(
+        settings.DEFAULT_MEDIA_PUBLIC_PREFIX
+    )
+    monkeypatch.setattr(settings, "MEDIA_PUBLIC_PREFIX", prefix)
+    monkeypatch.setattr(media_asset_service, "MEDIA_PUBLIC_PREFIX", prefix)
+    return prefix
+
+
 def test_startup_initializes_storage(monkeypatch, tmp_path: Path) -> None:
     data_dir = tmp_path / "data"
     monkeypatch.setenv("COGNIRO_DATA_DIR", str(data_dir))
-    monkeypatch.delenv("MEDIA_PUBLIC_PREFIX", raising=False)
+    _patch_media_prefix(monkeypatch)
 
     with TestClient(app):
         quizzes_file = data_dir / "quizzes" / "quizzes.json"
@@ -165,7 +176,7 @@ def test_admin_quiz_rejects_blank_title(monkeypatch, tmp_path: Path) -> None:
 def test_admin_assets_upload_and_processing(monkeypatch, tmp_path: Path) -> None:
     data_dir = tmp_path / "data"
     monkeypatch.setenv("COGNIRO_DATA_DIR", str(data_dir))
-    monkeypatch.delenv("MEDIA_PUBLIC_PREFIX", raising=False)
+    media_prefix = _patch_media_prefix(monkeypatch)
 
     png_bytes = _create_png_bytes(1200, 800)
 
@@ -183,8 +194,8 @@ def test_admin_assets_upload_and_processing(monkeypatch, tmp_path: Path) -> None
         assert payload["assetId"].startswith("asset_")
         assert payload["url"].endswith("/image.webp")
         assert payload["thumbUrl"].endswith("/thumb.webp")
-        assert payload["url"].startswith("/media/quiz-assets/")
-        assert payload["thumbUrl"].startswith("/media/quiz-assets/")
+        assert payload["url"].startswith(f"{media_prefix}/")
+        assert payload["thumbUrl"].startswith(f"{media_prefix}/")
         assert payload["width"] <= 720
         assert payload["height"] > 0
         assert payload["alt"] == ""
