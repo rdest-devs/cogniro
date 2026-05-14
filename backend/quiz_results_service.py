@@ -194,8 +194,7 @@ def calculate_quiz_results(payload: QuizResultsRequest) -> QuizResultsResponse:
             is_correct, review_answers = _build_numeric_review(question, value)
         else:
             raise HTTPException(
-                status_code=400,
-                detail=f"Unknown question type: {question['type']}",
+                status_code=400, detail=f"Nieznany typ pytania: {question['type']}"
             )
 
         if is_correct:
