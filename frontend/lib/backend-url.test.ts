@@ -34,3 +34,10 @@ test('joinApiUrl joins base URLs and paths with one slash', () => {
     'http://localhost:8000/admin/auth/refresh',
   );
 });
+
+test('joinApiUrl trims trailing /api for legacy base URLs', () => {
+  assert.equal(
+    joinApiUrl('http://localhost:8000/api', '/admin/auth/refresh'),
+    'http://localhost:8000/admin/auth/refresh',
+  );
+});

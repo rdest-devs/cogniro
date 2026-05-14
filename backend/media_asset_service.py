@@ -5,8 +5,9 @@ from pathlib import Path, PurePosixPath
 import uuid
 
 from fastapi import FastAPI, HTTPException, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 
 from models import QuizAssetUploadResponse
@@ -24,8 +25,10 @@ _ALLOWED_PILLOW_FORMATS = {"JPEG", "PNG", "WEBP"}
 
 def _is_safe_asset_path(asset_path: str) -> bool:
     """Reject path components that could escape the uploads directory."""
-    parts = PurePosixPath(asset_path).parts
-    return all(part != ".." and part != "." for part in parts)
+    path = PurePosixPath(asset_path)
+    if path.is_absolute():
+        return False
+    return all(part != ".." and part != "." for part in path.parts)
 
 
 def _assert_relative_to(resolved: Path, base: Path) -> None:
@@ -35,10 +38,17 @@ def _assert_relative_to(resolved: Path, base: Path) -> None:
         raise HTTPException(status_code=404, detail="Nie znaleziono zasobu.") from exc
 
 
+def _wants_alpha(source: Image.Image) -> bool:
+    return source.mode in {"RGBA", "LA"} or (
+        source.mode == "P" and "transparency" in source.info
+    )
+
+
 def resize_to_webp_bytes(
     source: Image.Image, *, max_width: int, quality: int
 ) -> tuple[bytes, int, int]:
-    image = source.convert("RGB")
+    oriented = ImageOps.exif_transpose(source)
+    image = oriented.convert("RGBA" if _wants_alpha(oriented) else "RGB")
 
     if image.width > max_width:
         ratio = max_width / image.width
@@ -74,17 +84,7 @@ async def _read_upload_with_limit(file: UploadFile, max_bytes: int) -> bytes:
     return b"".join(chunks)
 
 
-async def upload_asset(app: FastAPI, file: UploadFile) -> QuizAssetUploadResponse:
-    # NOTE: content_type is client-supplied; real format validation happens
-    # after Pillow opens the image (see _ALLOWED_PILLOW_FORMATS check below).
-    if file.content_type not in ALLOWED_UPLOAD_MIME_TYPES:
-        raise HTTPException(
-            status_code=400,
-            detail="Nieprawidłowy typ pliku. Dozwolone typy plików: JPEG, PNG, WebP.",
-        )
-
-    raw_data = await _read_upload_with_limit(file, MAX_UPLOAD_BYTES)
-
+def _process_upload_bytes(app: FastAPI, raw_data: bytes) -> QuizAssetUploadResponse:
     try:
         source = Image.open(BytesIO(raw_data))
         if source.format not in _ALLOWED_PILLOW_FORMATS:
@@ -140,6 +140,19 @@ async def upload_asset(app: FastAPI, file: UploadFile) -> QuizAssetUploadRespons
         height=image_height,
         alt="",
     )
+
+
+async def upload_asset(app: FastAPI, file: UploadFile) -> QuizAssetUploadResponse:
+    # NOTE: content_type is client-supplied; real format validation happens
+    # after Pillow opens the image (see _ALLOWED_PILLOW_FORMATS check below).
+    if file.content_type not in ALLOWED_UPLOAD_MIME_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail="Nieprawidłowy typ pliku. Dozwolone typy plików: JPEG, PNG, WebP.",
+        )
+
+    raw_data = await _read_upload_with_limit(file, MAX_UPLOAD_BYTES)
+    return await run_in_threadpool(_process_upload_bytes, app, raw_data)
 
 
 def serve_asset(app: FastAPI, asset_path: str) -> FileResponse:

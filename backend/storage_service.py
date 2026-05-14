@@ -151,7 +151,12 @@ def to_stored_quiz(
         "show_answers_after": payload.show_answers_after,
         "show_leaderboard_after": payload.show_leaderboard_after,
         "questions": [
-            question.model_dump(mode="json", by_alias=True, exclude_none=True)
+            question.model_dump(
+                mode="json",
+                by_alias=True,
+                exclude_none=True,
+                exclude={"id": True, "answers": {"__all__": {"id"}}},
+            )
             for question in payload.questions
         ],
     }
