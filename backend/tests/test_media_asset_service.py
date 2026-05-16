@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import os
 from pathlib import Path
 import sys
 import threading
@@ -14,7 +15,11 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 import services.media_assets as media_assets_service
 from schemas.admin_quiz import QuizAssetUploadResponse
-from services.media_assets import _is_safe_asset_path, resize_to_webp_bytes
+from services.media_assets import (
+    _is_safe_asset_path,
+    cleanup_orphaned_assets,
+    resize_to_webp_bytes,
+)
 from services.storage import initialize_storage
 
 
@@ -101,3 +106,66 @@ async def test_upload_asset_runs_in_threadpool(
 
     assert response.assetId == "asset_test"
     assert worker_thread["id"] != main_thread
+
+
+def test_cleanup_orphaned_assets_keeps_referenced_and_recent(monkeypatch, tmp_path: Path) -> None:
+    app = FastAPI()
+    monkeypatch.setenv("COGNIRO_DATA_DIR", str(tmp_path))
+    app.state.storage = initialize_storage()
+
+    uploads_dir = app.state.storage.uploads_quiz_assets_dir
+    referenced = uploads_dir / "asset_referenced"
+    stale_orphan = uploads_dir / "asset_stale_orphan"
+    fresh_orphan = uploads_dir / "asset_fresh_orphan"
+
+    referenced.mkdir()
+    stale_orphan.mkdir()
+    fresh_orphan.mkdir()
+
+    old_mtime = 900.0
+    new_mtime = 980.0
+    os.utime(referenced, (old_mtime, old_mtime))
+    os.utime(stale_orphan, (old_mtime, old_mtime))
+    os.utime(fresh_orphan, (new_mtime, new_mtime))
+
+    removed = cleanup_orphaned_assets(
+        app,
+        quizzes=[
+            {
+                "questions": [
+                    {
+                        "image": {"assetId": "asset_referenced"},
+                        "answers": [],
+                    }
+                ]
+            }
+        ],
+        now_timestamp=1000.0,
+        min_age_seconds=50,
+    )
+
+    assert removed == 1
+    assert referenced.exists()
+    assert fresh_orphan.exists()
+    assert not stale_orphan.exists()
+
+
+def test_cleanup_orphaned_assets_handles_directory_listing_errors(
+    monkeypatch, tmp_path: Path
+) -> None:
+    app = FastAPI()
+    monkeypatch.setenv("COGNIRO_DATA_DIR", str(tmp_path))
+    app.state.storage = initialize_storage()
+
+    target_dir = app.state.storage.uploads_quiz_assets_dir
+    real_iterdir = Path.iterdir
+
+    def _iterdir_with_failure(path: Path):
+        if path == target_dir:
+            raise OSError("simulated listing failure")
+        return real_iterdir(path)
+
+    monkeypatch.setattr(Path, "iterdir", _iterdir_with_failure)
+
+    removed = cleanup_orphaned_assets(app, quizzes=[])
+    assert removed == 0

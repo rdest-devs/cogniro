@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI, HTTPException
 
 from schemas.admin_quiz import AdminQuizUpsertPayload
+from services.media_assets import cleanup_orphaned_assets
 from services.storage import (
     QUIZ_WRITE_LOCK,
     find_quiz_index,
@@ -58,6 +59,7 @@ def create_quiz(app: FastAPI, payload: AdminQuizUpsertPayload) -> dict[str, str]
         stored_quiz = to_stored_quiz(payload)
         quizzes.append(stored_quiz)
         write_quizzes_payload_atomic(storage.quizzes_file, stored_payload)
+        cleanup_orphaned_assets(app, quizzes)
 
     return {"id": stored_quiz["id"]}
 
@@ -85,5 +87,6 @@ def update_quiz(
             participants_count=_safe_int(existing.get("participants_count", 0)),
         )
         write_quizzes_payload_atomic(storage.quizzes_file, stored_payload)
+        cleanup_orphaned_assets(app, quizzes)
 
     return {"id": quiz_id}

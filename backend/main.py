@@ -7,15 +7,15 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routes.admin_auth import router as admin_auth_router
-from routes.admin_quiz import router as admin_quiz_router
-from routes.media import router as media_router
-from routes.nick import router as nick_router
-from routes.user import router as user_router
-from security.admin_auth import reload_admin_auth_config
-from services.storage import initialize_storage
-
 load_dotenv()
+
+from routes.admin_auth import router as admin_auth_router  # noqa: E402
+from routes.admin_quiz import router as admin_quiz_router  # noqa: E402
+from routes.media import router as media_router  # noqa: E402
+from routes.nick import router as nick_router  # noqa: E402
+from routes.user import router as user_router  # noqa: E402
+from security.admin_auth import reload_admin_auth_config  # noqa: E402
+from services.storage import initialize_storage  # noqa: E402
 
 _DEFAULT_CORS_ORIGINS = [
     "http://localhost:3000",

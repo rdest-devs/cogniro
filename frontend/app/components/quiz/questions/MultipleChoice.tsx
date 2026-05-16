@@ -33,6 +33,7 @@ export default function MultipleChoice({
   onSubmit,
 }: MultipleChoiceProps) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const groupAriaLabel = question.trim() || 'Wybór wielu odpowiedzi';
   const normalizedAnswers = useMemo(
     () =>
       answers.map((answer) =>
@@ -63,7 +64,7 @@ export default function MultipleChoice({
         imageLoading="eager"
       />
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3" role="group" aria-label={groupAriaLabel}>
         {normalizedAnswers.map((answer, i) => {
           const hasImage = Boolean(answer.image);
           const label = answer.text?.trim() || `Odpowiedź ${i + 1}`;
@@ -83,6 +84,9 @@ export default function MultipleChoice({
             <button
               key={`${i}-${label}`}
               type="button"
+              role="checkbox"
+              aria-checked={selected.has(i)}
+              aria-label={label}
               onClick={() => toggle(i)}
               className={cn(
                 'cursor-pointer rounded-2xl border p-3 text-left transition-colors',

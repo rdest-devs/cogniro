@@ -19,12 +19,16 @@ export default function QuestionCard({
   imageLoading = 'lazy',
 }: QuestionCardProps) {
   const shouldRenderLegacyImage = Boolean(imageUrl) && !image;
+  const normalizedQuestion = question.trim();
+  const headingText = normalizedQuestion || (image ? 'Pytanie obrazkowe' : '');
 
   return (
     <div className="flex w-full flex-col gap-2 rounded-2xl bg-[var(--card-bg)] p-5">
-      <h2 className="text-lg leading-[1.4] font-bold text-[var(--text-dark)]">
-        {question}
-      </h2>
+      {headingText && (
+        <h2 className="text-lg leading-[1.4] font-bold text-[var(--text-dark)]">
+          {headingText}
+        </h2>
+      )}
       {hint && (
         <p className="text-[13px] font-normal text-[var(--text-muted)]">
           {hint}
@@ -46,7 +50,7 @@ export default function QuestionCard({
           src={resolveMediaUrl(image.url)}
           width={image.width}
           height={image.height}
-          alt={image.alt || 'Question image'}
+          alt={image.alt ?? ''}
           loading={imageLoading}
           decoding="async"
           className="mt-2 w-full rounded-2xl object-contain"

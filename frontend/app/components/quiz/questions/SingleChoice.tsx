@@ -31,6 +31,7 @@ export default function SingleChoice({
   onSubmit,
 }: SingleChoiceProps) {
   const [selected, setSelected] = useState<number | null>(null);
+  const groupAriaLabel = question.trim() || 'Wybór jednej odpowiedzi';
   const normalizedAnswers = useMemo(
     () =>
       answers.map((answer) =>
@@ -51,7 +52,7 @@ export default function SingleChoice({
         imageLoading="eager"
       />
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3" role="radiogroup" aria-label={groupAriaLabel}>
         {normalizedAnswers.map((answer, i) => {
           const hasImage = Boolean(answer.image);
           const label = answer.text?.trim() || `Odpowiedź ${i + 1}`;
@@ -71,6 +72,9 @@ export default function SingleChoice({
             <button
               key={`${i}-${label}`}
               type="button"
+              role="radio"
+              aria-checked={selected === i}
+              aria-label={label}
               onClick={() => setSelected(i)}
               className={cn(
                 'cursor-pointer rounded-2xl border p-3 text-left transition-colors',
