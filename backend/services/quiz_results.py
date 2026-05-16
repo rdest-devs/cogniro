@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from fastapi import HTTPException
 
-from models import (
+from core.settings import env_bool
+from schemas.user import (
     QuizResultsRequest,
     QuizResultsResponse,
     ReviewAnswer,
     ReviewQuestion,
 )
-from settings import env_bool
 
 MOCK_QUESTIONS = [
     {

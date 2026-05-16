@@ -12,10 +12,10 @@ from starlette.datastructures import Headers
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-import media_asset_service
-from media_asset_service import _is_safe_asset_path, resize_to_webp_bytes
-from models import QuizAssetUploadResponse
-from storage_service import initialize_storage
+import services.media_assets as media_assets_service
+from schemas.admin_quiz import QuizAssetUploadResponse
+from services.media_assets import _is_safe_asset_path, resize_to_webp_bytes
+from services.storage import initialize_storage
 
 
 def _transparent_png_bytes() -> bytes:
@@ -89,7 +89,7 @@ async def test_upload_asset_runs_in_threadpool(
             alt="",
         )
 
-    monkeypatch.setattr(media_asset_service, "_process_upload_bytes", _fake_process)
+    monkeypatch.setattr(media_assets_service, "_process_upload_bytes", _fake_process)
 
     upload = UploadFile(
         file=io.BytesIO(_small_png_bytes()),
@@ -97,7 +97,7 @@ async def test_upload_asset_runs_in_threadpool(
         headers=Headers({"content-type": "image/png"}),
     )
 
-    response = await media_asset_service.upload_asset(app, upload)
+    response = await media_assets_service.upload_asset(app, upload)
 
     assert response.assetId == "asset_test"
     assert worker_thread["id"] != main_thread
