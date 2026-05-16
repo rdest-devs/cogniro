@@ -9,16 +9,15 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
 from PIL import Image, ImageOps, UnidentifiedImageError
 
-
-from models import QuizAssetUploadResponse
-from settings import (
+from core.settings import (
     ALLOWED_UPLOAD_MIME_TYPES,
     MAX_IMAGE_PIXELS,
     MAX_UPLOAD_BYTES,
     MEDIA_PUBLIC_PREFIX,
     UPLOAD_CHUNK_SIZE,
 )
-from storage_service import get_storage
+from schemas.admin_quiz import QuizAssetUploadResponse
+from services.storage import get_storage
 
 _ALLOWED_PILLOW_FORMATS = {"JPEG", "PNG", "WEBP"}
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
 import os
@@ -10,8 +11,18 @@ import uuid
 
 from fastapi import FastAPI, HTTPException
 
-from models import AdminQuizUpsertPayload, StoragePaths
-from settings import DEFAULT_DATA_DIR, QUIZZES_FILENAME
+from core.settings import DEFAULT_DATA_DIR, QUIZZES_FILENAME
+from schemas.admin_quiz import AdminQuizUpsertPayload
+
+
+@dataclass
+class StoragePaths:
+    data_dir: Path
+    quizzes_dir: Path
+    quizzes_file: Path
+    uploads_dir: Path
+    uploads_quiz_assets_dir: Path
+
 
 # NOTE: This in-process lock only serializes writes within a single worker.
 # If running with multiple uvicorn workers (--workers N), use file-based

@@ -11,8 +11,8 @@ from PIL import Image
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-import media_asset_service
-import settings
+from core import settings
+import services.media_assets as media_assets_service
 from main import app
 from tests.auth_test_constants import TEST_ADMIN_PASSWORD
 
@@ -58,7 +58,7 @@ def _patch_media_prefix(monkeypatch) -> str:
         settings.DEFAULT_MEDIA_PUBLIC_PREFIX
     )
     monkeypatch.setattr(settings, "MEDIA_PUBLIC_PREFIX", prefix)
-    monkeypatch.setattr(media_asset_service, "MEDIA_PUBLIC_PREFIX", prefix)
+    monkeypatch.setattr(media_assets_service, "MEDIA_PUBLIC_PREFIX", prefix)
     return prefix
 
 
@@ -273,7 +273,7 @@ def test_admin_assets_rejects_too_many_pixels(monkeypatch, tmp_path: Path) -> No
 def test_resolve_data_dir_falls_back_when_default_is_not_writable(
     monkeypatch, tmp_path: Path
 ) -> None:
-    import storage_service
+    import services.storage as storage_service
 
     readonly_default = tmp_path / "readonly-default"
     readonly_default.mkdir()

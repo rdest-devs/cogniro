@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException
 
-from models import AdminQuizUpsertPayload
-from storage_service import (
+from schemas.admin_quiz import AdminQuizUpsertPayload
+from services.storage import (
     QUIZ_WRITE_LOCK,
     find_quiz_index,
     get_storage,
