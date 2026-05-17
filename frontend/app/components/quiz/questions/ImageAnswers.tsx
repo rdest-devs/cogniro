@@ -43,7 +43,11 @@ export default function ImageAnswers({
     >
       <QuestionCard question={question} />
 
-      <div className="flex flex-col gap-2.5">
+      <div
+        className="flex flex-col gap-2.5"
+        role="radiogroup"
+        aria-label={question}
+      >
         {rows.map((row, rowIdx) => (
           <div key={row.map((a) => a.label).join('|')} className="flex gap-2.5">
             {row.map((answer, colIdx) => {
@@ -52,6 +56,9 @@ export default function ImageAnswers({
               return (
                 <button
                   key={answer.label}
+                  type="button"
+                  role="radio"
+                  aria-checked={isSelected}
                   onClick={() => setSelected(idx)}
                   className={cn(
                     'flex flex-1 cursor-pointer flex-col overflow-hidden rounded-2xl transition-all',

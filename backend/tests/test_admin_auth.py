@@ -389,7 +389,7 @@ def test_admin_quiz_requires_auth(client: TestClient) -> None:
     assert response.status_code == 401
 
 
-def test_admin_quiz_with_token_reaches_stub(client: TestClient) -> None:
+def test_admin_quiz_with_token_returns_list(client: TestClient) -> None:
     login = client.post(
         "/admin/auth/login",
         json={"password": TEST_ADMIN_PASSWORD},
@@ -401,8 +401,8 @@ def test_admin_quiz_with_token_reaches_stub(client: TestClient) -> None:
         "/admin/quiz/all",
         headers={"Authorization": f"Bearer {token}"},
     )
-    assert response.status_code == 501
-    assert response.json()["detail"] == "unimplemented"
+    assert response.status_code == 200
+    assert response.json() == []
 
 
 def test_admin_logout_revokes_token(

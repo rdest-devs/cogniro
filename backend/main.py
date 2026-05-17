@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from contextlib import asynccontextmanager
 
@@ -7,9 +9,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from routes.admin_auth import router as admin_auth_router
 from routes.admin_quiz import router as admin_quiz_router
+from routes.media import router as media_router
 from routes.nick import router as nick_router
 from routes.user import router as user_router
 from security.admin_auth import reload_admin_auth_config
+from services.storage import initialize_storage
 
 load_dotenv()
 
@@ -27,7 +31,8 @@ def _cors_allow_origins() -> list[str]:
 
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI):
+async def lifespan(application: FastAPI):
+    application.state.storage = initialize_storage()
     reload_admin_auth_config()
     yield
 
@@ -46,6 +51,7 @@ app.include_router(user_router, prefix="/quiz")
 app.include_router(admin_quiz_router, prefix="/admin")
 app.include_router(admin_auth_router, prefix="/admin")
 app.include_router(nick_router)
+app.include_router(media_router)
 
 
 @app.get("/health")
@@ -53,7 +59,7 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-def main():
+def main() -> None:
     print("Backend module loaded. Serve `app` with an ASGI server.")
 
 

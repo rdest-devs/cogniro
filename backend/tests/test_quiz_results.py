@@ -6,6 +6,8 @@ from fastapi.testclient import TestClient
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
+from services.quiz_results import MOCK_QUESTIONS
+
 
 def _full_correct_payload() -> dict:
     return {
@@ -72,3 +74,13 @@ def test_quiz_results_shows_review_when_env_enabled(
 
     assert data["showAnswerReview"] is True
     assert len(data["reviewQuestions"]) == 7
+
+
+def test_quiz_results_mock_questions_use_supported_choice_types() -> None:
+    choice_types = {
+        question["type"]
+        for question in MOCK_QUESTIONS
+        if question["id"] in {1, 2, 3, 4}
+    }
+
+    assert choice_types <= {"single", "multiple"}
