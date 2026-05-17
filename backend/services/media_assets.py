@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from io import BytesIO
 from pathlib import Path, PurePosixPath
+import re
 import shutil
 import time
 import uuid
@@ -23,6 +24,7 @@ from services.storage import get_storage
 
 _ALLOWED_PILLOW_FORMATS = {"JPEG", "PNG", "WEBP"}
 ORPHAN_ASSET_RETENTION_SECONDS = 24 * 60 * 60
+_ASSET_ID_IN_STRING = re.compile(r"\b(asset_[0-9a-f]{32})\b")
 
 
 def _is_safe_asset_path(asset_path: str) -> bool:
@@ -125,7 +127,7 @@ def _process_upload_bytes(app: FastAPI, raw_data: bytes) -> QuizAssetUploadRespo
 
     asset_id = f"asset_{uuid.uuid4().hex}"
     storage = get_storage(app)
-    asset_dir = storage.uploads_quiz_assets_dir / asset_id
+    asset_dir = storage.staging_dir / asset_id
     asset_dir.mkdir(parents=True, exist_ok=True)
 
     image_path = asset_dir / "image.webp"
@@ -157,6 +159,12 @@ async def upload_asset(app: FastAPI, file: UploadFile) -> QuizAssetUploadRespons
     return await run_in_threadpool(_process_upload_bytes, app, raw_data)
 
 
+def _asset_ids_from_string(value: object) -> set[str]:
+    if isinstance(value, str):
+        return set(_ASSET_ID_IN_STRING.findall(value))
+    return set()
+
+
 def _extract_referenced_asset_ids(quizzes: list[dict]) -> set[str]:
     referenced: set[str] = set()
 
@@ -177,18 +185,23 @@ def _extract_referenced_asset_ids(quizzes: list[dict]) -> set[str]:
                 if isinstance(asset_id, str) and asset_id:
                     referenced.add(asset_id)
 
-            answers = question.get("answers", [])
+            referenced.update(_asset_ids_from_string(question.get("image")))
+
+            answers = question.get("answers")
+            if answers is None:
+                answers = question.get("choices")
             if not isinstance(answers, list):
                 continue
+
             for answer in answers:
                 if not isinstance(answer, dict):
                     continue
                 answer_image = answer.get("image")
-                if not isinstance(answer_image, dict):
-                    continue
-                asset_id = answer_image.get("assetId")
-                if isinstance(asset_id, str) and asset_id:
-                    referenced.add(asset_id)
+                if isinstance(answer_image, dict):
+                    asset_id = answer_image.get("assetId")
+                    if isinstance(asset_id, str) and asset_id:
+                        referenced.add(asset_id)
+                referenced.update(_asset_ids_from_string(answer_image))
 
     return referenced
 
@@ -207,7 +220,7 @@ def cleanup_orphaned_assets(
     removed = 0
 
     try:
-        children = list(storage.uploads_quiz_assets_dir.iterdir())
+        children = list(storage.staging_dir.iterdir())
     except OSError:
         return 0
 
@@ -232,7 +245,7 @@ def serve_asset(app: FastAPI, asset_path: str) -> FileResponse:
         raise HTTPException(status_code=404, detail="Nie znaleziono zasobu.")
 
     storage = get_storage(app)
-    candidate = storage.uploads_quiz_assets_dir / asset_path
+    candidate = storage.staging_dir / asset_path
 
     # Only serve .webp files — the only format the upload pipeline produces.
     if candidate.suffix.lower() != ".webp":
@@ -240,13 +253,13 @@ def serve_asset(app: FastAPI, asset_path: str) -> FileResponse:
 
     # Reject symlinks anywhere in the path to prevent traversal.
     for parent in [candidate] + list(candidate.parents):
-        if parent == storage.uploads_quiz_assets_dir:
+        if parent == storage.staging_dir:
             break
         if parent.is_symlink():
             raise HTTPException(status_code=404, detail="Nie znaleziono zasobu.")
 
     resolved = candidate.resolve()
-    _assert_relative_to(resolved, storage.uploads_quiz_assets_dir)
+    _assert_relative_to(resolved, storage.staging_dir)
 
     if not resolved.is_file():
         raise HTTPException(status_code=404, detail="Nie znaleziono zasobu.")

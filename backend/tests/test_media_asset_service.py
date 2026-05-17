@@ -115,7 +115,7 @@ def test_cleanup_orphaned_assets_keeps_referenced_and_recent(
     monkeypatch.setenv("COGNIRO_DATA_DIR", str(tmp_path))
     app.state.storage = initialize_storage()
 
-    uploads_dir = app.state.storage.uploads_quiz_assets_dir
+    uploads_dir = app.state.storage.staging_dir
     referenced = uploads_dir / "asset_referenced"
     stale_orphan = uploads_dir / "asset_stale_orphan"
     fresh_orphan = uploads_dir / "asset_fresh_orphan"
@@ -159,7 +159,7 @@ def test_cleanup_orphaned_assets_handles_directory_listing_errors(
     monkeypatch.setenv("COGNIRO_DATA_DIR", str(tmp_path))
     app.state.storage = initialize_storage()
 
-    target_dir = app.state.storage.uploads_quiz_assets_dir
+    target_dir = app.state.storage.staging_dir
     real_iterdir = Path.iterdir
 
     def _iterdir_with_failure(path: Path):
