@@ -5,6 +5,8 @@ interface AdminLayoutProps {
   activeItem?: string;
   children: React.ReactNode;
   logoHref?: string;
+  /** Obsługa pozycji menu bocznego (Statystyki itd.). */
+  onMenuNavigate?: (menuItemId: string) => void;
   onCreateQuiz?: () => void;
   onLogout?: () => void;
 }
@@ -13,12 +15,17 @@ export default function AdminLayout({
   activeItem = 'quizy',
   children,
   logoHref = '/admin/',
+  onMenuNavigate,
   onCreateQuiz,
   onLogout,
 }: AdminLayoutProps) {
   return (
     <div className="flex h-full w-full overflow-hidden bg-[var(--page-bg)]">
-      <Sidebar activeItem={activeItem} quizListHref={logoHref} />
+      <Sidebar
+        activeItem={activeItem}
+        quizListHref={logoHref}
+        onNavigate={onMenuNavigate}
+      />
 
       <div className="flex min-h-0 flex-1 flex-col">
         <TopBar

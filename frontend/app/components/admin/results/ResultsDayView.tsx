@@ -19,6 +19,8 @@ type Props = {
   adminBase: string;
   date: string;
   quizFilter: string | null;
+  menuActiveItem?: string;
+  onMenuNavigate?: (menuItemId: string) => void;
   onBack: () => void;
   onCreateQuiz?: () => void;
   onLogout?: () => void;
@@ -28,6 +30,8 @@ export function ResultsDayView({
   adminBase,
   date,
   quizFilter,
+  menuActiveItem = 'statystyki',
+  onMenuNavigate,
   onBack,
   onCreateQuiz,
   onLogout,
@@ -66,7 +70,13 @@ export function ResultsDayView({
   };
 
   return (
-    <AdminLayout onCreateQuiz={onCreateQuiz} onLogout={onLogout}>
+    <AdminLayout
+      activeItem={menuActiveItem}
+      logoHref={adminBase}
+      onMenuNavigate={onMenuNavigate}
+      onCreateQuiz={onCreateQuiz}
+      onLogout={onLogout}
+    >
       <div className="mb-4 flex gap-3">
         <button
           type="button"

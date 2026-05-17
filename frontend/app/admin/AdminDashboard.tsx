@@ -290,6 +290,29 @@ export default function AdminDashboard({
     [quizFilter],
   );
 
+  const menuActiveItem = useMemo(() => {
+    if (adminView === 'results') {
+      return 'statystyki';
+    }
+    if (adminView === 'panel') {
+      return 'quizy';
+    }
+    return '';
+  }, [adminView]);
+
+  const handleMenuNavigate = useCallback(
+    (itemId: string) => {
+      if (itemId === 'statystyki') {
+        router.push(`${adminBase}?view=results`);
+        return;
+      }
+      if (itemId === 'quizy') {
+        router.push(adminBase);
+      }
+    },
+    [router, adminBase],
+  );
+
   return (
     <div className="h-screen w-full bg-[var(--page-bg)]">
       {adminView === 'panel' && (
@@ -297,6 +320,9 @@ export default function AdminDashboard({
           quizzes={adminCards}
           isLoading={adminLoading}
           error={adminError}
+          logoHref={adminBase}
+          menuActiveItem={menuActiveItem}
+          onMenuNavigate={handleMenuNavigate}
           onRefresh={loadAdminQuizzes}
           onCreateQuiz={handleCreateQuiz}
           onOpenQuiz={handleOpenQuizDetail}
@@ -314,6 +340,8 @@ export default function AdminDashboard({
           selectedQuizId={resolvedSelectedQuizId}
           resultsForQuiz={resultsForSelectedQuiz}
           adminBase={adminBase}
+          menuActiveItem={menuActiveItem}
+          onMenuNavigate={handleMenuNavigate}
           onCreateQuiz={handleCreateQuiz}
           onSelectQuiz={goDetail}
           onEditQuiz={handleEditQuiz}
@@ -325,6 +353,9 @@ export default function AdminDashboard({
       {adminView === 'running' && quizIdFromUrl && (
         <RunningQuizView
           quizId={quizIdFromUrl}
+          logoHref={adminBase}
+          menuActiveItem={menuActiveItem}
+          onMenuNavigate={handleMenuNavigate}
           onStopped={(date, file) => {
             const p = new URLSearchParams({
               view: 'results',
@@ -349,6 +380,8 @@ export default function AdminDashboard({
             date={resultsDate}
             file={resultsFile}
             quizFilter={quizFilter}
+            menuActiveItem={menuActiveItem}
+            onMenuNavigate={handleMenuNavigate}
             onBack={() => {
               router.push(`${adminBase}?${resultsQs({ date: resultsDate })}`);
             }}
@@ -360,6 +393,8 @@ export default function AdminDashboard({
             adminBase={adminBase}
             date={resultsDate}
             quizFilter={quizFilter}
+            menuActiveItem={menuActiveItem}
+            onMenuNavigate={handleMenuNavigate}
             onBack={() => {
               router.push(`${adminBase}?${resultsQs({})}`);
             }}
@@ -370,6 +405,8 @@ export default function AdminDashboard({
           <ResultsBrowserView
             adminBase={adminBase}
             quizFilter={quizFilter}
+            menuActiveItem={menuActiveItem}
+            onMenuNavigate={handleMenuNavigate}
             onBack={() => {
               router.push(adminBase);
             }}
@@ -382,6 +419,9 @@ export default function AdminDashboard({
         <QuizEditor
           mode={editorMode}
           quizId={editorMode === 'edit' ? quizIdFromUrl : null}
+          logoHref={adminBase}
+          menuActiveItem={menuActiveItem}
+          onMenuNavigate={handleMenuNavigate}
           onSaved={handleQuizSaved}
           onCancel={handleEditorCancel}
           onCreateQuiz={handleCreateQuiz}

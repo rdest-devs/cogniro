@@ -48,6 +48,15 @@ def _reset_live_sessions() -> Iterator[None]:
 
 
 @pytest.fixture(autouse=True)
+def _reset_play_rate_limit() -> Iterator[None]:
+    from services.play_rate_limit import reset_play_rate_limit_for_tests
+
+    reset_play_rate_limit_for_tests()
+    yield
+    reset_play_rate_limit_for_tests()
+
+
+@pytest.fixture(autouse=True)
 def _cogniro_data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("COGNIRO_DATA_DIR", str(tmp_path / "cogniro-data"))
 

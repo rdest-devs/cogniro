@@ -1,10 +1,18 @@
-import { BarChart3, FileText, Search, Settings } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { BarChart3, FileText, Settings } from 'lucide-react';
 
-export const menuItems = [
+export type SidebarMenuItem = {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  /** Pozycja widoczna, ale bez nawigacji (np. w przygotowaniu). */
+  disabled?: boolean;
+};
+
+export const menuItems: SidebarMenuItem[] = [
   { id: 'quizy', label: 'Moje Quizy', icon: FileText },
   { id: 'statystyki', label: 'Statystyki', icon: BarChart3 },
-  { id: 'przeglądaj', label: 'Przeglądaj Wszystkie', icon: Search },
-  { id: 'ustawienia', label: 'Ustawienia', icon: Settings },
+  { id: 'ustawienia', label: 'Ustawienia', icon: Settings, disabled: true },
 ];
 
 export const statusColors: Record<string, string> = {

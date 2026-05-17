@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, File, Request, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
+from core import settings
 from schemas.admin_quiz import (
     AdminQuizDetailResponse,
     AdminQuizListItemResponse,
@@ -29,6 +30,26 @@ from services.admin_quiz import (
     update_quiz,
 )
 from services.media_assets import upload_asset
+
+
+async def _read_upload_capped(file: UploadFile, max_bytes: int) -> bytes:
+    """Read multipart upload in chunks; abort if total exceeds max_bytes."""
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = await file.read(settings.UPLOAD_CHUNK_SIZE)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > max_bytes:
+            mb = max_bytes // (1024 * 1024)
+            raise HTTPException(
+                status_code=413,
+                detail=f"Archiwum przekracza maksymalny rozmiar ({mb} MB).",
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
+
 
 router = APIRouter(
     tags=["admin-quiz"],
@@ -126,6 +147,6 @@ async def admin_quiz_export(request: Request, quiz_id: str) -> Response:
 async def admin_quiz_import(
     request: Request, file: UploadFile = File(...)
 ) -> AdminQuizSaveResponse:
-    raw = await file.read()
+    raw = await _read_upload_capped(file, settings.MAX_QUIZ_IMPORT_ZIP_BYTES)
     result = await run_in_threadpool(import_quiz_zip, request.app, raw)
     return AdminQuizSaveResponse(id=result["id"])

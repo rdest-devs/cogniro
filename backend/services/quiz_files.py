@@ -63,7 +63,7 @@ def read_meta_or_rebuild(quiz_dir: Path, quiz_id: str) -> QuizMeta:
         try:
             data = json.loads(meta_path.read_text(encoding="utf-8"))
             return QuizMeta(**data)
-        except (json.JSONDecodeError, KeyError, TypeError):
+        except json.JSONDecodeError, KeyError, TypeError:
             pass
     quiz = read_quiz_kqf(quiz_dir)
     now = (

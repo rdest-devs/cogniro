@@ -15,6 +15,9 @@ type Snapshot = Awaited<ReturnType<typeof getSessionSnapshot>>;
 
 type Props = {
   quizId: string;
+  logoHref?: string;
+  menuActiveItem?: string;
+  onMenuNavigate?: (menuItemId: string) => void;
   onStopped: (date: string, filename: string) => void;
   onBack: () => void;
   onCreateQuiz?: () => void;
@@ -23,6 +26,9 @@ type Props = {
 
 export function RunningQuizView({
   quizId,
+  logoHref = '/admin/',
+  menuActiveItem = 'quizy',
+  onMenuNavigate,
   onStopped,
   onBack,
   onCreateQuiz,
@@ -61,7 +67,13 @@ export function RunningQuizView({
 
   if (err) {
     return (
-      <AdminLayout onCreateQuiz={onCreateQuiz} onLogout={onLogout}>
+      <AdminLayout
+        activeItem={menuActiveItem}
+        logoHref={logoHref}
+        onMenuNavigate={onMenuNavigate}
+        onCreateQuiz={onCreateQuiz}
+        onLogout={onLogout}
+      >
         <p>Błąd: {err}</p>
         <button type="button" className="mt-2 underline" onClick={onBack}>
           Powrót
@@ -72,14 +84,26 @@ export function RunningQuizView({
 
   if (!activation) {
     return (
-      <AdminLayout onCreateQuiz={onCreateQuiz} onLogout={onLogout}>
+      <AdminLayout
+        activeItem={menuActiveItem}
+        logoHref={logoHref}
+        onMenuNavigate={onMenuNavigate}
+        onCreateQuiz={onCreateQuiz}
+        onLogout={onLogout}
+      >
         <p>Uruchamianie…</p>
       </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout onCreateQuiz={onCreateQuiz} onLogout={onLogout}>
+    <AdminLayout
+      activeItem={menuActiveItem}
+      logoHref={logoHref}
+      onMenuNavigate={onMenuNavigate}
+      onCreateQuiz={onCreateQuiz}
+      onLogout={onLogout}
+    >
       <div className="mb-4 flex gap-3">
         <button
           type="button"

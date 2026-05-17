@@ -14,6 +14,9 @@ interface AdminPanelProps {
   quizzes: QuizCard[];
   isLoading?: boolean;
   error?: string | null;
+  logoHref?: string;
+  menuActiveItem?: string;
+  onMenuNavigate?: (menuItemId: string) => void;
   onCreateQuiz?: () => void;
   onOpenQuiz?: (quizId: string) => void;
   onRefresh?: () => void;
@@ -31,6 +34,9 @@ export default function AdminPanel({
   quizzes,
   isLoading = false,
   error,
+  logoHref = '/admin/',
+  menuActiveItem = 'quizy',
+  onMenuNavigate,
   onCreateQuiz,
   onOpenQuiz,
   onRefresh,
@@ -43,7 +49,13 @@ export default function AdminPanel({
   const [importBusy, setImportBusy] = useState(false);
 
   return (
-    <AdminLayout onCreateQuiz={onCreateQuiz} onLogout={onLogout}>
+    <AdminLayout
+      activeItem={menuActiveItem}
+      logoHref={logoHref}
+      onMenuNavigate={onMenuNavigate}
+      onCreateQuiz={onCreateQuiz}
+      onLogout={onLogout}
+    >
       <header className="flex items-center justify-between">
         <h1 className="text-[28px] font-bold text-[var(--text-dark)]">
           Moje Quizy

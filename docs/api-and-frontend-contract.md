@@ -34,7 +34,7 @@ All routes below require admin auth unless noted. Router prefix: **`/admin`**.
 | GET | `/admin/quiz/{quiz_id}/session` | Snapshot: pin, participants, blocked flags, scores. |
 | POST | `/admin/quiz/{quiz_id}/session/block` | JSON `{ nickname }` → `{ blocked: true }`. |
 | GET | `/admin/quiz/{quiz_id}/export` | `application/zip` attachment: `quiz.kqf` + `media/**`. |
-| POST | `/admin/quiz/import` | `multipart/form-data` file field `file` (zip) → `{ id }`. |
+| POST | `/admin/quiz/import` | `multipart/form-data` file field `file` (zip) → `{ id }`. **Limits:** upload ≤ `MAX_QUIZ_IMPORT_ZIP_BYTES` (default 100 MiB); `quiz.kqf` uncompressed ≤ `MAX_QUIZ_IMPORT_KQF_BYTES` (default 2 MiB); each `media/*` member ≤ `MAX_QUIZ_IMPORT_MEMBER_BYTES` (default 100 MiB); total uncompressed extracted ≤ `MAX_QUIZ_IMPORT_UNCOMPRESSED_TOTAL_BYTES` (default 300 MiB). Oversize → `413`. See `backend/.env.example`. |
 
 Client helpers: [frontend/lib/admin-quiz/client.ts](../frontend/lib/admin-quiz/client.ts), [frontend/lib/sessions/client.ts](../frontend/lib/sessions/client.ts), [frontend/lib/import-export/client.ts](../frontend/lib/import-export/client.ts).
 
@@ -64,6 +64,8 @@ Client: [frontend/lib/results/client.ts](../frontend/lib/results/client.ts).
 |--------|------|------|------|
 | POST | `/play/{pin}/join` | `{ nickname }` | Registers participant; `409` if nickname taken (case-folded). |
 | POST | `/play/{pin}/submit` | `{ nickname, score }` | `400` with `{"detail": {"error": "nickname_violation", "detail_pl": "..."}}` if blocked / unknown nickname. |
+
+**Rate limiting (per client IP):** Both endpoints share one sliding window per IP (default **120** requests per **60** seconds). Over limit → **`429`** with body `{"detail":"rate_limited"}` and **`Retry-After`** (seconds). Configure `PLAY_RATE_LIMIT_*` in `backend/.env.example`. Behind a trusted reverse proxy, set **`PLAY_RATE_LIMIT_TRUST_X_FORWARDED_FOR=true`** so the first `X-Forwarded-For` hop is used as the client IP (do not enable if clients can send that header directly to the API).
 
 Client: [frontend/lib/play/client.ts](../frontend/lib/play/client.ts). Frontend flow: [frontend/app/play/page.tsx](../frontend/app/play/page.tsx), [frontend/app/play/storage.ts](../frontend/app/play/storage.ts) (`sessionStorage` key `cogniro:play:{code}:{nickname}:state`).
 

@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from schemas.kqf import KqfQuiz
 from services import sessions
+from services.play_rate_limit import enforce_play_rate_limit
 from services.quiz_files import kqf_with_absolute_media, read_quiz_kqf
 from services.storage import get_storage, quiz_dir_for
 
@@ -39,6 +40,7 @@ def _origin_from(request: Request) -> str:
 
 @router.post("/{pin}/join", response_model=KqfQuiz)
 async def play_join(pin: str, body: JoinBody, request: Request) -> KqfQuiz:
+    enforce_play_rate_limit(request)
     session = sessions.lookup_by_pin(pin)
     if session is None:
         raise HTTPException(status_code=404, detail="pin_not_active")
@@ -55,13 +57,14 @@ async def play_join(pin: str, body: JoinBody, request: Request) -> KqfQuiz:
 
 
 @router.post("/{pin}/submit")
-async def play_submit(pin: str, body: SubmitBody) -> dict:
+async def play_submit(pin: str, body: SubmitBody, request: Request) -> dict:
     """Accept a final score for a joined participant.
 
     On nickname violation (unknown nickname or blocked), responds with **400** and
     JSON body ``{"detail": {"error": "nickname_violation", "detail_pl": "..."}}``
     (FastAPI ``HTTPException`` wraps the dict under ``detail``).
     """
+    enforce_play_rate_limit(request)
     try:
         await run_in_threadpool(
             sessions.record_submission,

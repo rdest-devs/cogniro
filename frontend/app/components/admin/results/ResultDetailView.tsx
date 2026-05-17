@@ -11,6 +11,8 @@ type Props = {
   date: string;
   file: string;
   quizFilter: string | null;
+  menuActiveItem?: string;
+  onMenuNavigate?: (menuItemId: string) => void;
   onBack: () => void;
   onCreateQuiz?: () => void;
   onLogout?: () => void;
@@ -21,6 +23,8 @@ export function ResultDetailView({
   date,
   file,
   quizFilter,
+  menuActiveItem = 'statystyki',
+  onMenuNavigate,
   onBack,
   onCreateQuiz,
   onLogout,
@@ -57,7 +61,13 @@ export function ResultDetailView({
   };
 
   return (
-    <AdminLayout onCreateQuiz={onCreateQuiz} onLogout={onLogout}>
+    <AdminLayout
+      activeItem={menuActiveItem}
+      logoHref={adminBase}
+      onMenuNavigate={onMenuNavigate}
+      onCreateQuiz={onCreateQuiz}
+      onLogout={onLogout}
+    >
       <div className="mb-4 flex flex-wrap gap-3">
         <button
           type="button"

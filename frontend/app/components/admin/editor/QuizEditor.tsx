@@ -30,6 +30,10 @@ import QuizSettingsForm from './QuizSettingsForm';
 interface QuizEditorProps {
   mode: 'create' | 'edit';
   quizId?: string | null;
+  /** Bazowy URL panelu (np. `/admin/`) — link „Moje Quizy” i menu boczne. */
+  logoHref?: string;
+  menuActiveItem?: string;
+  onMenuNavigate?: (menuItemId: string) => void;
   onSaved?: (quizId: string) => void;
   onCancel?: () => void;
   onCreateQuiz?: () => void;
@@ -60,6 +64,9 @@ function toUiErrorMessage(error: unknown): string {
 export default function QuizEditor({
   mode,
   quizId,
+  logoHref = '/admin/',
+  menuActiveItem = '',
+  onMenuNavigate,
   onSaved,
   onCancel,
   onCreateQuiz,
@@ -243,7 +250,13 @@ export default function QuizEditor({
   };
 
   return (
-    <AdminLayout onCreateQuiz={onCreateQuiz} onLogout={onLogout}>
+    <AdminLayout
+      activeItem={menuActiveItem}
+      logoHref={logoHref}
+      onMenuNavigate={onMenuNavigate}
+      onCreateQuiz={onCreateQuiz}
+      onLogout={onLogout}
+    >
       <FormProvider {...formMethods}>
         <form onSubmit={onSubmit} className="flex min-h-0 w-full flex-1">
           <div className="flex min-h-0 flex-1 flex-col gap-5">

@@ -97,7 +97,7 @@ def list_results_in_day(paths: StoragePaths, date: str) -> list[ResultFileMetada
                     score_count=len(data.get("scores", [])),
                 )
             )
-        except (json.JSONDecodeError, OSError):
+        except json.JSONDecodeError, OSError:
             continue
     return out
 

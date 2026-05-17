@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import zipfile
 
+import pytest
 from fastapi.testclient import TestClient
 
 
@@ -93,6 +94,9 @@ def test_import_rejects_bad_zip(
 def test_import_skips_path_traversal_member(
     client: TestClient, admin_token_header: dict[str, str]
 ) -> None:
+    from main import app
+    from services.storage import get_storage, quiz_dir_for
+
     quiz_id = _create_quiz(client, admin_token_header)
     base_zip = client.get(
         f"/admin/quiz/{quiz_id}/export", headers=admin_token_header
@@ -109,3 +113,25 @@ def test_import_skips_path_traversal_member(
         headers=admin_token_header,
     )
     assert r.status_code == 200
+    new_id = r.json()["id"]
+    paths = get_storage(app)
+    qd = quiz_dir_for(paths, new_id)
+    assert not any(p.name == "evil.txt" for p in qd.rglob("*"))
+    data_dir = paths.data_dir.resolve()
+    evil_at_root = data_dir / "evil.txt"
+    assert not evil_at_root.is_file()
+
+
+def test_import_rejects_upload_over_zip_limit(
+    client: TestClient,
+    admin_token_header: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("core.settings.MAX_QUIZ_IMPORT_ZIP_BYTES", 500)
+    body = b"x" * 501
+    r = client.post(
+        "/admin/quiz/import",
+        files={"file": ("q.zip", body, "application/zip")},
+        headers=admin_token_header,
+    )
+    assert r.status_code == 413

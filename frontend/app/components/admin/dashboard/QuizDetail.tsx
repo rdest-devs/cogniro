@@ -25,6 +25,8 @@ interface QuizDetailProps {
   selectedQuizId?: string | null;
   resultsForQuiz: ResultRow[];
   adminBase: string;
+  menuActiveItem?: string;
+  onMenuNavigate?: (menuItemId: string) => void;
   onCreateQuiz?: () => void;
   onEditQuiz?: (quizId: string) => void;
   onSelectQuiz?: (quizId: string) => void;
@@ -37,6 +39,8 @@ export default function QuizDetail({
   selectedQuizId,
   resultsForQuiz,
   adminBase,
+  menuActiveItem = '',
+  onMenuNavigate,
   onCreateQuiz,
   onEditQuiz,
   onSelectQuiz,
@@ -111,7 +115,13 @@ export default function QuizDetail({
   );
 
   return (
-    <AdminLayout onCreateQuiz={onCreateQuiz} onLogout={onLogout}>
+    <AdminLayout
+      activeItem={menuActiveItem}
+      logoHref={adminBase}
+      onMenuNavigate={onMenuNavigate}
+      onCreateQuiz={onCreateQuiz}
+      onLogout={onLogout}
+    >
       <div className="flex flex-col gap-6">
         <header className="flex items-center justify-between">
           <h1 className="text-[28px] font-bold text-[var(--text-dark)]">

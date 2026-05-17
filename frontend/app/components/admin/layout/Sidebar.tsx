@@ -30,9 +30,13 @@ export default function Sidebar({
         {menuItems.map((item) => {
           const isActive = activeItem === item.id;
           const Icon = item.icon;
+          const isDisabled = Boolean(item.disabled);
           const rowClass = cn(
-            'flex w-full cursor-pointer items-center gap-3 rounded-xl py-3 pr-5 pl-6 text-left no-underline ring-offset-2 ring-offset-[var(--sidebar-bg)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--orange)]',
-            isActive
+            'flex w-full items-center gap-3 rounded-xl py-3 pr-5 pl-6 text-left no-underline ring-offset-2 ring-offset-[var(--sidebar-bg)] transition-colors outline-none',
+            isDisabled
+              ? 'cursor-not-allowed border-l-4 border-l-transparent opacity-45'
+              : 'cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--orange)]',
+            isActive && !isDisabled
               ? 'border-l-4 border-l-[var(--orange)] bg-[var(--sidebar-active)]'
               : 'border-l-4 border-l-transparent',
           );
@@ -42,7 +46,7 @@ export default function Sidebar({
               <Icon
                 size={20}
                 className={cn(
-                  isActive
+                  isActive && !isDisabled
                     ? 'text-[var(--orange)]'
                     : 'text-[var(--sidebar-text-muted)]',
                 )}
@@ -50,7 +54,7 @@ export default function Sidebar({
               <span
                 className={cn(
                   'text-sm',
-                  isActive
+                  isActive && !isDisabled
                     ? 'font-semibold text-white'
                     : 'font-medium text-[var(--sidebar-text)]',
                 )}
@@ -70,6 +74,19 @@ export default function Sidebar({
               >
                 {inner}
               </Link>
+            );
+          }
+
+          if (isDisabled) {
+            return (
+              <div
+                key={item.id}
+                aria-disabled="true"
+                className={rowClass}
+                title="Niedostępne"
+              >
+                {inner}
+              </div>
             );
           }
 

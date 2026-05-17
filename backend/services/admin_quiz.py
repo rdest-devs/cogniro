@@ -10,6 +10,12 @@ from typing import Literal
 
 from fastapi import FastAPI, HTTPException
 
+from core.settings import (
+    MAX_QUIZ_IMPORT_KQF_BYTES,
+    MAX_QUIZ_IMPORT_MEMBER_BYTES,
+    MAX_QUIZ_IMPORT_UNCOMPRESSED_TOTAL_BYTES,
+    UPLOAD_CHUNK_SIZE,
+)
 from schemas.admin_quiz import (
     AdminQuizDetailResponse,
     AdminQuizListItemResponse,
@@ -260,6 +266,55 @@ def _safe_import_media_path(quiz_dir: Path, member: str) -> Path | None:
     return target
 
 
+def _read_zip_entry_bytes_limited(
+    zf: zipfile.ZipFile, member: str, max_bytes: int
+) -> bytes:
+    """Read a zip member fully into memory with a hard uncompressed byte cap."""
+    buf = bytearray()
+    with zf.open(member) as src:
+        while True:
+            chunk = src.read(UPLOAD_CHUNK_SIZE)
+            if not chunk:
+                break
+            if len(buf) + len(chunk) > max_bytes:
+                raise HTTPException(
+                    status_code=413,
+                    detail="Plik quiz.kqf w archiwum jest zbyt duży.",
+                )
+            buf.extend(chunk)
+    return bytes(buf)
+
+
+def _extract_zip_member_limited(
+    zf: zipfile.ZipFile,
+    member: str,
+    target: Path,
+    *,
+    max_member: int,
+    budget: list[int],
+) -> None:
+    """Stream a zip member to disk; enforce per-member and total uncompressed caps."""
+    written_member = 0
+    with zf.open(member) as src, target.open("wb") as dst:
+        while True:
+            chunk = src.read(UPLOAD_CHUNK_SIZE)
+            if not chunk:
+                break
+            if written_member + len(chunk) > max_member:
+                raise HTTPException(
+                    status_code=413,
+                    detail="Jeden z plików w media/ przekracza maksymalny rozmiar.",
+                )
+            if len(chunk) > budget[0]:
+                raise HTTPException(
+                    status_code=413,
+                    detail="Rozpakowana zawartość archiwum przekracza dozwolony limit.",
+                )
+            budget[0] -= len(chunk)
+            written_member += len(chunk)
+            dst.write(chunk)
+
+
 def import_quiz_zip(app: FastAPI, zip_bytes: bytes) -> dict[str, str]:
     paths = get_storage(app)
     try:
@@ -269,8 +324,17 @@ def import_quiz_zip(app: FastAPI, zip_bytes: bytes) -> dict[str, str]:
                 raise HTTPException(
                     status_code=400, detail="Archiwum musi zawierać quiz.kqf."
                 )
+            kqf_bytes = _read_zip_entry_bytes_limited(
+                zf, "quiz.kqf", MAX_QUIZ_IMPORT_KQF_BYTES
+            )
+            budget = [MAX_QUIZ_IMPORT_UNCOMPRESSED_TOTAL_BYTES - len(kqf_bytes)]
+            if budget[0] < 0:
+                raise HTTPException(
+                    status_code=413,
+                    detail="Rozpakowana zawartość archiwum przekracza dozwolony limit.",
+                )
             try:
-                kqf_text = zf.read("quiz.kqf").decode("utf-8")
+                kqf_text = kqf_bytes.decode("utf-8")
             except UnicodeDecodeError as exc:
                 raise HTTPException(
                     status_code=400, detail="Niepoprawny plik quiz.kqf."
@@ -294,8 +358,13 @@ def import_quiz_zip(app: FastAPI, zip_bytes: bytes) -> dict[str, str]:
                     if target is None:
                         continue
                     target.parent.mkdir(parents=True, exist_ok=True)
-                    with zf.open(name) as src, target.open("wb") as dst:
-                        dst.write(src.read())
+                    _extract_zip_member_limited(
+                        zf,
+                        name,
+                        target,
+                        max_member=MAX_QUIZ_IMPORT_MEMBER_BYTES,
+                        budget=budget,
+                    )
             return {"id": quiz_id}
     except zipfile.BadZipFile as exc:
         raise HTTPException(

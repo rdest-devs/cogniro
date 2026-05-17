@@ -28,6 +28,9 @@ PINs are short strings used in `/play/?code=` join URLs built when the admin act
 1. **Activate** — `POST /admin/quiz/{id}/activate` starts a session, returns `pin` and `join_url`.
 2. **Join** — `POST /play/{pin}/join` registers a participant nickname.
 3. **Submit** — `POST /play/{pin}/submit` records a score for a joined nickname.
+
+Both play endpoints share a **per-IP sliding-window rate limit** ([backend/services/play_rate_limit.py](../backend/services/play_rate_limit.py)); defaults and `PLAY_RATE_LIMIT_*` env vars are documented in [backend/.env.example](../backend/.env.example) and [api-and-frontend-contract.md](api-and-frontend-contract.md).
+
 4. **Stop** — `POST /admin/quiz/{id}/stop` ends the session, writes a result JSON under `storage/results/{date}/`, and clears the in-memory session.
 
 ## Flush-to-disk semantics
