@@ -23,3 +23,21 @@ test('image answers render radio semantics for choices', () => {
   assert.ok(markup.includes('role="radio"'));
   assert.ok(markup.includes('aria-checked="false"'));
 });
+
+test('image answers expose selected radio state', () => {
+  const markup = renderToStaticMarkup(
+    <ImageAnswers
+      questionNumber={1}
+      totalQuestions={5}
+      time="00:30"
+      question="Which option matches?"
+      answers={[
+        { imageUrl: 'images/a.png', label: 'Option A' },
+        { imageUrl: 'images/b.png', label: 'Option B' },
+      ]}
+      initialSelectedIndex={0}
+    />,
+  );
+
+  assert.ok(markup.includes('aria-checked="true"'));
+});

@@ -49,9 +49,11 @@ Backend URL is shared by quiz-demo (`POST /quiz/results`), admin auth (`POST /ad
 
 ```bash
 NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
+# Optional: override the public media prefix if backend MEDIA_PUBLIC_PREFIX differs
+# NEXT_PUBLIC_MEDIA_PUBLIC_PREFIX=/media/quiz-assets
 ```
 
-If not provided, the frontend defaults to `http://localhost:8000` (same as quiz-demo).
+If not provided, the frontend defaults to `http://localhost:8000` (same as quiz-demo). `NEXT_PUBLIC_MEDIA_PUBLIC_PREFIX` is only needed if the backend serves quiz assets under a different public path.
 
 You can start editing the page by modifying `frontend/app/page.tsx`. The page auto-updates as you edit the file.
 

@@ -77,10 +77,11 @@ def test_quiz_results_shows_review_when_env_enabled(
 
 
 def test_quiz_results_mock_questions_use_supported_choice_types() -> None:
-    choice_types = {
-        question["type"]
-        for question in MOCK_QUESTIONS
-        if question["id"] in {1, 2, 3, 4}
-    }
+    selected = [
+        question for question in MOCK_QUESTIONS if question["id"] in {1, 2, 3, 4}
+    ]
+    assert {question["id"] for question in selected} == {1, 2, 3, 4}
+
+    choice_types = {question["type"] for question in selected}
 
     assert choice_types <= {"single", "multiple"}

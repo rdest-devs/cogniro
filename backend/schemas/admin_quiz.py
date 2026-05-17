@@ -20,6 +20,55 @@ class QuizAssetUploadResponse(QuizImage):
     pass
 
 
+class AdminQuizSaveResponse(BaseModel):
+    id: str = Field(min_length=1)
+
+
+class AdminQuizListItemResponse(BaseModel):
+    id: str = Field(min_length=1)
+    title: str = ""
+    status: str = "active"
+    created_at: str = Field(min_length=1)
+    participants_count: int = Field(ge=0)
+
+    model_config = ConfigDict(extra="ignore")
+
+
+class AdminQuizDetailAnswerResponse(BaseModel):
+    text: str = ""
+    is_correct: bool = Field(
+        validation_alias=AliasChoices("is_correct", "isCorrect"),
+        serialization_alias="is_correct",
+    )
+    image: QuizImage | None = None
+
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+
+
+class AdminQuizDetailQuestionResponse(BaseModel):
+    text: str = ""
+    type: Literal["single_choice", "multiple_choice"]
+    image: QuizImage | None = None
+    answers: list[AdminQuizDetailAnswerResponse] = Field(min_length=2)
+
+    model_config = ConfigDict(extra="ignore")
+
+
+class AdminQuizDetailResponse(BaseModel):
+    id: str = Field(min_length=1)
+    title: str = ""
+    status: str = "active"
+    created_at: str = Field(min_length=1)
+    participants_count: int = Field(ge=0)
+    time_limit: int | None = Field(default=None, gt=0)
+    shuffle_questions: bool = False
+    show_answers_after: bool = True
+    show_leaderboard_after: bool = False
+    questions: list[AdminQuizDetailQuestionResponse] = Field(min_length=1)
+
+    model_config = ConfigDict(extra="ignore")
+
+
 class AdminQuizAnswer(BaseModel):
     id: str | None = None
     text: str = ""

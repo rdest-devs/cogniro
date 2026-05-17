@@ -13,6 +13,13 @@ from services.storage import (
 )
 
 
+def _safe_int(value: object, default: int = 0) -> int:
+    try:
+        return int(value)
+    except TypeError, ValueError:
+        return default
+
+
 def list_quizzes(app: FastAPI) -> list[dict]:
     storage = get_storage(app)
     payload = read_quizzes_payload(storage)
@@ -24,7 +31,7 @@ def list_quizzes(app: FastAPI) -> list[dict]:
             "title": str(quiz.get("title", "")),
             "status": str(quiz.get("status", "active")),
             "created_at": str(quiz.get("created_at", "")),
-            "participants_count": int(quiz.get("participants_count", 0)),
+            "participants_count": _safe_int(quiz.get("participants_count", 0)),
         }
         for quiz in quizzes
     ]
@@ -75,7 +82,7 @@ def update_quiz(
             quiz_id=quiz_id,
             created_at=str(raw_created_at) if raw_created_at is not None else None,
             status=str(existing.get("status", "active")),
-            participants_count=int(existing.get("participants_count", 0)),
+            participants_count=_safe_int(existing.get("participants_count", 0)),
         )
         write_quizzes_payload_atomic(storage.quizzes_file, stored_payload)
 
