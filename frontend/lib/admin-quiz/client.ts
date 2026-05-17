@@ -299,3 +299,37 @@ export async function uploadAdminAsset(
 
   return parsed.data;
 }
+
+export async function deleteAdminQuiz(
+  quizId: string,
+  hasRetried = false,
+): Promise<void> {
+  const token = getStoredAdminToken();
+  const headers = new Headers();
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  const response = await fetch(
+    joinApiUrl(BACKEND_BASE_URL, `admin/quiz/${encodeURIComponent(quizId)}`),
+    { method: 'DELETE', headers },
+  );
+
+  const payload = await tryParseJson(response);
+
+  if (!response.ok) {
+    const errorBody = (payload ?? {}) as ApiErrorBody;
+    if (await tryRefreshOn401(response, errorBody, hasRetried)) {
+      await deleteAdminQuiz(quizId, true);
+      return;
+    }
+    const detailCode =
+      typeof errorBody.detail === 'string' ? errorBody.detail : undefined;
+    throw new AdminQuizApiError(
+      getErrorMessage(errorBody, toApiErrorMessage(response.status)),
+      response.status,
+      detailCode ?? errorBody.error,
+      errorBody.reason ?? detailCode,
+    );
+  }
+}
