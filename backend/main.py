@@ -11,6 +11,7 @@ load_dotenv()
 
 from routes.admin_auth import router as admin_auth_router  # noqa: E402
 from routes.admin_quiz import router as admin_quiz_router  # noqa: E402
+from routes.admin_results import router as admin_results_router  # noqa: E402
 from routes.media import router as media_router  # noqa: E402
 from routes.nick import router as nick_router  # noqa: E402
 from routes.play import router as play_router  # noqa: E402
@@ -51,6 +52,7 @@ app.add_middleware(
 app.include_router(user_router, prefix="/quiz")
 app.include_router(admin_quiz_router, prefix="/admin")
 app.include_router(admin_auth_router, prefix="/admin")
+app.include_router(admin_results_router)
 app.include_router(nick_router)
 app.include_router(play_router)
 app.include_router(media_router)
