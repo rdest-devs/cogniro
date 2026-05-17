@@ -1,0 +1,103 @@
+from __future__ import annotations
+
+from typing import Annotated, Literal
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+
+class KqfFrontMatter(BaseModel):
+    title: str = Field(min_length=1)
+    description: str | None = None
+    author: str | None = None
+    version: str | None = None
+    language: str | None = None
+    tags: list[str] = Field(default_factory=list)
+
+    model_config = ConfigDict(extra="ignore")
+
+
+class KqfMedia(BaseModel):
+    image: str | None = None
+    video: str | None = None
+    audio: str | None = None
+    hint: str | None = None
+
+    model_config = ConfigDict(extra="ignore")
+
+
+class KqfChoice(BaseModel):
+    text: str = Field(min_length=1)
+    is_correct: bool
+
+
+class _KqfBaseQuestion(BaseModel):
+    id: str = Field(min_length=1)
+    text: str = Field(min_length=1)
+    time_s: int | None = Field(default=None, gt=0)
+    points: int | None = Field(default=None, ge=0)
+    media: KqfMedia = Field(default_factory=KqfMedia)
+
+    model_config = ConfigDict(extra="ignore")
+
+
+class KqfSingleChoice(_KqfBaseQuestion):
+    type: Literal["singlechoice"]
+    choices: list[KqfChoice] = Field(min_length=2, max_length=6)
+
+    @model_validator(mode="after")
+    def _validate_correct(self) -> KqfSingleChoice:
+        correct = sum(1 for choice in self.choices if choice.is_correct)
+        if correct != 1:
+            raise ValueError("singlechoice must have exactly one correct choice")
+        return self
+
+
+class KqfMultiChoice(_KqfBaseQuestion):
+    type: Literal["multichoice"]
+    choices: list[KqfChoice] = Field(min_length=2, max_length=8)
+
+    @model_validator(mode="after")
+    def _validate_correct(self) -> KqfMultiChoice:
+        if not any(choice.is_correct for choice in self.choices):
+            raise ValueError("multichoice must have at least one correct choice")
+        return self
+
+
+class KqfTrueFalse(_KqfBaseQuestion):
+    type: Literal["truefalse"]
+    correct: bool
+
+
+class KqfSlider(_KqfBaseQuestion):
+    type: Literal["slider"]
+    correct: float
+    min: float
+    max: float
+    step: float = 1
+    tolerance: float = 0
+    unit: str | None = None
+
+    @model_validator(mode="after")
+    def _validate_range(self) -> KqfSlider:
+        if self.min >= self.max:
+            raise ValueError("min must be < max")
+        if not (self.min <= self.correct <= self.max):
+            raise ValueError("correct must be in [min, max]")
+        if self.step <= 0:
+            raise ValueError("step must be > 0")
+        if self.tolerance < 0:
+            raise ValueError("tolerance must be >= 0")
+        return self
+
+
+KqfQuestion = Annotated[
+    KqfSingleChoice | KqfMultiChoice | KqfTrueFalse | KqfSlider,
+    Field(discriminator="type"),
+]
+
+
+class KqfQuiz(BaseModel):
+    front_matter: KqfFrontMatter
+    questions: list[KqfQuestion] = Field(min_length=1)
+
+    model_config = ConfigDict(extra="ignore")
