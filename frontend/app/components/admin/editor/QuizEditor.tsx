@@ -3,7 +3,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, RefreshCcw, Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
+import {
+  FormProvider,
+  type Resolver,
+  useFieldArray,
+  useForm,
+} from 'react-hook-form';
 
 import type { QuizEditorFormValues } from '@/app/types';
 import {
@@ -70,7 +75,9 @@ export default function QuizEditor({
 
   const formMethods = useForm<QuizEditorFormValues>({
     defaultValues: createDefaultQuizFormValues(),
-    resolver: zodResolver(quizEditorFormSchema),
+    resolver: zodResolver(
+      quizEditorFormSchema,
+    ) as Resolver<QuizEditorFormValues>,
     mode: 'onChange',
   });
 
@@ -153,15 +160,15 @@ export default function QuizEditor({
   }, [mode, quizId, reset, onSessionInvalid]);
 
   const watchedTitle = watch('title');
-  const watchedTimeLimit = watch('timeLimit');
-  const watchedShuffle = watch('shuffleQuestions');
-  const watchedShowAnswers = watch('showAnswersAfter');
-  const watchedShowLeaderboard = watch('showLeaderboardAfter');
+  const watchedDescription = watch('description') ?? '';
+  const watchedAuthor = watch('author') ?? '';
+  const watchedTags = watch('tags');
+  const tagsText = (watchedTags ?? []).join(', ');
   const isMissingQuizId = mode === 'edit' && !quizId;
   const hasBlockingLoadError =
     mode === 'edit' && (isMissingQuizId || Boolean(loadError));
 
-  const onSubmit = handleSubmit(async (values) => {
+  const onSubmit = handleSubmit(async (values: QuizEditorFormValues) => {
     if (hasBlockingLoadError) {
       setSaveError(
         loadError ??
@@ -317,36 +324,32 @@ export default function QuizEditor({
                   shouldValidate: true,
                 })
               }
-              timeLimit={watchedTimeLimit}
-              onTimeLimitChange={(value) =>
-                setValue('timeLimit', value, {
+              description={watchedDescription}
+              onDescriptionChange={(value) =>
+                setValue('description', value || null, {
                   shouldDirty: true,
                   shouldValidate: true,
                 })
               }
-              shuffleQuestions={watchedShuffle}
-              onShuffleQuestionsToggle={() =>
-                setValue('shuffleQuestions', !watchedShuffle, {
+              author={watchedAuthor}
+              onAuthorChange={(value) =>
+                setValue('author', value || null, {
                   shouldDirty: true,
                   shouldValidate: true,
                 })
               }
-              showAnswersAfter={watchedShowAnswers}
-              onShowAnswersAfterToggle={() =>
-                setValue('showAnswersAfter', !watchedShowAnswers, {
+              tagsText={tagsText}
+              onTagsTextChange={(value) => {
+                const tags = value
+                  .split(',')
+                  .map((t) => t.trim())
+                  .filter(Boolean);
+                setValue('tags', tags, {
                   shouldDirty: true,
                   shouldValidate: true,
-                })
-              }
-              showLeaderboardAfter={watchedShowLeaderboard}
-              onShowLeaderboardAfterToggle={() =>
-                setValue('showLeaderboardAfter', !watchedShowLeaderboard, {
-                  shouldDirty: true,
-                  shouldValidate: true,
-                })
-              }
+                });
+              }}
               titleError={errors.title?.message}
-              timeLimitError={errors.timeLimit?.message}
             />
 
             <section className="flex flex-col gap-3">

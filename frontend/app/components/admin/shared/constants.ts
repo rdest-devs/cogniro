@@ -11,11 +11,16 @@ export const statusColors: Record<string, string> = {
   Aktywny: 'bg-[var(--active)] text-white',
   Stare: 'bg-[var(--orange)] text-white',
   Zakończony: 'bg-[var(--wrong-fg)] text-white',
+  Nieaktywny: 'bg-[var(--border)] text-[var(--text-dark)]',
   active: 'bg-[var(--active)] text-white',
   completed: 'bg-[var(--wrong-fg)] text-white',
+  idle: 'bg-[var(--border)] text-[var(--text-dark)]',
+  running: 'bg-[var(--active)] text-white',
 };
 
 export const typeColors: Record<string, string> = {
   Jednokrotny: 'bg-[var(--active)] text-white',
   Wielokrotny: 'bg-[var(--primary-blue)] text-white',
+  'Prawda / fałsz': 'bg-[var(--orange)] text-white',
+  Suwak: 'bg-[var(--wrong-fg)] text-white',
 };

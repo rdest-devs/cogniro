@@ -99,10 +99,10 @@ export default function AdminPanel({
                 {quiz.title}
               </h3>
               <p className="text-[13px] text-[var(--text-muted)]">
-                {quiz.questionsCount !== undefined
-                  ? `${quiz.questionsCount} pytań · `
+                {quiz.questionCount} pytań
+                {quiz.lastActivatedAt
+                  ? ` · ostatnio ${quiz.lastActivatedAt}`
                   : ''}
-                {quiz.responsesCount} odpowiedzi
               </p>
               <footer className="flex items-center justify-between">
                 <span className="text-xs text-[var(--text-muted)]">

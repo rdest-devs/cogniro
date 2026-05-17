@@ -1,10 +1,10 @@
-export type QuizStatus = 'Aktywny' | 'Stare' | 'Zakończony';
+export type QuizStatus = 'Aktywny' | 'Nieaktywny' | 'Stare' | 'Zakończony';
 
 export interface QuizCard {
   id: string;
   title: string;
-  questionsCount?: number;
-  responsesCount: number;
+  questionCount: number;
+  lastActivatedAt?: string | null;
   createdAt: string;
   status: QuizStatus;
 }
@@ -14,7 +14,8 @@ export interface QuizInfo {
   title: string;
   status: QuizStatus;
   date: string;
-  participants: number;
+  questionCount: number;
+  lastActivatedAt?: string | null;
   avgScore?: number;
 }
 

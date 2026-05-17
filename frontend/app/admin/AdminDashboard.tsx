@@ -43,22 +43,26 @@ function mapApiQuizToCard(quiz: AdminQuizApiListItem): QuizCard {
   return {
     id: quiz.id,
     title: quiz.title,
-    responsesCount: quiz.participants_count,
+    questionCount: quiz.question_count,
+    lastActivatedAt: quiz.last_activated_at
+      ? formatDate(quiz.last_activated_at)
+      : null,
     createdAt: formatDate(quiz.created_at),
     status: mapApiQuizStatusToLabel(quiz.status) as QuizCard['status'],
   };
 }
 
 function mapApiQuizToInfo(quiz: AdminQuizApiListItem): QuizInfo {
-  const quizInfo: QuizInfo = {
+  return {
     id: quiz.id,
     title: quiz.title,
     status: mapApiQuizStatusToLabel(quiz.status) as QuizInfo['status'],
     date: formatDate(quiz.created_at),
-    participants: quiz.participants_count,
+    questionCount: quiz.question_count,
+    lastActivatedAt: quiz.last_activated_at
+      ? formatDate(quiz.last_activated_at)
+      : null,
   };
-
-  return quizInfo;
 }
 
 function toUiErrorMessage(error: unknown): string {

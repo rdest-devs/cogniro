@@ -6,8 +6,16 @@ import { useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 
 import StatusBadge from '@/app/components/common/StatusBadge';
-import type { QuizEditorFormValues, QuizQuestionType } from '@/app/types';
-import { AdminQuizApiError, uploadAdminAsset } from '@/lib/admin-quiz';
+import type {
+  KqfQuestionType,
+  QuizEditorFormValues,
+  QuizEditorQuestionForm,
+} from '@/app/types';
+import {
+  AdminQuizApiError,
+  switchQuestionTypePreservingCommon,
+  uploadAdminAsset,
+} from '@/lib/admin-quiz';
 import { cn } from '@/lib/cn';
 import { resolveMediaUrl } from '@/lib/media-url';
 
@@ -22,14 +30,18 @@ interface QuestionListItemProps {
   canRemove: boolean;
 }
 
-const typeOptions: Array<{ label: string; value: QuizQuestionType }> = [
-  { label: 'Jednokrotny', value: 'single_choice' },
-  { label: 'Wielokrotny', value: 'multiple_choice' },
+const typeOptions: Array<{ label: string; value: KqfQuestionType }> = [
+  { label: 'Jednokrotny', value: 'singlechoice' },
+  { label: 'Wielokrotny', value: 'multichoice' },
+  { label: 'Prawda / fałsz', value: 'truefalse' },
+  { label: 'Suwak', value: 'slider' },
 ];
 
-const typeLabelMap: Record<QuizQuestionType, string> = {
-  single_choice: 'Jednokrotny',
-  multiple_choice: 'Wielokrotny',
+const typeLabelMap: Record<KqfQuestionType, string> = {
+  singlechoice: 'Jednokrotny',
+  multichoice: 'Wielokrotny',
+  truefalse: 'Prawda / fałsz',
+  slider: 'Suwak',
 };
 
 function toUploadErrorMessage(error: unknown): string {
@@ -44,6 +56,363 @@ function toUploadErrorMessage(error: unknown): string {
   return 'Nie udało się przesłać obrazu.';
 }
 
+function ChoiceAnswersSection({ questionIndex }: { questionIndex: number }) {
+  const {
+    control,
+    register,
+    watch,
+    getValues,
+    setValue,
+    trigger,
+    formState: { errors },
+  } = useFormContext<QuizEditorFormValues>();
+
+  const questionPath = `questions.${questionIndex}` as const;
+  const choicesPath = `${questionPath}.choices` as const;
+  const questionType = watch(`${questionPath}.type` as const) as
+    | 'singlechoice'
+    | 'multichoice';
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: choicesPath,
+  });
+
+  // Field errors for discriminated question unions are not narrowed by RHF.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const questionErrors = errors.questions?.[questionIndex] as any;
+  const maxChoices = questionType === 'singlechoice' ? 6 : 8;
+
+  const handleSetSingleCorrect = (selectedAnswerIndex: number) => {
+    const answers = getValues(choicesPath);
+    answers.forEach((_, answerIndex) => {
+      setValue(
+        `${choicesPath}.${answerIndex}.isCorrect`,
+        answerIndex === selectedAnswerIndex,
+        { shouldValidate: true, shouldDirty: true },
+      );
+    });
+    void trigger(questionPath);
+  };
+
+  const handleSetMultipleCorrect = (answerIndex: number, checked: boolean) => {
+    setValue(`${choicesPath}.${answerIndex}.isCorrect`, checked, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+    void trigger(questionPath);
+  };
+
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="text-[13px] font-medium text-[var(--text-muted)]">
+        Odpowiedzi ({fields.length})
+      </legend>
+
+      {fields.map((answerField, answerIndex) => {
+        const answerTextPath = `${choicesPath}.${answerIndex}.text` as const;
+        const answerCorrectPath =
+          `${choicesPath}.${answerIndex}.isCorrect` as const;
+        const answerInputId = `question-${questionIndex}-answer-${answerIndex}-text`;
+        const answerLabelId = `${answerInputId}-label`;
+        const answerText = watch(answerTextPath);
+        const isCorrect = watch(answerCorrectPath);
+        const answerError =
+          questionErrors?.choices?.[answerIndex]?.text?.message;
+
+        return (
+          <div key={answerField.id} className="flex items-start gap-2">
+            {questionType === 'singlechoice' ? (
+              <input
+                type="radio"
+                name={`question-${questionIndex}-correct`}
+                checked={isCorrect}
+                onChange={() => handleSetSingleCorrect(answerIndex)}
+                aria-labelledby={answerLabelId}
+                className="mt-2 h-4 w-4 accent-[var(--orange)]"
+              />
+            ) : (
+              <input
+                type="checkbox"
+                checked={isCorrect}
+                onChange={(event) =>
+                  handleSetMultipleCorrect(answerIndex, event.target.checked)
+                }
+                aria-labelledby={answerLabelId}
+                className="mt-2 h-4 w-4 accent-[var(--orange)]"
+              />
+            )}
+
+            <div className="flex flex-1 flex-col gap-2">
+              <label
+                id={answerLabelId}
+                htmlFor={answerInputId}
+                className="sr-only"
+              >
+                {answerText?.trim()
+                  ? `Odpowiedź: ${answerText}`
+                  : `Odpowiedź ${answerIndex + 1}`}
+              </label>
+              <input
+                id={answerInputId}
+                {...register(answerTextPath)}
+                aria-labelledby={answerLabelId}
+                className={cn(
+                  'rounded-xl border px-3 py-2 text-sm outline-none focus:border-[var(--primary-blue)]',
+                  isCorrect
+                    ? 'border-[var(--orange)] bg-[var(--selected-bg)]'
+                    : 'border-[var(--border)] bg-white',
+                )}
+              />
+              {answerError && (
+                <span className="text-xs text-[var(--wrong-fg)]">
+                  {answerError}
+                </span>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => remove(answerIndex)}
+              disabled={fields.length <= 2}
+              className="mt-0.5 flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-[var(--border)] bg-white text-[var(--wrong-fg)] disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label={`Usuń odpowiedź ${answerIndex + 1} w pytaniu ${questionIndex + 1}`}
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        );
+      })}
+
+      <button
+        type="button"
+        onClick={() => append({ text: '', isCorrect: false })}
+        disabled={fields.length >= maxChoices}
+        className="mt-1 flex cursor-pointer items-center gap-2 self-start rounded-xl border border-dashed border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--primary-blue)] disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <Plus size={14} />
+        Dodaj odpowiedź
+      </button>
+
+      {(questionErrors?.choices?.message ??
+        questionErrors?.choices?.root?.message) && (
+        <span className="text-xs text-[var(--wrong-fg)]">
+          {questionErrors.choices?.message ??
+            questionErrors.choices?.root?.message}
+        </span>
+      )}
+    </fieldset>
+  );
+}
+
+function TrueFalseSection({ questionIndex }: { questionIndex: number }) {
+  const { watch, setValue, trigger } = useFormContext<QuizEditorFormValues>();
+  const questionPath = `questions.${questionIndex}` as const;
+  const correct = watch(`${questionPath}.correct` as const);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-[13px] font-medium text-[var(--text-muted)]">
+        Poprawna odpowiedź
+      </span>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={Boolean(correct)}
+          aria-label="Przełącz prawdę lub fałsz"
+          onClick={() => {
+            setValue(`${questionPath}.correct`, !correct, {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
+            void trigger(questionPath);
+          }}
+          className={cn(
+            'flex h-5 w-9 cursor-pointer items-center rounded-full p-0.5 transition-colors',
+            correct ? 'bg-[var(--primary-blue)]' : 'bg-[var(--border)]',
+          )}
+        >
+          <span
+            className={cn(
+              'h-4 w-4 rounded-full bg-white transition-transform',
+              correct && 'translate-x-4',
+            )}
+          />
+        </button>
+        <span className="text-sm text-[var(--text-dark)]">
+          {correct ? 'Prawda' : 'Fałsz'}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function SliderSection({ questionIndex }: { questionIndex: number }) {
+  const { register, watch, setValue, trigger } =
+    useFormContext<QuizEditorFormValues>();
+  const questionPath = `questions.${questionIndex}` as const;
+  const min = Number(watch(`${questionPath}.min` as const));
+  const max = Number(watch(`${questionPath}.max` as const));
+  const step = Number(watch(`${questionPath}.step` as const));
+  const correct = Number(watch(`${questionPath}.correct` as const));
+  const tolerance = Number(watch(`${questionPath}.tolerance` as const));
+  const unitStr =
+    (watch(`${questionPath}.unit` as const) as string | null)?.trim() ?? '';
+
+  const safeStep = Number.isFinite(step) && step > 0 ? step : 1;
+  const previewTicks = 5;
+  const span = max - min;
+  const tickValues =
+    Number.isFinite(min) &&
+    Number.isFinite(max) &&
+    span > 0 &&
+    Number.isFinite(safeStep)
+      ? Array.from(
+          { length: previewTicks + 1 },
+          (_, i) => min + (span * i) / previewTicks,
+        )
+      : [];
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <label className="flex flex-col gap-1">
+          <span className="text-[13px] font-medium text-[var(--text-muted)]">
+            Min
+          </span>
+          <input
+            type="number"
+            step="any"
+            {...register(`${questionPath}.min` as const, {
+              valueAsNumber: true,
+            })}
+            className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-[13px] font-medium text-[var(--text-muted)]">
+            Max
+          </span>
+          <input
+            type="number"
+            step="any"
+            {...register(`${questionPath}.max` as const, {
+              valueAsNumber: true,
+            })}
+            className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-[13px] font-medium text-[var(--text-muted)]">
+            Poprawna wartość
+          </span>
+          <input
+            type="number"
+            step="any"
+            {...register(`${questionPath}.correct` as const, {
+              valueAsNumber: true,
+            })}
+            className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-[13px] font-medium text-[var(--text-muted)]">
+            Krok
+          </span>
+          <input
+            type="number"
+            step="any"
+            {...register(`${questionPath}.step` as const, {
+              valueAsNumber: true,
+            })}
+            className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-[13px] font-medium text-[var(--text-muted)]">
+            Tolerancja
+          </span>
+          <input
+            type="number"
+            step="any"
+            min={0}
+            {...register(`${questionPath}.tolerance` as const, {
+              valueAsNumber: true,
+            })}
+            className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-[13px] font-medium text-[var(--text-muted)]">
+            Jednostka (opcj.)
+          </span>
+          <input
+            value={
+              (watch(`${questionPath}.unit` as const) as string | null) ?? ''
+            }
+            onChange={(event) => {
+              const v = event.target.value;
+              setValue(`${questionPath}.unit`, v.trim() ? v : null, {
+                shouldDirty: true,
+                shouldValidate: true,
+              });
+              void trigger(questionPath);
+            }}
+            className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
+          />
+        </label>
+      </div>
+
+      <div className="rounded-xl border border-dashed border-[var(--border)] bg-white px-3 py-2 text-xs text-[var(--text-muted)]">
+        <span className="font-semibold text-[var(--text-dark)]">
+          Podgląd zakresu:
+        </span>{' '}
+        {Number.isFinite(min) && Number.isFinite(max) ? (
+          <>
+            [{min}, {max}]{unitStr ? ` ${unitStr}` : ''} · krok {safeStep}
+            {Number.isFinite(tolerance) && tolerance > 0
+              ? ` · ±${tolerance}`
+              : ''}
+            {Number.isFinite(correct) ? ` · cel: ${correct}` : ''}
+          </>
+        ) : (
+          'Uzupełnij min i max.'
+        )}
+      </div>
+
+      {tickValues.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] font-medium tracking-wide text-[var(--text-muted)] uppercase">
+            Skala (orientacyjnie)
+          </span>
+          <div className="relative h-6 rounded-full bg-[var(--border)]/60">
+            {tickValues.map((v) => {
+              const pct = span > 0 ? ((v - min) / span) * 100 : 0;
+              return (
+                <span
+                  key={v}
+                  title={String(v)}
+                  className="absolute top-1/2 h-2 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--text-muted)]"
+                  style={{ left: `${pct}%` }}
+                />
+              );
+            })}
+            {Number.isFinite(correct) && span > 0 && (
+              <span
+                className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[var(--orange)] shadow"
+                style={{
+                  left: `${Math.min(100, Math.max(0, ((correct - min) / span) * 100))}%`,
+                }}
+              />
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function QuestionListItem({
   index,
   isExpanded,
@@ -52,7 +421,6 @@ export default function QuestionListItem({
   canRemove,
 }: QuestionListItemProps) {
   const {
-    control,
     register,
     watch,
     getValues,
@@ -65,67 +433,18 @@ export default function QuestionListItem({
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const questionPath = `questions.${index}` as const;
-  const answersPath = `${questionPath}.answers` as const;
-
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: answersPath,
-  });
 
   const questionText = watch(`${questionPath}.text` as const);
-  const questionType =
-    watch(`${questionPath}.type` as const) ?? ('single_choice' as const);
-  const questionImage = watch(`${questionPath}.image` as const);
-  const questionAnswers = watch(answersPath);
+  const questionType = watch(
+    `${questionPath}.type` as const,
+  ) as KqfQuestionType;
+  const questionImage = watch(`${questionPath}.image` as const) as
+    | string
+    | null
+    | undefined;
   const questionErrors = errors.questions?.[index];
-  const hasAnswerUploadInProgress = Array.from(uploadingKeys).some((key) =>
-    key.startsWith('answer-'),
-  );
 
-  const handleSetSingleCorrect = (selectedAnswerIndex: number) => {
-    const answers = getValues(answersPath);
-
-    answers.forEach((_, answerIndex) => {
-      setValue(
-        `${answersPath}.${answerIndex}.isCorrect`,
-        answerIndex === selectedAnswerIndex,
-        { shouldValidate: true, shouldDirty: true },
-      );
-    });
-
-    void trigger(questionPath);
-  };
-
-  const handleSetMultipleCorrect = (answerIndex: number, checked: boolean) => {
-    setValue(`${answersPath}.${answerIndex}.isCorrect`, checked, {
-      shouldValidate: true,
-      shouldDirty: true,
-    });
-    void trigger(questionPath);
-  };
-
-  const handleTypeChange = (nextType: QuizQuestionType) => {
-    setValue(`${questionPath}.type`, nextType, {
-      shouldValidate: true,
-      shouldDirty: true,
-    });
-
-    if (nextType === 'single_choice') {
-      const answers = getValues(answersPath);
-      const firstCorrectIndex = answers.findIndex((answer) => answer.isCorrect);
-      const targetIndex = firstCorrectIndex >= 0 ? firstCorrectIndex : 0;
-
-      answers.forEach((_, answerIndex) => {
-        setValue(
-          `${answersPath}.${answerIndex}.isCorrect`,
-          answerIndex === targetIndex,
-          { shouldValidate: true, shouldDirty: true },
-        );
-      });
-    }
-
-    void trigger(questionPath);
-  };
+  const questionForPreview = watch(questionPath) as QuizEditorQuestionForm;
 
   const addUploadingKey = (key: string) =>
     setUploadingKeys((prev) => new Set(prev).add(key));
@@ -135,6 +454,19 @@ export default function QuestionListItem({
       next.delete(key);
       return next;
     });
+
+  const handleTypeChange = (nextType: KqfQuestionType) => {
+    const current = getValues(questionPath) as QuizEditorQuestionForm;
+    setValue(
+      questionPath,
+      switchQuestionTypePreservingCommon(current, nextType),
+      {
+        shouldValidate: true,
+        shouldDirty: true,
+      },
+    );
+    void trigger(questionPath);
+  };
 
   const handleQuestionImageUpload = async (
     event: ChangeEvent<HTMLInputElement>,
@@ -150,8 +482,8 @@ export default function QuestionListItem({
     addUploadingKey('question');
 
     try {
-      const uploadedImage = await uploadAdminAsset(selectedFile);
-      setValue(`${questionPath}.image`, uploadedImage, {
+      const uploaded = await uploadAdminAsset(selectedFile);
+      setValue(`${questionPath}.image`, uploaded.url, {
         shouldDirty: true,
         shouldValidate: true,
       });
@@ -163,36 +495,12 @@ export default function QuestionListItem({
     }
   };
 
-  const handleAnswerImageUpload =
-    (answerIndex: number) => async (event: ChangeEvent<HTMLInputElement>) => {
-      const selectedFile = event.target.files?.[0];
-      event.currentTarget.value = '';
-
-      if (!selectedFile) {
-        return;
-      }
-
-      const key = `answer-${answerIndex}`;
-      setUploadError(null);
-      addUploadingKey(key);
-
-      try {
-        const uploadedImage = await uploadAdminAsset(selectedFile);
-        const imagePath = `${answersPath}.${answerIndex}.image` as const;
-        setValue(imagePath, uploadedImage, {
-          shouldDirty: true,
-          shouldValidate: true,
-        });
-        void trigger(questionPath);
-      } catch (error) {
-        setUploadError(toUploadErrorMessage(error));
-      } finally {
-        removeUploadingKey(key);
-      }
-    };
-
   const panelId = `question-panel-${index}`;
   const questionImageInputId = `question-${index}-image-upload`;
+  const imageSrc =
+    typeof questionImage === 'string' && questionImage.trim()
+      ? resolveMediaUrl(questionImage.trim())
+      : null;
 
   return (
     <article>
@@ -254,9 +562,62 @@ export default function QuestionListItem({
                 )}
               </label>
 
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="flex flex-col gap-1">
+                  <span className="text-[13px] font-medium text-[var(--text-muted)]">
+                    Czas na pytanie (s, opcj.)
+                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    placeholder="brak"
+                    {...register(`${questionPath}.timeS` as const, {
+                      setValueAs: (v) => {
+                        if (v === '' || v === null || v === undefined) {
+                          return null;
+                        }
+                        const n = Number(v);
+                        return Number.isFinite(n) && n > 0 ? n : null;
+                      },
+                    })}
+                    className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-[13px] font-medium text-[var(--text-muted)]">
+                    Punkty (opcj.)
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder="domyślnie"
+                    {...register(`${questionPath}.points` as const, {
+                      setValueAs: (v) => {
+                        if (v === '' || v === null || v === undefined) {
+                          return null;
+                        }
+                        const n = Number(v);
+                        return Number.isFinite(n) && n >= 0 ? n : null;
+                      },
+                    })}
+                    className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              </div>
+
+              <label className="flex flex-col gap-1">
+                <span className="text-[13px] font-medium text-[var(--text-muted)]">
+                  Podpowiedź (opcj.)
+                </span>
+                <input
+                  {...register(`${questionPath}.hint` as const)}
+                  className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
+                />
+              </label>
+
               <div className="flex flex-col gap-2">
                 <span className="text-[13px] font-medium text-[var(--text-muted)]">
-                  Obraz pytania (opcjonalnie)
+                  Obraz do pytania (opcj., URL z uploadu)
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
                   <label
@@ -282,7 +643,7 @@ export default function QuestionListItem({
                     <button
                       type="button"
                       onClick={() => {
-                        setValue(`${questionPath}.image`, undefined, {
+                        setValue(`${questionPath}.image`, null, {
                           shouldDirty: true,
                           shouldValidate: true,
                         });
@@ -294,14 +655,12 @@ export default function QuestionListItem({
                     </button>
                   )}
                 </div>
-                {questionImage && (
+                {imageSrc && (
                   <div className="rounded-xl border border-[var(--border)] bg-white p-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={resolveMediaUrl(questionImage.thumbUrl)}
-                      alt={questionImage.alt || 'Podgląd obrazu pytania'}
-                      width={questionImage.width}
-                      height={questionImage.height}
+                      src={imageSrc}
+                      alt="Podgląd obrazu pytania"
                       loading="lazy"
                       decoding="async"
                       className="max-h-40 w-full rounded-lg object-contain"
@@ -318,7 +677,7 @@ export default function QuestionListItem({
                   <select
                     value={questionType}
                     onChange={(event) =>
-                      handleTypeChange(event.target.value as QuizQuestionType)
+                      handleTypeChange(event.target.value as KqfQuestionType)
                     }
                     className="w-full appearance-none rounded-xl border border-[var(--border)] bg-white px-3 py-2 pr-8 text-sm text-[var(--text-dark)] outline-none focus:border-[var(--primary-blue)]"
                   >
@@ -335,174 +694,18 @@ export default function QuestionListItem({
                 </div>
               </label>
 
-              <fieldset className="flex flex-col gap-2">
-                <legend className="text-[13px] font-medium text-[var(--text-muted)]">
-                  Odpowiedzi ({fields.length})
-                </legend>
+              {(questionType === 'singlechoice' ||
+                questionType === 'multichoice') && (
+                <ChoiceAnswersSection questionIndex={index} />
+              )}
 
-                {fields.map((answerField, answerIndex) => {
-                  const answerTextPath =
-                    `${answersPath}.${answerIndex}.text` as const;
-                  const answerCorrectPath =
-                    `${answersPath}.${answerIndex}.isCorrect` as const;
-                  const answerImagePath =
-                    `${answersPath}.${answerIndex}.image` as const;
-                  const answerInputId = `question-${index}-answer-${answerIndex}-text`;
-                  const answerLabelId = `${answerInputId}-label`;
-                  const answerImageInputId = `question-${index}-answer-${answerIndex}-image-upload`;
-                  const answerText = watch(answerTextPath);
-                  const answerImage = watch(answerImagePath);
-                  const isCorrect = watch(answerCorrectPath);
-                  const answerError =
-                    questionErrors?.answers?.[answerIndex]?.text?.message;
+              {questionType === 'truefalse' && (
+                <TrueFalseSection questionIndex={index} />
+              )}
 
-                  return (
-                    <div
-                      key={answerField.id}
-                      className="flex items-start gap-2"
-                    >
-                      {questionType === 'single_choice' ? (
-                        <input
-                          type="radio"
-                          name={`question-${index}-correct`}
-                          checked={isCorrect}
-                          onChange={() => handleSetSingleCorrect(answerIndex)}
-                          aria-labelledby={answerLabelId}
-                          className="mt-2 h-4 w-4 accent-[var(--orange)]"
-                        />
-                      ) : (
-                        <input
-                          type="checkbox"
-                          checked={isCorrect}
-                          onChange={(event) =>
-                            handleSetMultipleCorrect(
-                              answerIndex,
-                              event.target.checked,
-                            )
-                          }
-                          aria-labelledby={answerLabelId}
-                          className="mt-2 h-4 w-4 accent-[var(--orange)]"
-                        />
-                      )}
-
-                      <div className="flex flex-1 flex-col gap-2">
-                        <label
-                          id={answerLabelId}
-                          htmlFor={answerInputId}
-                          className="sr-only"
-                        >
-                          {answerText?.trim()
-                            ? `Odpowiedź: ${answerText}`
-                            : `Odpowiedź ${answerIndex + 1}`}
-                        </label>
-                        <input
-                          id={answerInputId}
-                          {...register(answerTextPath)}
-                          aria-labelledby={answerLabelId}
-                          className={cn(
-                            'rounded-xl border px-3 py-2 text-sm outline-none focus:border-[var(--primary-blue)]',
-                            isCorrect
-                              ? 'border-[var(--orange)] bg-[var(--selected-bg)]'
-                              : 'border-[var(--border)] bg-white',
-                          )}
-                        />
-                        {answerError && (
-                          <span className="text-xs text-[var(--wrong-fg)]">
-                            {answerError}
-                          </span>
-                        )}
-
-                        <div className="flex flex-wrap items-center gap-2">
-                          <label
-                            htmlFor={answerImageInputId}
-                            className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--text-dark)]"
-                          >
-                            {uploadingKeys.has(`answer-${answerIndex}`) ? (
-                              <Loader2 size={14} className="animate-spin" />
-                            ) : (
-                              <Upload size={14} />
-                            )}
-                            Obraz odpowiedzi
-                            <input
-                              id={answerImageInputId}
-                              type="file"
-                              accept="image/png,image/jpeg,image/webp"
-                              className="sr-only"
-                              disabled={uploadingKeys.has(
-                                `answer-${answerIndex}`,
-                              )}
-                              onChange={handleAnswerImageUpload(answerIndex)}
-                            />
-                          </label>
-
-                          {answerImage && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setValue(answerImagePath, undefined, {
-                                  shouldDirty: true,
-                                  shouldValidate: true,
-                                });
-                                void trigger(questionPath);
-                              }}
-                              className="rounded-xl border border-[var(--border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--wrong-fg)]"
-                            >
-                              Usuń obraz
-                            </button>
-                          )}
-                        </div>
-
-                        {answerImage && (
-                          <div className="rounded-lg border border-[var(--border)] bg-white p-2">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={resolveMediaUrl(answerImage.thumbUrl)}
-                              alt={
-                                answerImage.alt ||
-                                `Podgląd obrazu odpowiedzi ${answerIndex + 1}`
-                              }
-                              width={answerImage.width}
-                              height={answerImage.height}
-                              loading="lazy"
-                              decoding="async"
-                              className="max-h-28 w-full rounded-md object-contain"
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => remove(answerIndex)}
-                        disabled={
-                          fields.length <= 2 || hasAnswerUploadInProgress
-                        }
-                        className="mt-0.5 flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-[var(--border)] bg-white text-[var(--wrong-fg)] disabled:cursor-not-allowed disabled:opacity-40"
-                        aria-label={`Usuń odpowiedź ${answerIndex + 1} w pytaniu ${index + 1}`}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  );
-                })}
-
-                <button
-                  type="button"
-                  onClick={() => append({ text: '', isCorrect: false })}
-                  className="mt-1 flex cursor-pointer items-center gap-2 self-start rounded-xl border border-dashed border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--primary-blue)]"
-                >
-                  <Plus size={14} />
-                  Dodaj odpowiedź
-                </button>
-
-                {(questionErrors?.answers?.message ??
-                  questionErrors?.answers?.root?.message) && (
-                  <span className="text-xs text-[var(--wrong-fg)]">
-                    {questionErrors.answers?.message ??
-                      questionErrors.answers?.root?.message}
-                  </span>
-                )}
-              </fieldset>
+              {questionType === 'slider' && (
+                <SliderSection questionIndex={index} />
+              )}
 
               {uploadError && (
                 <div
@@ -514,14 +717,7 @@ export default function QuestionListItem({
               )}
             </div>
 
-            <QuestionPreview
-              question={{
-                text: questionText ?? '',
-                image: questionImage,
-                type: questionType,
-                answers: questionAnswers ?? [],
-              }}
-            />
+            <QuestionPreview question={questionForPreview} />
           </div>
         </div>
       )}

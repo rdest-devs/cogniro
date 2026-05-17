@@ -1,6 +1,6 @@
 'use client';
 
-import { Calendar, Eye, Pencil, Trash2, Users } from 'lucide-react';
+import { Calendar, Eye, List, Pencil, Trash2 } from 'lucide-react';
 
 import StatusBadge from '@/app/components/common/StatusBadge';
 import type { QuizInfo, ResultRow } from '@/app/types';
@@ -57,15 +57,20 @@ export default function QuizDetail({
                   </h3>
                   <StatusBadge label={quiz.status} colorMap={statusColors} />
                 </div>
-                <div className="flex items-center gap-4 text-[13px] text-[var(--text-muted)]">
+                <div className="flex flex-wrap items-center gap-4 text-[13px] text-[var(--text-muted)]">
                   <span className="flex items-center gap-1">
                     <Calendar size={14} />
                     {quiz.date}
                   </span>
                   <span className="flex items-center gap-1">
-                    <Users size={14} />
-                    {quiz.participants} uczestników
+                    <List size={14} />
+                    {quiz.questionCount} pytań
                   </span>
+                  {quiz.lastActivatedAt && (
+                    <span className="flex items-center gap-1">
+                      Ostatnio: {quiz.lastActivatedAt}
+                    </span>
+                  )}
                 </div>
               </button>
 
