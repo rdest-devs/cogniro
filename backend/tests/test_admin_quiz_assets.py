@@ -10,8 +10,8 @@ from PIL import Image
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from core import settings
-import services.admin_quiz as admin_quiz_service
 import services.media_assets as media_assets_service
+import services.sessions as sessions_service
 from main import app
 from tests.auth_test_constants import TEST_ADMIN_PASSWORD
 
@@ -141,7 +141,7 @@ def test_admin_quiz_delete_while_running_returns_409(
 ) -> None:
     data_dir = tmp_path / "data"
     monkeypatch.setenv("COGNIRO_DATA_DIR", str(data_dir))
-    monkeypatch.setattr(admin_quiz_service, "is_quiz_running", lambda _qid: True)
+    monkeypatch.setattr(sessions_service, "is_quiz_running", lambda _qid: True)
 
     with TestClient(app) as client:
         headers = _admin_headers(client)
