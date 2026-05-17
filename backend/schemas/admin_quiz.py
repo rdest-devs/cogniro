@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from schemas.points import normalize_question_points
 
 
 class QuizImage(BaseModel):
@@ -44,11 +46,16 @@ class _AdminQuizPayloadBase(BaseModel):
     id: str | None = None
     text: str = Field(min_length=1)
     time_s: int | None = Field(default=None, gt=0)
-    points: int | None = Field(default=None, ge=0)
+    points: int = Field(default=1, ge=1)
     image: str | None = None  # KQF @image directive value (URL or relative path)
     hint: str | None = None
 
     model_config = ConfigDict(extra="ignore")
+
+    @field_validator("points", mode="before")
+    @classmethod
+    def _validate_points(cls, value: object) -> int:
+        return normalize_question_points(value)
 
 
 class AdminQuizChoicePayload(BaseModel):

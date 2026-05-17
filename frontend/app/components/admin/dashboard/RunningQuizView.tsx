@@ -1,9 +1,19 @@
 'use client';
 
+import { ArrowLeft, Ban, CircleStop, RefreshCcw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { QrCode } from '@/app/components/admin/dashboard/QrCode';
 import AdminLayout from '@/app/components/admin/layout/AdminLayout';
+import {
+  adminBlueHeadTableClass,
+  adminBlueHeadTableTdClass,
+  adminBlueHeadTableTdMutedClass,
+  adminBlueHeadTableThClass,
+  adminBlueHeadTableTheadClass,
+  adminDangerOutlineButtonClass,
+  adminToolbarButtonClass,
+} from '@/app/components/admin/shared/constants';
 import {
   activateQuiz,
   blockNickname,
@@ -12,6 +22,16 @@ import {
 } from '@/lib/sessions/client';
 
 type Snapshot = Awaited<ReturnType<typeof getSessionSnapshot>>;
+
+function formatScoreVsMax(score: number | null, maxScore: number): string {
+  if (maxScore <= 0) {
+    return score == null ? '—' : String(score);
+  }
+  if (score == null) {
+    return `— / ${maxScore}`;
+  }
+  return `${score} / ${maxScore}`;
+}
 
 type Props = {
   quizId: string;
@@ -75,7 +95,12 @@ export function RunningQuizView({
         onLogout={onLogout}
       >
         <p>Błąd: {err}</p>
-        <button type="button" className="mt-2 underline" onClick={onBack}>
+        <button
+          type="button"
+          className={`${adminToolbarButtonClass} mt-2`}
+          onClick={onBack}
+        >
+          <ArrowLeft size={14} aria-hidden />
           Powrót
         </button>
       </AdminLayout>
@@ -104,33 +129,36 @@ export function RunningQuizView({
       onCreateQuiz={onCreateQuiz}
       onLogout={onLogout}
     >
-      <div className="mb-4 flex gap-3">
+      <div className="mb-4 flex flex-wrap gap-3">
         <button
           type="button"
-          className="rounded border px-3 py-1"
+          className={adminToolbarButtonClass}
           onClick={onBack}
         >
+          <ArrowLeft size={14} aria-hidden />
           Powrót
         </button>
       </div>
-      <section className="space-y-4">
-        <div className="flex flex-wrap gap-6">
+      <section className="space-y-6">
+        <div className="flex flex-wrap gap-6 rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] p-6">
           <QrCode value={activation.join_url} />
           <div>
-            <div className="font-mono text-3xl tracking-widest">
+            <div className="font-mono text-3xl tracking-widest text-[var(--text-dark)]">
               PIN: {activation.pin}
             </div>
-            <div className="text-sm text-zinc-500">{activation.join_url}</div>
-            <div className="text-sm">
+            <div className="text-sm text-[var(--text-muted)]">
+              {activation.join_url}
+            </div>
+            <div className="text-sm text-[var(--text-dark)]">
               Aktywny od:{' '}
               {new Date(activation.started_at).toLocaleTimeString('pl-PL')}
             </div>
           </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <button
             type="button"
-            className="rounded border px-3 py-1"
+            className={adminToolbarButtonClass}
             onClick={async () => {
               try {
                 setSnap(await getSessionSnapshot(quizId));
@@ -139,58 +167,83 @@ export function RunningQuizView({
               }
             }}
           >
+            <RefreshCcw size={14} aria-hidden />
             Odśwież
           </button>
           <button
             type="button"
-            className="rounded bg-red-700 px-3 py-1 text-white"
+            className={adminDangerOutlineButtonClass}
             onClick={async () => {
               const r = await stopQuiz(quizId);
               onStopped(r.date, r.filename);
             }}
           >
+            <CircleStop size={14} aria-hidden />
             Zakończ quiz
           </button>
         </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr>
-              <th className="text-left">Pseudonim</th>
-              <th className="text-left">Stan</th>
-              <th className="text-left">Wynik</th>
-              <th className="text-left">Akcje</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(snap?.participants ?? []).map((p) => (
-              <tr key={p.nickname}>
-                <td>{p.nickname}</td>
-                <td>
-                  {p.blocked
-                    ? 'Zablok.'
-                    : p.has_submitted
-                      ? 'Wysłano'
-                      : 'W trakcie'}
-                </td>
-                <td>{p.score ?? '—'}</td>
-                <td>
-                  {!p.blocked && !p.has_submitted && (
-                    <button
-                      type="button"
-                      className="text-red-700 underline"
-                      onClick={async () => {
-                        await blockNickname(quizId, p.nickname);
-                        setSnap(await getSessionSnapshot(quizId));
-                      }}
-                    >
-                      Blokuj
-                    </button>
-                  )}
-                </td>
+        <div className="overflow-x-auto">
+          <table className={adminBlueHeadTableClass}>
+            <thead className={adminBlueHeadTableTheadClass}>
+              <tr>
+                <th className={adminBlueHeadTableThClass}>Pseudonim</th>
+                <th className={adminBlueHeadTableThClass}>Stan</th>
+                <th className={adminBlueHeadTableThClass}>
+                  Wynik (zdobyte / maks.)
+                </th>
+                <th className={adminBlueHeadTableThClass}>Akcje</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {(snap?.participants ?? []).length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={4}
+                    className="px-4 py-8 text-center text-sm text-[var(--text-muted)]"
+                  >
+                    Nikt jeszcze nie dołączył. Udostępnij kod QR lub link z PIN.
+                  </td>
+                </tr>
+              ) : (
+                (snap?.participants ?? []).map((p) => (
+                  <tr
+                    key={p.nickname}
+                    className="border-t border-[var(--border)]"
+                  >
+                    <td className={`${adminBlueHeadTableTdClass} font-medium`}>
+                      {p.nickname}
+                    </td>
+                    <td className={adminBlueHeadTableTdMutedClass}>
+                      {p.blocked
+                        ? 'Zablok.'
+                        : p.has_submitted
+                          ? 'Wysłano'
+                          : 'W trakcie'}
+                    </td>
+                    <td className={`${adminBlueHeadTableTdClass} tabular-nums`}>
+                      {formatScoreVsMax(p.score, snap?.max_score ?? 0)}
+                    </td>
+                    <td className={adminBlueHeadTableTdClass}>
+                      {!p.blocked && !p.has_submitted && (
+                        <button
+                          type="button"
+                          className={adminDangerOutlineButtonClass}
+                          onClick={async () => {
+                            await blockNickname(quizId, p.nickname);
+                            setSnap(await getSessionSnapshot(quizId));
+                          }}
+                        >
+                          <Ban size={14} aria-hidden />
+                          Blokuj
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
     </AdminLayout>
   );

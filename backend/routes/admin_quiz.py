@@ -138,8 +138,8 @@ async def admin_quiz_stop(request: Request, quiz_id: str) -> dict[str, str]:
 
 
 @router.get("/quiz/{quiz_id}/session")
-async def admin_quiz_session(quiz_id: str) -> dict:
-    return await run_in_threadpool(get_session_snapshot, quiz_id)
+async def admin_quiz_session(request: Request, quiz_id: str) -> dict:
+    return await run_in_threadpool(get_session_snapshot, request.app, quiz_id)
 
 
 @router.post("/quiz/{quiz_id}/session/block")

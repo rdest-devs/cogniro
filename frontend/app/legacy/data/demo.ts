@@ -117,6 +117,8 @@ export const attemptReviewDemo = {
   correctCount: 1,
   wrongCount: 1,
   scorePercent: 50,
+  scorePoints: 5,
+  scoreTotal: 10,
   questions: [
     {
       number: 1,

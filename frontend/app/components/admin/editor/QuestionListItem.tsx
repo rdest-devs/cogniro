@@ -449,6 +449,11 @@ export default function QuestionListItem({
   const questionErrors = errors.questions?.[index];
 
   const questionForPreview = watch(questionPath) as QuizEditorQuestionForm;
+  const allQuestions = watch('questions');
+  const quizMaxPoints = allQuestions.reduce((sum, q) => {
+    const p = q?.points;
+    return sum + (typeof p === 'number' && p >= 1 ? p : 1);
+  }, 0);
 
   const addUploadingKey = (key: string) =>
     setUploadingKeys((prev) => new Set(prev).add(key));
@@ -596,19 +601,20 @@ export default function QuestionListItem({
                 </label>
                 <label className="flex flex-col gap-1">
                   <span className="text-[13px] font-medium text-[var(--text-muted)]">
-                    Punkty (opcj.)
+                    Punkty
                   </span>
                   <input
                     type="number"
-                    min={0}
-                    placeholder="domyślnie"
+                    min={1}
+                    step={1}
+                    placeholder="1"
                     {...register(`${questionPath}.points` as const, {
                       setValueAs: (v) => {
                         if (v === '' || v === null || v === undefined) {
-                          return null;
+                          return 1;
                         }
                         const n = Number(v);
-                        return Number.isFinite(n) && n >= 0 ? n : null;
+                        return Number.isFinite(n) && n >= 1 ? Math.trunc(n) : 1;
                       },
                     })}
                     className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
@@ -744,6 +750,7 @@ export default function QuestionListItem({
             <QuestionPreview
               question={questionForPreview}
               editorQuizId={editorQuizId}
+              quizMaxPoints={quizMaxPoints}
             />
           </div>
         </div>

@@ -46,7 +46,10 @@ function mapApiQuestionToForm(q: AdminQuizApiQuestion): QuizEditorQuestionForm {
   const id = q.id;
   const text = q.text;
   const timeS = q.time_s ?? null;
-  const points = q.points ?? null;
+  const points =
+    typeof q.points === 'number' && Number.isFinite(q.points) && q.points >= 1
+      ? Math.trunc(q.points)
+      : 1;
   const image = q.image ?? null;
   const hint = q.hint ?? null;
 
@@ -127,9 +130,11 @@ function coerceApiQuestionLoose(
       ? raw.time_s
       : null;
   const points =
-    typeof raw.points === 'number' && Number.isFinite(raw.points)
-      ? raw.points
-      : null;
+    typeof raw.points === 'number' &&
+    Number.isFinite(raw.points) &&
+    raw.points >= 1
+      ? Math.trunc(raw.points)
+      : 1;
   const image =
     typeof raw.image === 'string' && raw.image.trim() ? raw.image : null;
   const hint =
@@ -286,7 +291,7 @@ function mapQuestionToPayload(
     id: q.id,
     text: q.text.trim(),
     time_s: q.timeS ?? undefined,
-    points: q.points ?? undefined,
+    points: q.points,
     image: q.image?.trim() ? q.image.trim() : undefined,
     hint: q.hint?.trim() ? q.hint.trim() : undefined,
   };

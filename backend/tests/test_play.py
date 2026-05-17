@@ -120,7 +120,7 @@ def test_submit_blocked_returns_400_violation(
     assert r.json()["detail"]["error"] == "nickname_violation"
 
 
-def test_submit_twice_returns_409(
+def test_submit_twice_is_idempotent_returns_200(
     client: TestClient, admin_token_header: dict[str, str]
 ) -> None:
     quiz_id = _create_quiz(client, admin_token_header)
@@ -128,6 +128,12 @@ def test_submit_twice_returns_409(
         f"/admin/quiz/{quiz_id}/activate", headers=admin_token_header
     ).json()["pin"]
     client.post(f"/play/{pin}/join", json={"nickname": "Ala"})
-    client.post(f"/play/{pin}/submit", json={"nickname": "Ala", "score": 1})
-    r = client.post(f"/play/{pin}/submit", json={"nickname": "Ala", "score": 2})
-    assert r.status_code == 409
+    r1 = client.post(f"/play/{pin}/submit", json={"nickname": "Ala", "score": 1})
+    assert r1.status_code == 200
+    r2 = client.post(f"/play/{pin}/submit", json={"nickname": "Ala", "score": 999})
+    assert r2.status_code == 200
+    assert r2.json() == {"accepted": True}
+    snap = client.get(
+        f"/admin/quiz/{quiz_id}/session", headers=admin_token_header
+    ).json()
+    assert snap["participants"][0]["score"] == 1

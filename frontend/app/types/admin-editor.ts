@@ -32,7 +32,8 @@ interface QuizEditorQuestionFormBase {
   id?: string;
   text: string;
   timeS?: number | null;
-  points?: number | null;
+  /** Waga punktowa pytania; w pliku KQF / API brak lub 0 → liczymy jako 1. */
+  points: number;
   /** KQF @image: URL or relative path from upload */
   image?: string | null;
   hint?: string | null;
@@ -150,7 +151,7 @@ export type AdminQuizUpsertQuestionPayload =
       type: 'singlechoice';
       text: string;
       time_s?: number | null;
-      points?: number | null;
+      points: number;
       image?: string | null;
       hint?: string | null;
       choices: Array<{ text: string; is_correct: boolean }>;
@@ -160,7 +161,7 @@ export type AdminQuizUpsertQuestionPayload =
       type: 'multichoice';
       text: string;
       time_s?: number | null;
-      points?: number | null;
+      points: number;
       image?: string | null;
       hint?: string | null;
       choices: Array<{ text: string; is_correct: boolean }>;
@@ -170,7 +171,7 @@ export type AdminQuizUpsertQuestionPayload =
       type: 'truefalse';
       text: string;
       time_s?: number | null;
-      points?: number | null;
+      points: number;
       image?: string | null;
       hint?: string | null;
       correct: boolean;
@@ -180,7 +181,7 @@ export type AdminQuizUpsertQuestionPayload =
       type: 'slider';
       text: string;
       time_s?: number | null;
-      points?: number | null;
+      points: number;
       image?: string | null;
       hint?: string | null;
       correct: number;

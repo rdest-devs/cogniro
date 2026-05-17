@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ResultDetailView } from '@/app/components/admin/results/ResultDetailView';
 import { ResultsBrowserView } from '@/app/components/admin/results/ResultsBrowserView';
@@ -126,31 +126,42 @@ export default function AdminDashboard({
   const [adminLoading, setAdminLoading] = useState(true);
   const [adminError, setAdminError] = useState<string | null>(null);
 
-  const loadAdminQuizzes = useCallback(async () => {
-    setAdminLoading(true);
-    setAdminError(null);
-
-    try {
-      const quizzes = await getAllAdminQuizzes();
-      setAdminQuizzes(quizzes);
-    } catch (error) {
-      if (
-        error instanceof AdminQuizApiError &&
-        (error.status === 401 || error.status === 403)
-      ) {
-        onSessionInvalid();
-        return;
+  const loadAdminQuizzes = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      const silent = opts?.silent ?? false;
+      if (!silent) {
+        setAdminLoading(true);
       }
-      setAdminError(toUiErrorMessage(error));
-      setAdminQuizzes([]);
-    } finally {
-      setAdminLoading(false);
-    }
-  }, [onSessionInvalid]);
+      setAdminError(null);
 
+      try {
+        const quizzes = await getAllAdminQuizzes();
+        setAdminQuizzes(quizzes);
+      } catch (error) {
+        if (
+          error instanceof AdminQuizApiError &&
+          (error.status === 401 || error.status === 403)
+        ) {
+          onSessionInvalid();
+          return;
+        }
+        setAdminError(toUiErrorMessage(error));
+        setAdminQuizzes([]);
+      } finally {
+        if (!silent) {
+          setAdminLoading(false);
+        }
+      }
+    },
+    [onSessionInvalid],
+  );
+
+  const adminListHydratedRef = useRef(false);
   useEffect(() => {
-    void loadAdminQuizzes();
-  }, [loadAdminQuizzes]);
+    const silent = adminListHydratedRef.current;
+    adminListHydratedRef.current = true;
+    void loadAdminQuizzes(silent ? { silent: true } : undefined);
+  }, [adminView, quizIdFromUrl, loadAdminQuizzes]);
 
   useEffect(() => {
     if (adminLoading || wantsNew || !quizIdFromUrl) {
@@ -207,7 +218,7 @@ export default function AdminDashboard({
   }, [adminView, wantsEdit, quizIdFromUrl, adminInfos]);
 
   const resultsForSelectedQuiz = useMemo(() => {
-    if (!resolvedSelectedQuizId) {
+    if (!resolvedSelectedQuizId || !adminError) {
       return [];
     }
 
@@ -217,7 +228,7 @@ export default function AdminDashboard({
     >;
 
     return resultsByQuizId[resolvedSelectedQuizId] ?? [];
-  }, [resolvedSelectedQuizId]);
+  }, [resolvedSelectedQuizId, adminError]);
 
   const goDetail = useCallback(
     (quizId: string) => {
@@ -339,6 +350,7 @@ export default function AdminDashboard({
           <QuizDetail
             quizzes={adminInfos}
             selectedQuizId={resolvedSelectedQuizId}
+            legacyDemoResultsEnabled={Boolean(adminError)}
             resultsForQuiz={resultsForSelectedQuiz}
             adminBase={adminBase}
             menuActiveItem={menuActiveItem}

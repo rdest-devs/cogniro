@@ -70,7 +70,7 @@ Questions are separated by `---` (horizontal rules). Each block has:
 | `ID`     | alphanumeric slug   | ✅       | `Q1`, `q-3`  |
 | `type`   | see types below     | ✅       | `singlechoice`|
 | `time`   | integer + `s`       | ❌       | `30s`         |
-| `points` | integer + `pts`     | ❌       | `1000pts`     |
+| `points` | integer + `pts`     | ❌       | `1000pts`; **if omitted (or 0), score weight is 1** |
 
 **Parseable regex:**
 ```

@@ -19,7 +19,7 @@ export function createQuestionForType(
     text?: string;
     hint?: string | null;
     timeS?: number | null;
-    points?: number | null;
+    points?: number;
     image?: string | null;
   } = {},
 ): QuizEditorQuestionForm {
@@ -28,7 +28,12 @@ export function createQuestionForType(
     text: options.text ?? '',
     hint: options.hint ?? null,
     timeS: options.timeS ?? null,
-    points: options.points ?? null,
+    points:
+      options.points !== undefined &&
+      Number.isFinite(options.points) &&
+      options.points >= 1
+        ? Math.trunc(options.points)
+        : 1,
     image: options.image ?? null,
   };
 

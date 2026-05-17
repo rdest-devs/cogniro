@@ -56,6 +56,7 @@ def test_serialize_slider_emits_block() -> None:
         ],
     )
     text = serialize_kqf(quiz)
+    assert "## Q1 | slider | 1pts" in text
     assert "@slider:" in text
     assert "  correct: 1989" in text
     assert "  unit: year" in text
@@ -67,6 +68,7 @@ def test_serialize_truefalse_emits_two_choices() -> None:
         questions=[KqfTrueFalse(id="Q1", type="truefalse", text="?", correct=False)],
     )
     text = serialize_kqf(quiz)
+    assert "## Q1 | truefalse | 1pts" in text
     assert "- [ ] True" in text
     assert "- [x] False" in text
 

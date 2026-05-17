@@ -51,6 +51,8 @@ def test_results_list_endpoints(
         headers=admin_token_header,
     ).json()
     assert full["quiz_id"] == quiz_id
+    assert full["max_score"] == 1
+    assert full["scores"][0]["score"] == 100
 
 
 def test_delete_file_and_day(

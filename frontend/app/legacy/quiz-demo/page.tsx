@@ -500,6 +500,8 @@ export default function QuizDemoPage() {
           correctCount={correctCount}
           wrongCount={result.reviewQuestions.length - correctCount}
           scorePercent={result.scorePercent}
+          scorePoints={result.scorePoints}
+          scoreTotal={result.scoreMaxPoints}
           questions={result.reviewQuestions}
           onBack={() => setView('results')}
         />

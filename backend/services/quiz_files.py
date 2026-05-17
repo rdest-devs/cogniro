@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 
 from schemas.kqf import KqfQuiz
-from services.kqf import parse_kqf, serialize_kqf
+from services.kqf import KqfParseError, parse_kqf, serialize_kqf
 from services.slug import slugify_title
 from services.storage import write_text_atomic
 
@@ -116,6 +116,17 @@ def write_quiz_dir(
 
 def read_quiz_kqf(quiz_dir: Path) -> KqfQuiz:
     return parse_kqf((quiz_dir / "quiz.kqf").read_text(encoding="utf-8"))
+
+
+def max_points_from_quiz_dir(quiz_dir: Path) -> int:
+    """Sum of ``points`` from ``quiz.kqf``; 0 if file missing or invalid."""
+    if not quiz_dir.is_dir() or not (quiz_dir / "quiz.kqf").is_file():
+        return 0
+    try:
+        quiz = read_quiz_kqf(quiz_dir)
+    except OSError, UnicodeDecodeError, KqfParseError:
+        return 0
+    return sum(q.points for q in quiz.questions)
 
 
 def safe_quiz_media_file_path(quiz_dir: Path, filename: str) -> Path | None:

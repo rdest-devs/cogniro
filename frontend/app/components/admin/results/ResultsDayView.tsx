@@ -1,9 +1,16 @@
 'use client';
 
+import { ArrowLeft, RefreshCcw, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import AdminLayout from '@/app/components/admin/layout/AdminLayout';
+import {
+  adminDangerOutlineButtonClass,
+  adminPrimaryOutlineButtonClass,
+  adminToolbarButtonClass,
+} from '@/app/components/admin/shared/constants';
+import { resultFileDisplayName } from '@/lib/results/archivePayload';
 import { deleteResult, listDay } from '@/lib/results/client';
 
 type FileRow = {
@@ -77,17 +84,18 @@ export function ResultsDayView({
       onCreateQuiz={onCreateQuiz}
       onLogout={onLogout}
     >
-      <div className="mb-4 flex gap-3">
+      <div className="mb-4 flex flex-wrap gap-3">
         <button
           type="button"
-          className="rounded border px-3 py-1"
+          className={adminToolbarButtonClass}
           onClick={onBack}
         >
+          <ArrowLeft size={14} aria-hidden />
           Powrót
         </button>
         <button
           type="button"
-          className="rounded border px-3 py-1"
+          className={adminToolbarButtonClass}
           onClick={() => {
             void (async () => {
               try {
@@ -104,6 +112,7 @@ export function ResultsDayView({
             })();
           }}
         >
+          <RefreshCcw size={14} aria-hidden />
           Odśwież
         </button>
       </div>
@@ -117,17 +126,17 @@ export function ResultsDayView({
               className="flex flex-wrap items-center gap-2 text-sm"
             >
               <Link
-                className="text-[var(--primary-blue)] underline"
+                className={adminPrimaryOutlineButtonClass}
                 href={`${adminBase}?${qs({ date, file: f.filename })}`}
               >
-                {f.filename}
+                {resultFileDisplayName(f.filename)}
               </Link>
               <span className="text-zinc-500">
                 {f.quiz_title} · {f.score_count} wyników
               </span>
               <button
                 type="button"
-                className="text-red-700 underline"
+                className={adminDangerOutlineButtonClass}
                 onClick={async () => {
                   if (confirm(`Usunąć plik ${f.filename}?`)) {
                     await deleteResult(date, f.filename);
@@ -137,6 +146,7 @@ export function ResultsDayView({
                   }
                 }}
               >
+                <Trash2 size={14} aria-hidden />
                 Usuń
               </button>
             </li>

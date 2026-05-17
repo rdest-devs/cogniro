@@ -84,6 +84,4 @@ async def play_submit(pin: str, body: SubmitBody, request: Request) -> dict:
                 ),
             },
         ) from None
-    except sessions.AlreadySubmittedError:
-        raise HTTPException(status_code=409, detail="already_submitted") from None
     return {"accepted": True}

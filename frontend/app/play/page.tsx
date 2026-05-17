@@ -5,13 +5,10 @@ import { Suspense, useState } from 'react';
 
 import { EnterCode } from '@/app/play/EnterCode';
 import { EnterNickname } from '@/app/play/EnterNickname';
-import { NicknameViolation } from '@/app/play/NicknameViolation';
 import { PlayingShell } from '@/app/play/PlayingShell';
 import { PlayResult } from '@/app/play/PlayResult';
-import { PlaySubmitter } from '@/app/play/PlaySubmitter';
-import { calculateScore } from '@/app/play/scoring';
+import { type AnswerMap, calculateScore } from '@/app/play/scoring';
 import {
-  clearPlayState,
   loadPlayState,
   type PlayState,
   savePlayState,
@@ -24,20 +21,13 @@ type Stage =
   | { name: 'enter-nickname'; code: string }
   | { name: 'playing'; code: string; nickname: string; state: PlayState }
   | {
-      name: 'submitting';
-      code: string;
-      nickname: string;
-      state: PlayState;
-      score: number;
-    }
-  | {
       name: 'result';
       code: string;
       nickname: string;
       quiz: KqfQuiz;
       score: number;
-    }
-  | { name: 'violation' };
+      answers: AnswerMap;
+    };
 
 function PlayExperience({ urlCode }: { urlCode: string }) {
   const [stage, setStage] = useState<Stage>(() =>
@@ -46,6 +36,18 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
       : { name: 'enter-code' },
   );
   const [joinError, setJoinError] = useState<string | null>(null);
+
+  if (stage.name === 'result') {
+    return (
+      <PlayResult
+        code={stage.code}
+        nickname={stage.nickname}
+        quiz={stage.quiz}
+        score={stage.score}
+        answers={stage.answers}
+      />
+    );
+  }
 
   return (
     <main className="mx-auto max-w-2xl p-6">
@@ -112,40 +114,16 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
           onFinish={(final) => {
             const score = calculateScore(final.quiz, final.answers);
             setStage({
-              name: 'submitting',
-              code: stage.code,
-              nickname: stage.nickname,
-              state: final,
-              score,
-            });
-          }}
-        />
-      )}
-      {stage.name === 'submitting' && (
-        <PlaySubmitter
-          code={stage.code}
-          nickname={stage.nickname}
-          score={stage.score}
-          onAccepted={() => {
-            clearPlayState(window.sessionStorage, stage.code, stage.nickname);
-            setStage({
               name: 'result',
               code: stage.code,
               nickname: stage.nickname,
-              quiz: stage.state.quiz,
-              score: stage.score,
+              quiz: final.quiz,
+              score,
+              answers: final.answers,
             });
-          }}
-          onViolation={() => {
-            clearPlayState(window.sessionStorage, stage.code, stage.nickname);
-            setStage({ name: 'violation' });
           }}
         />
       )}
-      {stage.name === 'result' && (
-        <PlayResult quiz={stage.quiz} score={stage.score} />
-      )}
-      {stage.name === 'violation' && <NicknameViolation />}
     </main>
   );
 }

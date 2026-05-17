@@ -290,8 +290,7 @@ def _write_question(buf: io.StringIO, question: object) -> None:
     header_parts = [f"## {question.id} | {question.type}"]
     if question.time_s is not None:
         header_parts.append(f"{question.time_s}s")
-    if question.points is not None:
-        header_parts.append(f"{question.points}pts")
+    header_parts.append(f"{question.points}pts")
     buf.write(" | ".join(header_parts))
     buf.write("\n")
     buf.write(question.text)

@@ -32,9 +32,6 @@ export default function QuizResults({
     <div className="flex h-full w-full max-w-[390px] flex-col bg-[var(--page-bg)]">
       <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 pt-4 pb-8">
         <section className="flex flex-col items-center gap-4">
-          <span className="text-sm font-medium text-[var(--text-muted)]">
-            Twój wynik
-          </span>
           <ScoreCircle
             percent={scorePercent}
             correct={scorePoints}
@@ -46,7 +43,7 @@ export default function QuizResults({
           <div className="w-full max-w-[280px] rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] px-4 py-3">
             <div className="flex items-center justify-between text-sm">
               <span className="font-medium text-[var(--text-muted)]">
-                Punkty
+                Zdobyte / maks.
               </span>
               <span className="font-semibold text-[var(--text-dark)]">
                 {scorePoints} / {scoreTotal}

@@ -35,7 +35,9 @@ def test_activate_returns_pin_and_join_url(
     assert len(body["pin"]) == 6
     assert body["join_url"].endswith(f"/play/?code={body['pin']}")
     r2 = client.post(f"/admin/quiz/{quiz_id}/activate", headers=admin_token_header)
-    assert r2.status_code == 409
+    assert r2.status_code == 200
+    assert r2.json()["pin"] == body["pin"]
+    assert r2.json()["join_url"] == body["join_url"]
 
 
 def test_session_snapshot_lists_participants(
@@ -50,6 +52,7 @@ def test_session_snapshot_lists_participants(
     assert r.status_code == 200
     body = r.json()
     assert body["pin"] == pin
+    assert body["max_score"] == 1
     assert body["participants"][0]["nickname"] == "Ala"
     assert body["participants"][0]["has_submitted"] is False
 

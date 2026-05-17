@@ -1,32 +1,65 @@
 import { z } from 'zod';
 
+/** FastAPI serializes missing optional str fields as JSON `null`; normalize for TS. */
+const nullableJsonString = z
+  .union([z.string(), z.null()])
+  .optional()
+  .transform((v) => (v == null ? undefined : v));
+
 export const kqfFrontMatterSchema = z.object({
   title: z.string().min(1),
-  description: z.string().optional(),
-  author: z.string().optional(),
-  version: z.string().optional(),
-  language: z.string().optional(),
+  description: nullableJsonString,
+  author: nullableJsonString,
+  version: nullableJsonString,
+  language: nullableJsonString,
   tags: z.array(z.string()).default([]),
 });
 
 export const kqfMediaSchema = z.object({
-  image: z.string().optional(),
-  video: z.string().optional(),
-  audio: z.string().optional(),
-  hint: z.string().optional(),
+  image: nullableJsonString,
+  video: nullableJsonString,
+  audio: nullableJsonString,
+  hint: nullableJsonString,
 });
+
+const defaultKqfMedia: z.infer<typeof kqfMediaSchema> = {
+  image: undefined,
+  video: undefined,
+  audio: undefined,
+  hint: undefined,
+};
 
 export const kqfChoiceSchema = z.object({
   text: z.string().min(1),
   is_correct: z.boolean(),
 });
 
+function normalizeKqfPoints(value: unknown): number {
+  if (value == null) {
+    return 1;
+  }
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value) || value < 1) {
+      return 1;
+    }
+    return Math.trunc(value);
+  }
+  if (typeof value === 'string' && value.trim() !== '') {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n < 1) {
+      return 1;
+    }
+    return Math.trunc(n);
+  }
+  return 1;
+}
+
 const baseFields = {
   id: z.string().min(1),
   text: z.string().min(1),
   time_s: z.number().int().positive().nullish(),
-  points: z.number().int().nonnegative().nullish(),
-  media: kqfMediaSchema.default({}),
+  points: z.preprocess(normalizeKqfPoints, z.number().int().min(1)),
+  media: kqfMediaSchema.default(defaultKqfMedia),
 };
 
 export const kqfSingleChoiceSchema = z
@@ -76,7 +109,7 @@ export const kqfSliderSchema = z
     max: z.number(),
     step: z.number().default(1),
     tolerance: z.number().nonnegative().default(0),
-    unit: z.string().optional(),
+    unit: nullableJsonString,
   })
   .superRefine((v, ctx) => {
     if (v.min >= v.max) {

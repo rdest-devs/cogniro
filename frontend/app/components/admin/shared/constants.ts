@@ -32,3 +32,28 @@ export const typeColors: Record<string, string> = {
   'Prawda / fałsz': 'bg-[var(--orange)] text-white',
   Suwak: 'bg-[var(--wrong-fg)] text-white',
 };
+
+/** Wspólne przyciski narzędziowe admina (AdminPanel, QuizDetail). */
+export const adminToolbarButtonClass =
+  'inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] px-3 py-2 text-xs font-semibold text-[var(--text-dark)] transition-colors hover:bg-[var(--page-bg)] disabled:cursor-not-allowed disabled:opacity-50';
+
+export const adminPrimaryOutlineButtonClass =
+  'inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[var(--primary-blue)] px-3 py-2 text-xs font-semibold text-[var(--primary-blue)] transition-colors hover:bg-[var(--primary-blue)] hover:text-white';
+
+export const adminDangerOutlineButtonClass =
+  'inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[var(--wrong-fg)] px-3 py-2 text-xs font-semibold text-[var(--wrong-fg)] transition-colors hover:bg-[var(--wrong-fg)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50';
+
+/** Tabela z niebieskim nagłówkiem (np. podgląd sesji z QR, demo wyników). */
+export const adminBlueHeadTableClass =
+  'w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card-bg)]';
+
+export const adminBlueHeadTableTheadClass = 'bg-[var(--primary-blue)]';
+
+export const adminBlueHeadTableThClass =
+  'px-4 py-3 text-left text-sm font-semibold text-white';
+
+export const adminBlueHeadTableTdClass =
+  'px-4 py-3 text-sm text-[var(--text-dark)]';
+
+export const adminBlueHeadTableTdMutedClass =
+  'px-4 py-3 text-sm text-[var(--text-muted)]';

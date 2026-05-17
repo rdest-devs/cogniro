@@ -47,13 +47,16 @@ const questionCommonFormSchema = z.object({
     .transform((v) =>
       v === undefined || v === null || Number.isNaN(v) ? null : v,
     ),
-  points: z
-    .union([z.number().int().min(0), z.nan()])
-    .nullable()
-    .optional()
-    .transform((v) =>
-      v === undefined || v === null || Number.isNaN(v) ? null : v,
-    ),
+  points: z.preprocess((v) => {
+    if (v === undefined || v === null || v === '') {
+      return 1;
+    }
+    const n = typeof v === 'number' ? v : Number(v);
+    if (!Number.isFinite(n) || n < 1) {
+      return 1;
+    }
+    return Math.trunc(n);
+  }, z.number().int().min(1)),
   image: z
     .union([z.string().trim().min(1), z.literal(''), z.null()])
     .optional()
@@ -211,7 +214,16 @@ const apiQuestionCommon = {
   id: optionalId,
   text: z.string(),
   time_s: z.coerce.number().int().positive().nullish(),
-  points: z.coerce.number().int().min(0).nullish(),
+  points: z.preprocess((v) => {
+    if (v === undefined || v === null || v === '') {
+      return 1;
+    }
+    const n = typeof v === 'number' ? v : Number(v);
+    if (!Number.isFinite(n) || n < 1) {
+      return 1;
+    }
+    return Math.trunc(n);
+  }, z.number().int().min(1)),
   image: optionalNullableString,
   hint: optionalNullableString,
 };
@@ -297,7 +309,16 @@ const upsertCommon = {
   id: z.string().optional(),
   text: z.string().trim().min(1),
   time_s: z.number().int().positive().nullable().optional(),
-  points: z.number().int().min(0).nullable().optional(),
+  points: z.preprocess((v) => {
+    if (v === undefined || v === null) {
+      return 1;
+    }
+    const n = typeof v === 'number' ? v : Number(v);
+    if (!Number.isFinite(n) || n < 1) {
+      return 1;
+    }
+    return Math.trunc(n);
+  }, z.number().int().min(1)),
   image: z
     .union([z.string(), z.literal(''), z.null()])
     .optional()

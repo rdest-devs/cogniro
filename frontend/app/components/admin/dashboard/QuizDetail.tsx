@@ -18,11 +18,20 @@ import { AdminQuizApiError, deleteAdminQuiz } from '@/lib/admin-quiz';
 import { downloadExport } from '@/lib/import-export/client';
 
 import AdminLayout from '../layout/AdminLayout';
-import { statusColors } from '../shared/constants';
+import {
+  adminBlueHeadTableClass,
+  adminBlueHeadTableTdClass,
+  adminBlueHeadTableTdMutedClass,
+  adminBlueHeadTableThClass,
+  adminBlueHeadTableTheadClass,
+  statusColors,
+} from '../shared/constants';
 
 interface QuizDetailProps {
   quizzes: QuizInfo[];
   selectedQuizId?: string | null;
+  /** Tylko gdy panel admina pokazuje dane demo (np. błąd API) — inaczej ukryte. */
+  legacyDemoResultsEnabled?: boolean;
   resultsForQuiz: ResultRow[];
   adminBase: string;
   menuActiveItem?: string;
@@ -37,6 +46,7 @@ interface QuizDetailProps {
 export default function QuizDetail({
   quizzes,
   selectedQuizId,
+  legacyDemoResultsEnabled = false,
   resultsForQuiz,
   adminBase,
   menuActiveItem = '',
@@ -219,27 +229,19 @@ export default function QuizDetail({
           ))}
         </section>
 
-        {selectedQuiz && (
+        {legacyDemoResultsEnabled && selectedQuiz && (
           <section className="flex flex-col gap-4">
             <h2 className="text-base font-bold text-[var(--text-dark)]">
               Wyniki (demo) — {selectedQuiz.title}
             </h2>
 
-            <table className="w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card-bg)]">
-              <thead className="bg-[var(--primary-blue)]">
+            <table className={adminBlueHeadTableClass}>
+              <thead className={adminBlueHeadTableTheadClass}>
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-white">
-                    Imię
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-white">
-                    Wynik
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-white">
-                    Czas
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-white">
-                    Data
-                  </th>
+                  <th className={adminBlueHeadTableThClass}>Imię</th>
+                  <th className={adminBlueHeadTableThClass}>Wynik</th>
+                  <th className={adminBlueHeadTableThClass}>Czas</th>
+                  <th className={adminBlueHeadTableThClass}>Data</th>
                 </tr>
               </thead>
               <tbody>
@@ -249,8 +251,7 @@ export default function QuizDetail({
                       colSpan={4}
                       className="px-4 py-8 text-center text-sm text-[var(--text-muted)]"
                     >
-                      Brak danych demo dla tego quizu. Rzeczywiste wyniki w
-                      sekcji Wyniki.
+                      Brak wpisów demo dla tego quizu w zestawie przykładowym.
                     </td>
                   </tr>
                 ) : (
@@ -259,18 +260,20 @@ export default function QuizDetail({
                       key={`${row.name}-${index}`}
                       className="border-t border-[var(--border)]"
                     >
-                      <td className="px-4 py-3 text-sm font-medium text-[var(--text-dark)]">
+                      <td
+                        className={`${adminBlueHeadTableTdClass} font-medium`}
+                      >
                         {row.name}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className={adminBlueHeadTableTdClass}>
                         <span className="rounded-md bg-[var(--orange)] px-2 py-0.5 text-xs font-bold text-white">
                           {row.score}%
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-[var(--text-muted)]">
+                      <td className={adminBlueHeadTableTdMutedClass}>
                         {row.time}
                       </td>
-                      <td className="px-4 py-3 text-sm text-[var(--text-muted)]">
+                      <td className={adminBlueHeadTableTdMutedClass}>
                         {row.date}
                       </td>
                     </tr>

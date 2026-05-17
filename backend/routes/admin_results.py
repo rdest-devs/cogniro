@@ -9,6 +9,7 @@ from security.admin_auth import require_admin
 from services.results import (
     delete_result_day,
     delete_result_file,
+    enrich_result_payload_with_max_score,
     list_result_dates,
     list_results_in_day,
     read_result_file,
@@ -35,12 +36,12 @@ async def results_list_in_day(request: Request, date: str) -> list[dict]:
 
 @router.get("/{date}/{filename}")
 async def results_read_file(request: Request, date: str, filename: str) -> dict:
+    paths = get_storage(request.app)
     try:
-        return await run_in_threadpool(
-            read_result_file, get_storage(request.app), date, filename
-        )
+        data = await run_in_threadpool(read_result_file, paths, date, filename)
     except FileNotFoundError:
         raise HTTPException(status_code=404) from None
+    return await run_in_threadpool(enrich_result_payload_with_max_score, paths, data)
 
 
 @router.delete("/{date}/{filename}", status_code=204)

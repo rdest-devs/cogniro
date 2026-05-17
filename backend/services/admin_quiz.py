@@ -28,6 +28,7 @@ from services.admin_quiz_adapters import (
 from services.quiz_files import (
     QuizMeta,
     materialize_staging_media_into_quiz_dir,
+    max_points_from_quiz_dir,
     read_meta_or_rebuild,
     read_quiz_kqf,
     remove_obsolete_quiz_media_files,
@@ -152,17 +153,7 @@ def delete_quiz(app: FastAPI, quiz_id: str) -> None:
         shutil.rmtree(qd)
 
 
-def activate_quiz(app: FastAPI, quiz_id: str) -> dict[str, str]:
-    paths = get_storage(app)
-    qd = quiz_dir_for(paths, quiz_id)
-    if not qd.is_dir():
-        raise HTTPException(status_code=404, detail="Nie znaleziono quizu.")
-    meta = read_meta_or_rebuild(qd, quiz_id)
-    try:
-        session = sessions.start_session(quiz_id=quiz_id, quiz_title=meta.title)
-    except ValueError:
-        raise HTTPException(status_code=409, detail="Quiz jest już aktywny.")
-    update_last_activated_at(qd, _now_iso())
+def _activation_payload(session: sessions.QuizSession) -> dict[str, str]:
     return {
         "pin": session.pin,
         "join_url": _build_join_url(session.pin),
@@ -170,18 +161,47 @@ def activate_quiz(app: FastAPI, quiz_id: str) -> dict[str, str]:
     }
 
 
+def activate_quiz(app: FastAPI, quiz_id: str) -> dict[str, str]:
+    paths = get_storage(app)
+    qd = quiz_dir_for(paths, quiz_id)
+    if not qd.is_dir():
+        raise HTTPException(status_code=404, detail="Nie znaleziono quizu.")
+    meta = read_meta_or_rebuild(qd, quiz_id)
+    existing = sessions.lookup_by_quiz(quiz_id)
+    if existing is not None:
+        # Idempotent: admin UI / React Strict Mode may POST activate more than once
+        # while the same in-memory session is already running.
+        return _activation_payload(existing)
+    try:
+        session = sessions.start_session(quiz_id=quiz_id, quiz_title=meta.title)
+    except ValueError:
+        # Lost the race with another concurrent activate; join the existing session.
+        raced = sessions.lookup_by_quiz(quiz_id)
+        if raced is None:
+            raise HTTPException(
+                status_code=409, detail="Quiz jest już aktywny."
+            ) from None
+        return _activation_payload(raced)
+    update_last_activated_at(qd, _now_iso())
+    return _activation_payload(session)
+
+
 def _build_join_url(pin: str) -> str:
     base = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000").rstrip("/")
     return f"{base}/play/?code={pin}"
 
 
-def get_session_snapshot(quiz_id: str) -> dict:
+def get_session_snapshot(app: FastAPI, quiz_id: str) -> dict:
     session = sessions.lookup_by_quiz(quiz_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Quiz nie jest aktywny.")
+    paths = get_storage(app)
+    qd = quiz_dir_for(paths, quiz_id)
+    max_score = max_points_from_quiz_dir(qd)
     return {
         "pin": session.pin,
         "started_at": session.started_at.isoformat().replace("+00:00", "Z"),
+        "max_score": max_score,
         "participants": [
             {
                 "nickname": p.nickname,
@@ -214,6 +234,8 @@ def stop_quiz(app: FastAPI, quiz_id: str) -> dict[str, str]:
     session = sessions.stop_session(quiz_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Quiz nie jest aktywny.")
+    qd = quiz_dir_for(paths, quiz_id)
+    max_score = max_points_from_quiz_dir(qd)
     entries = [
         ResultEntry(
             nickname=p.nickname,
@@ -231,6 +253,7 @@ def stop_quiz(app: FastAPI, quiz_id: str) -> dict[str, str]:
         session_started_at=session.started_at,
         session_stopped_at=stopped_at,
         entries=entries,
+        max_score=max_score,
     )
     return {"date": stopped_at.strftime("%Y-%m-%d"), "filename": filename}
 

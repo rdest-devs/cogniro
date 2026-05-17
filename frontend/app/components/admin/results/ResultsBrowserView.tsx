@@ -1,9 +1,14 @@
 'use client';
 
+import { ArrowLeft, RefreshCcw, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 import AdminLayout from '@/app/components/admin/layout/AdminLayout';
+import {
+  adminDangerOutlineButtonClass,
+  adminToolbarButtonClass,
+} from '@/app/components/admin/shared/constants';
 import { deleteResult, listDates, listDay } from '@/lib/results/client';
 
 type Props = {
@@ -117,17 +122,19 @@ export function ResultsBrowserView({
       <div className="mb-4 flex flex-wrap gap-3">
         <button
           type="button"
-          className="rounded-xl border border-[var(--border)] px-3 py-2 text-sm font-semibold text-[var(--text-dark)]"
+          className={adminToolbarButtonClass}
           onClick={onBack}
         >
+          <ArrowLeft size={14} aria-hidden />
           Powrót
         </button>
         <button
           type="button"
           disabled={loading}
-          className="rounded-xl border border-[var(--border)] px-3 py-2 text-sm font-semibold text-[var(--text-dark)] disabled:opacity-50"
+          className={adminToolbarButtonClass}
           onClick={() => void loadAll()}
         >
+          <RefreshCcw size={14} aria-hidden />
           Odśwież
         </button>
       </div>
@@ -186,7 +193,7 @@ export function ResultsBrowserView({
                     <td className="py-3 pl-2 text-right">
                       <button
                         type="button"
-                        className="text-xs font-semibold text-[var(--wrong-fg)] underline"
+                        className={adminDangerOutlineButtonClass}
                         onClick={(e) => {
                           e.stopPropagation();
                           if (confirm(`Usunąć plik ${r.filename}?`)) {
@@ -197,6 +204,7 @@ export function ResultsBrowserView({
                           }
                         }}
                       >
+                        <Trash2 size={14} aria-hidden />
                         Usuń
                       </button>
                     </td>

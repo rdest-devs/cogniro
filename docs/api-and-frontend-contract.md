@@ -30,9 +30,9 @@ All routes below require admin auth unless noted. Router prefix: **`/admin`**.
 | GET | `/admin/quiz/{quiz_id}` | Full quiz DTO for editor (KQF-backed). |
 | PUT | `/admin/quiz/{quiz_id}` | Update → `{ id }`. |
 | DELETE | `/admin/quiz/{quiz_id}` | `204`; `409` if session running. |
-| POST | `/admin/quiz/{quiz_id}/activate` | `{ pin, join_url, started_at }`. |
-| POST | `/admin/quiz/{quiz_id}/stop` | `{ date, filename }` for written result file. |
-| GET | `/admin/quiz/{quiz_id}/session` | Snapshot: pin, participants, blocked flags, scores. |
+| POST | `/admin/quiz/{quiz_id}/activate` | `{ pin, join_url, started_at }`. Ustawia `meta.json.last_activated_at` przy **pierwszym** uruchomieniu. Powtórny POST przy już aktywnej sesji zwraca **200** z tym samym `pin` / `join_url` (idempotentnie). |
+| POST | `/admin/quiz/{quiz_id}/stop` | `{ date, filename }` for written result file (JSON zawiera m.in. `max_score` — suma `points` z KQF). |
+| GET | `/admin/quiz/{quiz_id}/session` | Snapshot: `pin`, `started_at`, **`max_score`** (suma punktów z KQF), `participants[]` (`nickname`, `joined_at`, `blocked`, `has_submitted`, `score`). |
 | POST | `/admin/quiz/{quiz_id}/session/block` | JSON `{ nickname }` → `{ blocked: true }`. |
 | GET | `/admin/quiz/{quiz_id}/media/{filename:path}` | Plik z `storage/quizzes/{quiz_id}/media/` dla podglądu w edytorze (bez aktywnej sesji). |
 | GET | `/admin/quiz/{quiz_id}/export` | `application/zip` attachment: mirror of `storage/quizzes/{quiz_id}/` — every file under that directory (e.g. `quiz.kqf`, `meta.json`, `media/**`, any extras). |
@@ -54,7 +54,7 @@ Prefix: **`/admin/results`**.
 |--------|------|------|
 | GET | `/admin/results` | `string[]` ISO dates (newest first). |
 | GET | `/admin/results/{date}` | File metadata list for that day. |
-| GET | `/admin/results/{date}/{filename}` | Full JSON body of one result file. |
+| GET | `/admin/results/{date}/{filename}` | Pełny JSON archiwum: `quiz_id`, `quiz_title`, `session_*`, **`max_score`**, `scores[]`. Dla starszych plików bez `max_score` backend uzupełnia pole z aktualnego `quiz.kqf` (jeśli quiz nadal istnieje). |
 | DELETE | `/admin/results/{date}/{filename}` | Remove one file. |
 | DELETE | `/admin/results/{date}` | Remove entire day directory. |
 
@@ -65,7 +65,7 @@ Client: [frontend/lib/results/client.ts](../frontend/lib/results/client.ts).
 | Method | Path | Body | Notes |
 |--------|------|------|------|
 | POST | `/play/{pin}/join` | `{ nickname }` | Registers participant; `409` if nickname taken (case-folded). |
-| POST | `/play/{pin}/submit` | `{ nickname, score }` | `400` with `{"detail": {"error": "nickname_violation", "detail_pl": "..."}}` if blocked / unknown nickname. |
+| POST | `/play/{pin}/submit` | `{ nickname, score }` | `400` with `{"detail": {"error": "nickname_violation", "detail_pl": "..."}}` if blocked / unknown nickname. Powtórny submit tego samego uczestnika (np. podwójne wywołanie z UI) zwraca **`200`** `{"accepted": true}` — pierwszy zapisany wynik pozostaje bez zmiany. |
 
 **Rate limiting (per client IP):** Both endpoints share one sliding window per IP (default **120** requests per **60** seconds). Over limit → **`429`** with body `{"detail":"rate_limited"}` and **`Retry-After`** (seconds). Configure `PLAY_RATE_LIMIT_*` in `backend/.env.example`. Behind a trusted reverse proxy, set **`PLAY_RATE_LIMIT_TRUST_X_FORWARDED_FOR=true`** so the first `X-Forwarded-For` hop is used as the client IP (do not enable if clients can send that header directly to the API).
 

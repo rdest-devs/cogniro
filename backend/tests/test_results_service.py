@@ -31,12 +31,14 @@ def test_write_result_file_creates_path() -> None:
         session_started_at=dt.datetime(2026, 5, 17, 19, 0, 1, tzinfo=dt.timezone.utc),
         session_stopped_at=dt.datetime(2026, 5, 17, 19, 23, 44, tzinfo=dt.timezone.utc),
         entries=_entries(),
+        max_score=5000,
     )
     assert name == "quiz_abc_tytul_19-23-44.json"
     path = paths.results_dir / "2026-05-17" / name
     assert path.is_file()
     data = json.loads(path.read_text(encoding="utf-8"))
     assert data["scores"][0]["nickname"] == "Ala"
+    assert data["max_score"] == 5000
 
 
 def test_list_dates_and_files() -> None:
@@ -48,6 +50,7 @@ def test_list_dates_and_files() -> None:
         session_started_at=dt.datetime(2026, 5, 17, tzinfo=dt.timezone.utc),
         session_stopped_at=dt.datetime(2026, 5, 17, 10, 0, 0, tzinfo=dt.timezone.utc),
         entries=_entries(),
+        max_score=10,
     )
     write_result_file(
         paths,
@@ -56,6 +59,7 @@ def test_list_dates_and_files() -> None:
         session_started_at=dt.datetime(2026, 5, 18, tzinfo=dt.timezone.utc),
         session_stopped_at=dt.datetime(2026, 5, 18, 10, 0, 0, tzinfo=dt.timezone.utc),
         entries=_entries(),
+        max_score=10,
     )
     assert list_result_dates(paths) == ["2026-05-18", "2026-05-17"]
     files = list_results_in_day(paths, "2026-05-17")
@@ -73,6 +77,7 @@ def test_read_and_delete_file_and_day() -> None:
         session_started_at=dt.datetime(2026, 5, 17, tzinfo=dt.timezone.utc),
         session_stopped_at=dt.datetime(2026, 5, 17, 10, 0, 0, tzinfo=dt.timezone.utc),
         entries=_entries(),
+        max_score=10,
     )
     payload = read_result_file(paths, "2026-05-17", name)
     assert payload["quiz_id"] == "quiz_a"

@@ -110,10 +110,6 @@ class NicknameViolationError(Exception):
     pass
 
 
-class AlreadySubmittedError(Exception):
-    pass
-
-
 def record_submission(*, pin: str, nickname: str, score: int) -> Participant:
     with _LOCK:
         session = _SESSIONS_BY_PIN.get(pin)
@@ -124,7 +120,8 @@ def record_submission(*, pin: str, nickname: str, score: int) -> Participant:
         if participant is None or participant.blocked:
             raise NicknameViolationError(nickname)
         if participant.submitted_at is not None:
-            raise AlreadySubmittedError(nickname)
+            # Idempotent: duplicate POST (e.g. React Strict Mode double effect) must not fail.
+            return participant
         participant.score = int(score)
         participant.submitted_at = datetime.now(timezone.utc)
         return participant

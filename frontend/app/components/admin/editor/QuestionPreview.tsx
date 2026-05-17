@@ -11,6 +11,8 @@ import EditorQuestionImagePreview from './EditorQuestionImagePreview';
 interface QuestionPreviewProps {
   question: QuizEditorQuestionForm;
   editorQuizId?: string | null;
+  /** Suma wag punktowych wszystkich pytań w quizie (podgląd na bieżąco). */
+  quizMaxPoints?: number;
 }
 
 const typeLabel: Record<QuizEditorQuestionForm['type'], string> = {
@@ -69,6 +71,7 @@ function previewBody(question: QuizEditorQuestionForm) {
 export default function QuestionPreview({
   question,
   editorQuizId,
+  quizMaxPoints,
 }: QuestionPreviewProps) {
   const rawImage =
     typeof question.image === 'string' && question.image.trim()
@@ -88,6 +91,22 @@ export default function QuestionPreview({
       </h3>
       <p className="text-xs font-semibold text-[var(--text-muted)]">
         {typeLabel[question.type]}
+      </p>
+      <p className="text-[12px] text-[var(--text-muted)]">
+        Punkty za to pytanie:{' '}
+        <span className="font-semibold text-[var(--text-dark)]">
+          {question.points}
+        </span>
+        {quizMaxPoints !== undefined && quizMaxPoints > 0 && (
+          <>
+            {' '}
+            · Łącznie maks. w quizie:{' '}
+            <span className="font-semibold text-[var(--text-dark)]">
+              {quizMaxPoints}
+            </span>{' '}
+            pkt
+          </>
+        )}
       </p>
       <p className="text-sm text-[var(--text-dark)]">
         {question.text.trim() || 'Brak treści pytania'}

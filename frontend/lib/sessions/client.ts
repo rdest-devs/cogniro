@@ -20,6 +20,7 @@ const sessionParticipantSchema = z.object({
 const sessionSnapshotSchema = z.object({
   pin: z.string(),
   started_at: z.string(),
+  max_score: z.number().int().nonnegative(),
   participants: z.array(sessionParticipantSchema),
 });
 

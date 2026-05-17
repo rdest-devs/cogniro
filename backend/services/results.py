@@ -9,7 +9,8 @@ import shutil
 from dataclasses import asdict, dataclass
 
 from services.slug import compose_result_filename
-from services.storage import StoragePaths, write_text_atomic
+from services.quiz_files import max_points_from_quiz_dir
+from services.storage import StoragePaths, quiz_dir_for, write_text_atomic
 
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -43,6 +44,7 @@ def write_result_file(
     session_started_at: dt.datetime,
     session_stopped_at: dt.datetime,
     entries: list[ResultEntry],
+    max_score: int,
 ) -> str:
     date_dir = paths.results_dir / session_stopped_at.strftime("%Y-%m-%d")
     date_dir.mkdir(parents=True, exist_ok=True)
@@ -58,6 +60,7 @@ def write_result_file(
         "quiz_title": quiz_title,
         "session_started_at": _iso_z(session_started_at),
         "session_stopped_at": _iso_z(session_stopped_at),
+        "max_score": int(max_score),
         "scores": [asdict(e) for e in entries],
     }
     write_text_atomic(
@@ -109,6 +112,23 @@ def read_result_file(paths: StoragePaths, date: str, filename: str) -> dict:
     if not path.is_file():
         raise FileNotFoundError(filename)
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def enrich_result_payload_with_max_score(paths: StoragePaths, data: dict) -> dict:
+    """Add ``max_score`` when missing by reading the quiz KQF (older archives)."""
+    ms = data.get("max_score")
+    if isinstance(ms, int) and ms > 0:
+        return data
+    qid = data.get("quiz_id")
+    if not isinstance(qid, str) or not qid.strip():
+        return data
+    qd = quiz_dir_for(paths, qid.strip())
+    computed = max_points_from_quiz_dir(qd)
+    if computed <= 0:
+        return data
+    out = dict(data)
+    out["max_score"] = computed
+    return out
 
 
 def delete_result_file(paths: StoragePaths, date: str, filename: str) -> None:

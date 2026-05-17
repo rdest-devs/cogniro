@@ -122,6 +122,7 @@ What animal?
 @hint: It barks.
 """
     quiz = parse_kqf(text)
+    assert quiz.questions[0].points == 1
     assert quiz.questions[0].media.image == "./media/dog.jpg"
     assert quiz.questions[0].media.hint == "It barks."
 
