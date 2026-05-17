@@ -1,6 +1,7 @@
 'use client';
 
 import { ChevronDown, LogOut, Plus } from 'lucide-react';
+import Link from 'next/link';
 import ExportedImage from 'next-image-export-optimizer';
 import { useEffect, useRef, useState } from 'react';
 
@@ -8,6 +9,7 @@ interface TopBarProps {
   userName?: string;
   userInitials?: string;
   logoUrl?: string;
+  logoHref?: string;
   onCreateQuiz?: () => void;
   onLogout?: () => void;
 }
@@ -16,6 +18,7 @@ export default function TopBar({
   userName = 'Admin',
   userInitials = 'AB',
   logoUrl = '/images/wi-new-logo.png',
+  logoHref = '/admin/',
   onCreateQuiz,
   onLogout,
 }: TopBarProps) {
@@ -37,13 +40,19 @@ export default function TopBar({
 
   return (
     <header className="flex h-16 w-full items-center justify-between border-b border-[var(--border)] bg-[var(--card-bg)] px-8">
-      <ExportedImage
-        src={logoUrl}
-        alt="Logo"
-        width={120}
-        height={34}
-        className="h-[34px] w-auto object-contain"
-      />
+      <Link
+        href={logoHref}
+        className="inline-flex shrink-0 rounded-md ring-offset-2 ring-offset-[var(--card-bg)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-blue)]"
+        aria-label="Moje Quizy"
+      >
+        <ExportedImage
+          src={logoUrl}
+          alt=""
+          width={120}
+          height={34}
+          className="h-[34px] w-auto object-contain"
+        />
+      </Link>
 
       <div className="flex items-center gap-4">
         <div ref={menuRef} className="relative">

@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { cn } from '@/lib/cn';
 
 import { menuItems } from '../shared/constants';
@@ -7,11 +9,14 @@ import { menuItems } from '../shared/constants';
 interface SidebarProps {
   activeItem?: string;
   onNavigate?: (item: string) => void;
+  /** Adres listy „Moje Quizy” (domyślnie jak logo: `/admin/`). */
+  quizListHref?: string;
 }
 
 export default function Sidebar({
   activeItem = 'quizy',
   onNavigate,
+  quizListHref = '/admin/',
 }: SidebarProps) {
   return (
     <aside className="flex h-full w-[260px] flex-col bg-[var(--sidebar-bg)]">
@@ -25,18 +30,15 @@ export default function Sidebar({
         {menuItems.map((item) => {
           const isActive = activeItem === item.id;
           const Icon = item.icon;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onNavigate?.(item.id)}
-              aria-current={isActive ? 'page' : undefined}
-              className={cn(
-                'flex w-full cursor-pointer items-center gap-3 rounded-xl py-3 pr-5 pl-6 transition-colors',
-                isActive
-                  ? 'border-l-4 border-l-[var(--orange)] bg-[var(--sidebar-active)]'
-                  : 'border-l-4 border-l-transparent',
-              )}
-            >
+          const rowClass = cn(
+            'flex w-full cursor-pointer items-center gap-3 rounded-xl py-3 pr-5 pl-6 text-left no-underline ring-offset-2 ring-offset-[var(--sidebar-bg)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--orange)]',
+            isActive
+              ? 'border-l-4 border-l-[var(--orange)] bg-[var(--sidebar-active)]'
+              : 'border-l-4 border-l-transparent',
+          );
+
+          const inner = (
+            <>
               <Icon
                 size={20}
                 className={cn(
@@ -55,6 +57,31 @@ export default function Sidebar({
               >
                 {item.label}
               </span>
+            </>
+          );
+
+          if (item.id === 'quizy' && quizListHref) {
+            return (
+              <Link
+                key={item.id}
+                href={quizListHref}
+                aria-current={isActive ? 'page' : undefined}
+                className={rowClass}
+              >
+                {inner}
+              </Link>
+            );
+          }
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onNavigate?.(item.id)}
+              aria-current={isActive ? 'page' : undefined}
+              className={rowClass}
+            >
+              {inner}
             </button>
           );
         })}

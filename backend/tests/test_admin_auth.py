@@ -5,6 +5,7 @@ import pytest
 import jwt
 from fastapi.testclient import TestClient
 
+from schemas.admin_quiz import AdminQuizListItemResponse
 from security.admin_auth import reload_admin_auth_config
 from tests.auth_test_constants import TEST_ADMIN_JWT_SECRET as _JWT_SECRET
 from tests.auth_test_constants import TEST_ADMIN_PASSWORD
@@ -402,7 +403,10 @@ def test_admin_quiz_with_token_returns_list(client: TestClient) -> None:
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 200
-    assert response.json() == []
+    body = response.json()
+    assert isinstance(body, list)
+    for item in body:
+        AdminQuizListItemResponse.model_validate(item)
 
 
 def test_admin_logout_revokes_token(
