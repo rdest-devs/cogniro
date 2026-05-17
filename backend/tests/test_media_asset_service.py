@@ -108,7 +108,9 @@ async def test_upload_asset_runs_in_threadpool(
     assert worker_thread["id"] != main_thread
 
 
-def test_cleanup_orphaned_assets_keeps_referenced_and_recent(monkeypatch, tmp_path: Path) -> None:
+def test_cleanup_orphaned_assets_keeps_referenced_and_recent(
+    monkeypatch, tmp_path: Path
+) -> None:
     app = FastAPI()
     monkeypatch.setenv("COGNIRO_DATA_DIR", str(tmp_path))
     app.state.storage = initialize_storage()

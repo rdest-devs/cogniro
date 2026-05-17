@@ -64,7 +64,11 @@ export default function MultipleChoice({
         imageLoading="eager"
       />
 
-      <div className="flex flex-col gap-3" role="group" aria-label={groupAriaLabel}>
+      <div
+        className="flex flex-col gap-3"
+        role="group"
+        aria-label={groupAriaLabel}
+      >
         {normalizedAnswers.map((answer, i) => {
           const hasImage = Boolean(answer.image);
           const label = answer.text?.trim() || `Odpowiedź ${i + 1}`;

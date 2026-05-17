@@ -52,7 +52,11 @@ export default function SingleChoice({
         imageLoading="eager"
       />
 
-      <div className="flex flex-col gap-3" role="radiogroup" aria-label={groupAriaLabel}>
+      <div
+        className="flex flex-col gap-3"
+        role="radiogroup"
+        aria-label={groupAriaLabel}
+      >
         {normalizedAnswers.map((answer, i) => {
           const hasImage = Boolean(answer.image);
           const label = answer.text?.trim() || `Odpowiedź ${i + 1}`;
