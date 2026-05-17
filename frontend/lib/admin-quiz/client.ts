@@ -231,6 +231,7 @@ export async function updateAdminQuiz(
 
 export async function uploadAdminAsset(
   file: File,
+  hasRetried = false,
 ): Promise<AdminAssetUploadResponse> {
   const token = getStoredAdminToken();
   const formData = new FormData();
@@ -252,11 +253,30 @@ export async function uploadAdminAsset(
 
   if (!response.ok) {
     const errorBody = (payload ?? {}) as ApiErrorBody;
+    const detailCode =
+      typeof errorBody.detail === 'string' ? errorBody.detail : undefined;
+
+    if (
+      response.status === 401 &&
+      errorBody.detail === 'token_expired' &&
+      !hasRetried
+    ) {
+      try {
+        await refreshAdminToken();
+      } catch {
+        // fall through to regular auth error
+      }
+
+      if (getStoredAdminToken()) {
+        return uploadAdminAsset(file, true);
+      }
+    }
+
     throw new AdminQuizApiError(
       getErrorMessage(errorBody, toAssetUploadErrorMessage(response.status)),
       response.status,
-      errorBody.error,
-      errorBody.reason,
+      detailCode ?? errorBody.error,
+      errorBody.reason ?? detailCode,
     );
   }
 

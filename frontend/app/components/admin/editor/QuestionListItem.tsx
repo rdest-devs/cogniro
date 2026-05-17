@@ -78,6 +78,9 @@ export default function QuestionListItem({
   const questionImage = watch(`${questionPath}.image` as const);
   const questionAnswers = watch(answersPath);
   const questionErrors = errors.questions?.[index];
+  const hasAnswerUploadInProgress = Array.from(uploadingKeys).some((key) =>
+    key.startsWith('answer-'),
+  );
 
   const handleSetSingleCorrect = (selectedAnswerIndex: number) => {
     const answers = getValues(answersPath);
@@ -461,7 +464,9 @@ export default function QuestionListItem({
                       <button
                         type="button"
                         onClick={() => remove(answerIndex)}
-                        disabled={fields.length <= 2}
+                        disabled={
+                          fields.length <= 2 || hasAnswerUploadInProgress
+                        }
                         className="mt-0.5 flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-[var(--border)] bg-white text-[var(--wrong-fg)] disabled:cursor-not-allowed disabled:opacity-40"
                         aria-label={`Usuń odpowiedź ${answerIndex + 1} w pytaniu ${index + 1}`}
                       >
