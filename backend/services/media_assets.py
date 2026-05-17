@@ -20,9 +20,10 @@ from core.settings import (
     UPLOAD_CHUNK_SIZE,
 )
 from schemas.admin_quiz import QuizAssetUploadResponse
-from services.storage import get_storage
+from services.storage import StoragePaths, get_storage
 
 _ALLOWED_PILLOW_FORMATS = {"JPEG", "PNG", "WEBP"}
+# Minimum age before periodic purge deletes ``uploads/quiz-assets/asset_*`` (editor cache).
 ORPHAN_ASSET_RETENTION_SECONDS = 24 * 60 * 60
 _ASSET_ID_IN_STRING = re.compile(r"\b(asset_[0-9a-f]{32})\b")
 
@@ -206,15 +207,18 @@ def _extract_referenced_asset_ids(quizzes: list[dict]) -> set[str]:
     return referenced
 
 
-def cleanup_orphaned_assets(
-    app: FastAPI,
-    quizzes: list[dict],
+def _purge_staging_orphans(
+    storage: StoragePaths,
+    referenced_asset_ids: set[str] | None,
     *,
-    now_timestamp: float | None = None,
-    min_age_seconds: int = ORPHAN_ASSET_RETENTION_SECONDS,
+    now_timestamp: float | None,
+    min_age_seconds: int,
 ) -> int:
-    storage = get_storage(app)
-    referenced_asset_ids = _extract_referenced_asset_ids(quizzes)
+    """Remove ``asset_*`` staging dirs older than ``cutoff``.
+
+    When ``referenced_asset_ids`` is not ``None``, those ids are kept (tests).
+    When ``None``, all stale ``asset_*`` dirs are removed (periodic editor cache).
+    """
     now = time.time() if now_timestamp is None else now_timestamp
     cutoff = now - max(min_age_seconds, 0)
     removed = 0
@@ -228,7 +232,7 @@ def cleanup_orphaned_assets(
         try:
             if not child.is_dir() or not child.name.startswith("asset_"):
                 continue
-            if child.name in referenced_asset_ids:
+            if referenced_asset_ids is not None and child.name in referenced_asset_ids:
                 continue
             if child.stat().st_mtime > cutoff:
                 continue
@@ -238,6 +242,37 @@ def cleanup_orphaned_assets(
             continue
 
     return removed
+
+
+def cleanup_orphaned_assets(
+    app: FastAPI,
+    quizzes: list[dict],
+    *,
+    now_timestamp: float | None = None,
+    min_age_seconds: int = ORPHAN_ASSET_RETENTION_SECONDS,
+) -> int:
+    referenced_asset_ids = _extract_referenced_asset_ids(quizzes)
+    return _purge_staging_orphans(
+        get_storage(app),
+        referenced_asset_ids,
+        now_timestamp=now_timestamp,
+        min_age_seconds=min_age_seconds,
+    )
+
+
+def purge_stale_editor_staging(
+    app: FastAPI,
+    *,
+    now_timestamp: float | None = None,
+    min_age_seconds: int = ORPHAN_ASSET_RETENTION_SECONDS,
+) -> int:
+    """Periodic purge: remove old ``uploads/quiz-assets/asset_*`` (editor-only; quiz media lives under each quiz after save)."""
+    return _purge_staging_orphans(
+        get_storage(app),
+        None,
+        now_timestamp=now_timestamp,
+        min_age_seconds=min_age_seconds,
+    )
 
 
 def serve_asset(app: FastAPI, asset_path: str) -> FileResponse:

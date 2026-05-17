@@ -20,6 +20,7 @@ from routes.admin_results import router as admin_results_router  # noqa: E402
 from routes.media import router as media_router  # noqa: E402
 from routes.play import router as play_router  # noqa: E402
 from security.admin_auth import reload_admin_auth_config  # noqa: E402
+from services.media_assets import purge_stale_editor_staging  # noqa: E402
 from services.results import purge_results_older_than  # noqa: E402
 from services.storage import initialize_storage  # noqa: E402
 
@@ -50,7 +51,16 @@ async def lifespan(application: FastAPI):
                 timedelta(days=RESULT_RETENTION_DAYS),
             )
         except Exception:
-            logger.exception("initial purge failed")
+            logger.exception("initial results purge failed")
+        try:
+            removed = purge_stale_editor_staging(application)
+            if removed:
+                logger.info(
+                    "initial editor staging purge removed %d asset directories",
+                    removed,
+                )
+        except Exception:
+            logger.exception("initial editor staging purge failed")
         while True:
             await asyncio.sleep(PURGE_INTERVAL_SECONDS)
             try:
@@ -59,7 +69,16 @@ async def lifespan(application: FastAPI):
                     timedelta(days=RESULT_RETENTION_DAYS),
                 )
             except Exception:
-                logger.exception("purge iteration failed")
+                logger.exception("results purge iteration failed")
+            try:
+                removed = purge_stale_editor_staging(application)
+                if removed:
+                    logger.info(
+                        "editor staging purge removed %d asset directories",
+                        removed,
+                    )
+            except Exception:
+                logger.exception("editor staging purge iteration failed")
 
     task = asyncio.create_task(_purge_loop())
     try:

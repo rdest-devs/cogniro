@@ -58,6 +58,7 @@ def _reset_play_rate_limit() -> Iterator[None]:
 
 @pytest.fixture(autouse=True)
 def _cogniro_data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("COGNIRO_STORAGE_DIR", raising=False)
     monkeypatch.setenv("COGNIRO_DATA_DIR", str(tmp_path / "cogniro-data"))
 
 

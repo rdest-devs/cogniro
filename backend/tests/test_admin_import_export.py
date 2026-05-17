@@ -40,6 +40,84 @@ def test_export_returns_zip_with_kqf(
         assert "quiz.kqf" in zf.namelist()
 
 
+def test_export_bundles_staged_editor_assets(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    from main import app
+    from services.storage import get_storage
+
+    paths = get_storage(app)
+    aid = "asset_" + "a" * 32
+    asset_dir = paths.staging_dir / aid
+    asset_dir.mkdir(parents=True, exist_ok=True)
+    (asset_dir / "image.webp").write_bytes(b"fakeimg")
+    (asset_dir / "thumb.webp").write_bytes(b"faketh")
+
+    payload = _minimal_quiz_payload()
+    payload["questions"][0]["image"] = f"/media/quiz-assets/{aid}/image.webp"
+
+    r = client.post("/admin/quiz", json=payload, headers=admin_token_header)
+    assert r.status_code == 200
+    quiz_id = r.json()["id"]
+
+    r = client.get(f"/admin/quiz/{quiz_id}/export", headers=admin_token_header)
+    assert r.status_code == 200
+    with zipfile.ZipFile(io.BytesIO(r.content)) as zf:
+        names = set(zf.namelist())
+        assert "quiz.kqf" in names
+        assert "meta.json" in names
+        assert f"media/{aid}/image.webp" in names
+        assert f"media/{aid}/thumb.webp" in names
+        kqf_text = zf.read("quiz.kqf").decode("utf-8")
+        assert f"./media/{aid}/image.webp" in kqf_text
+
+
+def test_export_zip_includes_every_file_in_quiz_dir(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    from main import app
+    from services.storage import get_storage, quiz_dir_for
+
+    quiz_id = _create_quiz(client, admin_token_header)
+    paths = get_storage(app)
+    qd = quiz_dir_for(paths, quiz_id)
+    (qd / "notes.txt").write_text("hello\n", encoding="utf-8")
+
+    r = client.get(f"/admin/quiz/{quiz_id}/export", headers=admin_token_header)
+    assert r.status_code == 200
+    with zipfile.ZipFile(io.BytesIO(r.content)) as zf:
+        names = set(zf.namelist())
+        assert "quiz.kqf" in names
+        assert "meta.json" in names
+        assert "notes.txt" in names
+        assert zf.read("notes.txt") == b"hello\n"
+
+
+def test_import_restores_non_kqf_files_from_zip(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    from main import app
+    from services.storage import get_storage, quiz_dir_for
+
+    quiz_id = _create_quiz(client, admin_token_header)
+    paths = get_storage(app)
+    qd = quiz_dir_for(paths, quiz_id)
+    (qd / "notes.txt").write_text("imported\n", encoding="utf-8")
+
+    zip_bytes = client.get(
+        f"/admin/quiz/{quiz_id}/export", headers=admin_token_header
+    ).content
+    r = client.post(
+        "/admin/quiz/import",
+        files={"file": ("q.zip", zip_bytes, "application/zip")},
+        headers=admin_token_header,
+    )
+    assert r.status_code == 200
+    new_id = r.json()["id"]
+    new_qd = quiz_dir_for(paths, new_id)
+    assert (new_qd / "notes.txt").read_text(encoding="utf-8") == "imported\n"
+
+
 def test_export_404_for_unknown_quiz(
     client: TestClient, admin_token_header: dict[str, str]
 ) -> None:

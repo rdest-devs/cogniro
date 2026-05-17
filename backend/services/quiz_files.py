@@ -3,14 +3,20 @@
 from __future__ import annotations
 
 import json
+import logging
+import re
+import shutil
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from schemas.kqf import KqfQuiz
 from services.kqf import parse_kqf, serialize_kqf
 from services.slug import slugify_title
 from services.storage import write_text_atomic
+
+_ASSET_ID = re.compile(r"\b(asset_[0-9a-f]{32})\b")
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -62,8 +68,10 @@ def read_meta_or_rebuild(quiz_dir: Path, quiz_id: str) -> QuizMeta:
     if meta_path.is_file():
         try:
             data = json.loads(meta_path.read_text(encoding="utf-8"))
+            if data.get("id") != quiz_id:
+                raise ValueError("meta id mismatch")
             return QuizMeta(**data)
-        except json.JSONDecodeError, KeyError, TypeError:
+        except json.JSONDecodeError, KeyError, TypeError, ValueError:
             pass
     quiz = read_quiz_kqf(quiz_dir)
     now = (
@@ -108,6 +116,183 @@ def write_quiz_dir(
 
 def read_quiz_kqf(quiz_dir: Path) -> KqfQuiz:
     return parse_kqf((quiz_dir / "quiz.kqf").read_text(encoding="utf-8"))
+
+
+def safe_quiz_media_file_path(quiz_dir: Path, filename: str) -> Path | None:
+    """Resolve ``filename`` under ``quiz_dir/media`` with traversal checks; or None."""
+    rel = PurePosixPath(filename)
+    if rel.is_absolute() or any(p in {"..", "."} for p in rel.parts):
+        return None
+    base = (quiz_dir / "media").resolve()
+    target = (base / Path(*rel.parts)).resolve()
+    try:
+        target.relative_to(base)
+    except ValueError:
+        return None
+    if not target.is_file():
+        return None
+    for parent in [target, *target.parents]:
+        if parent == base:
+            break
+        if parent.is_symlink():
+            return None
+    return target
+
+
+def _materialize_one_media_url(
+    url: str | None,
+    staging_dir: Path,
+    quiz_media_root: Path,
+) -> str | None:
+    """Copy staged editor assets into ``quiz_media_root``; normalize to ``./media/...``."""
+    if not url or not (s := url.strip()):
+        return None
+
+    m = _ASSET_ID.search(s)
+    if m:
+        aid = m.group(1)
+        dest_img = quiz_media_root / aid / "image.webp"
+        if dest_img.is_file():
+            return f"./media/{aid}/image.webp"
+        src_img = staging_dir / aid / "image.webp"
+        if src_img.is_file():
+            dest_img.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src_img, dest_img)
+            st_thumb = staging_dir / aid / "thumb.webp"
+            if st_thumb.is_file():
+                shutil.copy2(st_thumb, quiz_media_root / aid / "thumb.webp")
+            try:
+                shutil.rmtree(staging_dir / aid)
+            except OSError:
+                pass
+            return f"./media/{aid}/image.webp"
+        return url
+
+    if s.startswith("./media/"):
+        tail = s[len("./media/") :]
+    elif s.startswith("media/"):
+        tail = s[len("media/") :]
+    else:
+        return url
+    target = quiz_media_root / tail
+    if target.is_file():
+        return f"./media/{tail}"
+    return url
+
+
+def _rel_under_media_from_media_url(url: str | None) -> str | None:
+    """Return posix path relative to ``quiz_dir/media`` for ``./media/…`` or ``media/…``; else None."""
+    if not url or not (s := url.strip()):
+        return None
+    if s.startswith(("http://", "https://", "/")):
+        return None
+    if s.startswith("./media/"):
+        tail = s[len("./media/") :]
+    elif s.startswith("media/"):
+        tail = s[len("media/") :]
+    else:
+        return None
+    rel = PurePosixPath(tail)
+    if rel.is_absolute() or any(p in {"..", "."} for p in rel.parts):
+        return None
+    return tail.replace("\\", "/")
+
+
+def _expanded_quiz_media_relpaths(quiz: KqfQuiz) -> set[str]:
+    """Relative posix paths under ``media/`` that this quiz content keeps (files).
+
+    For each ``…/image.webp`` reference, ``…/thumb.webp`` in the same directory is
+    also retained so paired thumbnails are not orphaned while the image stays.
+    """
+    rels: set[str] = set()
+    for q in quiz.questions:
+        for raw in (q.media.image, q.media.video, q.media.audio):
+            rel = _rel_under_media_from_media_url(raw)
+            if not rel:
+                continue
+            rels.add(rel)
+            p = PurePosixPath(rel)
+            if p.name == "image.webp" and len(p.parts) > 1:
+                rels.add(str(p.parent / "thumb.webp"))
+    return rels
+
+
+def _safe_resolved_path_under_quiz_media(quiz_dir: Path, rel_posix: str) -> Path | None:
+    """Resolve ``rel_posix`` under ``quiz_dir/media`` with traversal checks; or None."""
+    rel = PurePosixPath(rel_posix)
+    if rel.is_absolute() or any(p in {"..", "."} for p in rel.parts):
+        return None
+    base = (quiz_dir / "media").resolve()
+    target = (base / Path(*rel.parts)).resolve()
+    try:
+        target.relative_to(base)
+    except ValueError:
+        return None
+    for node in [target, *target.parents]:
+        if node == base:
+            break
+        if node.is_symlink():
+            return None
+    return target
+
+
+def remove_obsolete_quiz_media_files(
+    quiz_dir: Path, *, previous: KqfQuiz, current: KqfQuiz
+) -> None:
+    """Delete files under ``quiz_dir/media`` that were referenced in ``previous`` but not in ``current``.
+
+    Call only after ``current`` has been written to ``quiz.kqf`` (so disk matches ``current``).
+    Only removes paths that were part of ``previous``'s expanded media set; unrelated files in
+    ``media/`` are left untouched.
+    """
+    before = _expanded_quiz_media_relpaths(previous)
+    after = _expanded_quiz_media_relpaths(current)
+    obsolete = before - after
+    for rel in sorted(obsolete):
+        path = _safe_resolved_path_under_quiz_media(quiz_dir, rel)
+        if path is None or not path.is_file():
+            continue
+        try:
+            path.unlink()
+        except OSError as exc:
+            logger.warning(
+                "Could not remove obsolete quiz media file %s: %s", path, exc
+            )
+    _prune_empty_media_subdirs(quiz_dir)
+
+
+def _prune_empty_media_subdirs(quiz_dir: Path) -> None:
+    root = quiz_dir / "media"
+    if not root.is_dir():
+        return
+    dirs = [p for p in root.rglob("*") if p.is_dir() and p != root]
+    for d in sorted(dirs, key=lambda p: len(p.parts), reverse=True):
+        try:
+            if not any(d.iterdir()):
+                d.rmdir()
+        except OSError:
+            pass
+
+
+def materialize_staging_media_into_quiz_dir(
+    quiz_dir: Path,
+    quiz: KqfQuiz,
+    staging_dir: Path,
+) -> KqfQuiz:
+    """Persist staged ``/media/quiz-assets/asset_…`` files under this quiz's ``media/`` tree."""
+    quiz_media = quiz_dir / "media"
+    quiz_media.mkdir(parents=True, exist_ok=True)
+    out = quiz.model_copy(deep=True)
+    for q in out.questions:
+        m = q.media
+        new_image = _materialize_one_media_url(m.image, staging_dir, quiz_media)
+        new_video = _materialize_one_media_url(m.video, staging_dir, quiz_media)
+        new_audio = _materialize_one_media_url(m.audio, staging_dir, quiz_media)
+        if (new_image, new_video, new_audio) != (m.image, m.video, m.audio):
+            q.media = m.model_copy(
+                update={"image": new_image, "video": new_video, "audio": new_audio}
+            )
+    return out
 
 
 def update_last_activated_at(quiz_dir: Path, ts: str) -> None:

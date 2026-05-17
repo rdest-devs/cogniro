@@ -18,6 +18,7 @@ from schemas.admin_quiz import QuizAssetUploadResponse
 from services.media_assets import (
     _is_safe_asset_path,
     cleanup_orphaned_assets,
+    purge_stale_editor_staging,
     resize_to_webp_bytes,
 )
 from services.storage import initialize_storage
@@ -171,3 +172,30 @@ def test_cleanup_orphaned_assets_handles_directory_listing_errors(
 
     removed = cleanup_orphaned_assets(app, quizzes=[])
     assert removed == 0
+
+
+def test_purge_stale_editor_staging_removes_old_dirs_regardless_of_quiz_references(
+    monkeypatch, tmp_path: Path
+) -> None:
+    app = FastAPI()
+    monkeypatch.setenv("COGNIRO_DATA_DIR", str(tmp_path))
+    app.state.storage = initialize_storage()
+
+    staging = app.state.storage.staging_dir
+    old_a = staging / f"asset_{'a' * 32}"
+    old_b = staging / f"asset_{'b' * 32}"
+    fresh = staging / f"asset_{'c' * 32}"
+    old_a.mkdir()
+    old_b.mkdir()
+    fresh.mkdir()
+    t_old = 100.0
+    t_new = 990.0
+    os.utime(old_a, (t_old, t_old))
+    os.utime(old_b, (t_old, t_old))
+    os.utime(fresh, (t_new, t_new))
+
+    removed = purge_stale_editor_staging(app, now_timestamp=1000.0, min_age_seconds=50)
+    assert removed == 2
+    assert not old_a.exists()
+    assert not old_b.exists()
+    assert fresh.exists()

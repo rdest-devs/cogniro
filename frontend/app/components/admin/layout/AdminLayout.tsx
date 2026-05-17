@@ -20,20 +20,20 @@ export default function AdminLayout({
   onLogout,
 }: AdminLayoutProps) {
   return (
-    <div className="flex h-full w-full overflow-hidden bg-[var(--page-bg)]">
+    <div className="flex h-full min-h-0 w-full overflow-hidden bg-[var(--page-bg)]">
       <Sidebar
         activeItem={activeItem}
         quizListHref={logoHref}
         onNavigate={onMenuNavigate}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <TopBar
           logoHref={logoHref}
           onCreateQuiz={onCreateQuiz}
           onLogout={onLogout}
         />
-        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-8">
+        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-8">
           {children}
         </main>
       </div>

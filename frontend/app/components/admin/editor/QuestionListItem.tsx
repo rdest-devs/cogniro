@@ -2,7 +2,7 @@
 
 import { ChevronDown, Loader2, Plus, Trash2, Upload } from 'lucide-react';
 import type { ChangeEvent } from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 
 import StatusBadge from '@/app/components/common/StatusBadge';
@@ -17,13 +17,16 @@ import {
   uploadAdminAsset,
 } from '@/lib/admin-quiz';
 import { cn } from '@/lib/cn';
-import { resolveMediaUrl } from '@/lib/media-url';
+import { resolveEditorQuestionImageUrl } from '@/lib/media-url';
 
 import { typeColors } from '../shared/constants';
+import EditorQuestionImagePreview from './EditorQuestionImagePreview';
 import QuestionPreview from './QuestionPreview';
 
 interface QuestionListItemProps {
   index: number;
+  /** Przy edycji — URL `./media/…` → `GET /admin/quiz/{quizId}/media/…` (Bearer). */
+  editorQuizId?: string | null;
   isExpanded: boolean;
   onToggle: () => void;
   onRemove: () => void;
@@ -415,6 +418,7 @@ function SliderSection({ questionIndex }: { questionIndex: number }) {
 
 export default function QuestionListItem({
   index,
+  editorQuizId,
   isExpanded,
   onToggle,
   onRemove,
@@ -496,11 +500,18 @@ export default function QuestionListItem({
   };
 
   const panelId = `question-panel-${index}`;
-  const questionImageInputId = `question-${index}-image-upload`;
-  const imageSrc =
+  const rawQuestionImage =
     typeof questionImage === 'string' && questionImage.trim()
-      ? resolveMediaUrl(questionImage.trim())
+      ? questionImage.trim()
       : null;
+
+  const imageDisplaySrc = useMemo(
+    () =>
+      rawQuestionImage
+        ? resolveEditorQuestionImageUrl(rawQuestionImage, editorQuizId)
+        : null,
+    [rawQuestionImage, editorQuizId],
+  );
 
   return (
     <article>
@@ -620,25 +631,29 @@ export default function QuestionListItem({
                   Obraz do pytania (opcj., URL z uploadu)
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
-                  <label
-                    htmlFor={questionImageInputId}
-                    className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--text-dark)]"
-                  >
-                    {uploadingKeys.has('question') ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : (
-                      <Upload size={14} />
+                  <span
+                    className={cn(
+                      'relative inline-flex min-h-[2.25rem] cursor-pointer items-center gap-2 overflow-hidden rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--text-dark)]',
+                      uploadingKeys.has('question') && 'cursor-wait opacity-60',
                     )}
-                    Prześlij obraz
+                  >
+                    <span className="pointer-events-none inline-flex items-center gap-2">
+                      {uploadingKeys.has('question') ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <Upload size={14} />
+                      )}
+                      Prześlij obraz
+                    </span>
                     <input
-                      id={questionImageInputId}
                       type="file"
                       accept="image/png,image/jpeg,image/webp"
-                      className="sr-only"
                       disabled={uploadingKeys.has('question')}
                       onChange={handleQuestionImageUpload}
+                      aria-label="Prześlij obraz do pytania"
+                      className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
                     />
-                  </label>
+                  </span>
                   {questionImage && (
                     <button
                       type="button"
@@ -655,17 +670,26 @@ export default function QuestionListItem({
                     </button>
                   )}
                 </div>
-                {imageSrc && (
-                  <div className="rounded-xl border border-[var(--border)] bg-white p-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={imageSrc}
-                      alt="Podgląd obrazu pytania"
-                      loading="lazy"
-                      decoding="async"
-                      className="max-h-40 w-full rounded-lg object-contain"
-                    />
-                  </div>
+                {rawQuestionImage && !imageDisplaySrc && (
+                  <p className="text-xs text-[var(--text-muted)]">
+                    Obraz z katalogu quizu (`./media/…`) — zapisz quiz, aby znać
+                    identyfikator i zbudować adres podglądu.
+                  </p>
+                )}
+                {imageDisplaySrc && (
+                  <EditorQuestionImagePreview
+                    key={imageDisplaySrc}
+                    imageDisplaySrc={imageDisplaySrc}
+                    alt="Podgląd obrazu pytania"
+                    imgClassName="max-h-40 w-full rounded-lg object-contain"
+                    errorMessage={
+                      <>
+                        Nie udało się załadować obrazu (sprawdź, czy plik jest w
+                        folderze media quizu, czy jesteś zalogowany w panelu
+                        admina i czy adres API jest poprawny).
+                      </>
+                    }
+                  />
                 )}
               </div>
 
@@ -717,7 +741,10 @@ export default function QuestionListItem({
               )}
             </div>
 
-            <QuestionPreview question={questionForPreview} />
+            <QuestionPreview
+              question={questionForPreview}
+              editorQuizId={editorQuizId}
+            />
           </div>
         </div>
       )}

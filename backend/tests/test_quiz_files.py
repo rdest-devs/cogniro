@@ -57,6 +57,20 @@ def test_meta_rebuild_if_missing() -> None:
     assert (qd / "meta.json").is_file()
 
 
+def test_meta_rebuild_when_id_mismatch() -> None:
+    paths = initialize_storage()
+    qd = quiz_dir_for(paths, "quiz_abc")
+    write_quiz_dir(qd, _example_quiz(), created_at="2026-05-17T00:00:00Z")
+    raw = (qd / "meta.json").read_text(encoding="utf-8")
+    (qd / "meta.json").write_text(
+        raw.replace('"id": "quiz_abc"', '"id": "quiz_other"'),
+        encoding="utf-8",
+    )
+    meta = read_meta_or_rebuild(qd, "quiz_abc")
+    assert meta.id == "quiz_abc"
+    assert meta.title == "Tytuł"
+
+
 def test_derive_meta() -> None:
     meta = derive_meta_from_kqf(
         _example_quiz(),

@@ -3,7 +3,10 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
+
+from services import sessions as sessions_service
 
 
 def _minimal_quiz_payload() -> dict:
@@ -39,7 +42,7 @@ def _create_quiz_with_media(
     return quiz_id
 
 
-def test_media_returns_403_when_not_running(
+def test_media_returns_403_without_active_session(
     client: TestClient, admin_token_header: dict[str, str]
 ) -> None:
     quiz_id = _create_quiz_with_media(client, admin_token_header, file_name="dog.jpg")
@@ -47,19 +50,53 @@ def test_media_returns_403_when_not_running(
     assert r.status_code == 403
 
 
-def test_media_returns_200_while_running(
-    client: TestClient, admin_token_header: dict[str, str]
+def test_media_returns_200_when_quiz_session_running(
+    client: TestClient,
+    admin_token_header: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     quiz_id = _create_quiz_with_media(client, admin_token_header, file_name="dog.jpg")
-    client.post(f"/admin/quiz/{quiz_id}/activate", headers=admin_token_header)
+    monkeypatch.setattr(sessions_service, "is_quiz_running", lambda qid: qid == quiz_id)
     r = client.get(f"/media/{quiz_id}/dog.jpg")
     assert r.status_code == 200
 
 
+def test_admin_quiz_media_returns_200_with_token(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    quiz_id = _create_quiz_with_media(client, admin_token_header, file_name="dog.jpg")
+    r = client.get(
+        f"/admin/quiz/{quiz_id}/media/dog.jpg",
+        headers=admin_token_header,
+    )
+    assert r.status_code == 200
+
+
+def test_admin_quiz_media_returns_401_without_token(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    quiz_id = _create_quiz_with_media(client, admin_token_header, file_name="dog.jpg")
+    r = client.get(f"/admin/quiz/{quiz_id}/media/dog.jpg")
+    assert r.status_code == 401
+
+
 def test_media_path_traversal_returns_404(
+    client: TestClient,
+    admin_token_header: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    quiz_id = _create_quiz(client, admin_token_header)
+    monkeypatch.setattr(sessions_service, "is_quiz_running", lambda qid: qid == quiz_id)
+    r = client.get(f"/media/{quiz_id}/..%2Fetc%2Fpasswd")
+    assert r.status_code == 404
+
+
+def test_admin_quiz_media_path_traversal_returns_404(
     client: TestClient, admin_token_header: dict[str, str]
 ) -> None:
     quiz_id = _create_quiz(client, admin_token_header)
-    client.post(f"/admin/quiz/{quiz_id}/activate", headers=admin_token_header)
-    r = client.get(f"/media/{quiz_id}/..%2Fetc%2Fpasswd")
+    r = client.get(
+        f"/admin/quiz/{quiz_id}/media/..%2Fetc%2Fpasswd",
+        headers=admin_token_header,
+    )
     assert r.status_code == 404

@@ -5,7 +5,7 @@ import os
 import shutil
 import zipfile
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException
@@ -27,10 +27,13 @@ from services.admin_quiz_adapters import (
 )
 from services.quiz_files import (
     QuizMeta,
+    materialize_staging_media_into_quiz_dir,
     read_meta_or_rebuild,
     read_quiz_kqf,
+    remove_obsolete_quiz_media_files,
     update_last_activated_at,
     write_quiz_dir,
+    write_text_atomic,
 )
 from services import sessions
 from services.kqf import KqfParseError, parse_kqf
@@ -107,6 +110,8 @@ def create_quiz(app: FastAPI, payload: AdminQuizUpsertPayload) -> dict[str, str]
     quiz_id = generate_quiz_id()
     qd = quiz_dir_for(paths, quiz_id)
     with QUIZ_WRITE_LOCK:
+        qd.mkdir(parents=True, exist_ok=True)
+        quiz = materialize_staging_media_into_quiz_dir(qd, quiz, paths.staging_dir)
         write_quiz_dir(qd, quiz, created_at=_now_iso())
     return {"id": quiz_id}
 
@@ -122,6 +127,7 @@ def update_quiz(
         existing = read_quiz_kqf(qd)
         meta = read_meta_or_rebuild(qd, quiz_id)
         quiz = upsert_payload_to_kqf(payload, existing=existing)
+        quiz = materialize_staging_media_into_quiz_dir(qd, quiz, paths.staging_dir)
         write_quiz_dir(
             qd,
             quiz,
@@ -129,6 +135,7 @@ def update_quiz(
             updated_at=_now_iso(),
             last_activated_at=meta.last_activated_at,
         )
+        remove_obsolete_quiz_media_files(qd, previous=existing, current=quiz)
     return {"id": quiz_id}
 
 
@@ -228,42 +235,40 @@ def stop_quiz(app: FastAPI, quiz_id: str) -> dict[str, str]:
     return {"date": stopped_at.strftime("%Y-%m-%d"), "filename": filename}
 
 
-def export_quiz_zip(app: FastAPI, quiz_id: str) -> tuple[bytes, str]:
-    paths = get_storage(app)
-    qd = quiz_dir_for(paths, quiz_id)
-    if not qd.is_dir():
-        raise HTTPException(status_code=404, detail="Nie znaleziono quizu.")
-    kqf_path = qd / "quiz.kqf"
-    if not kqf_path.is_file():
-        raise HTTPException(status_code=404, detail="Nie znaleziono quizu.")
-    meta = read_meta_or_rebuild(qd, quiz_id)
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.write(kqf_path, "quiz.kqf")
-        media_dir = qd / "media"
-        if media_dir.is_dir():
-            for p in media_dir.rglob("*"):
-                if p.is_file():
-                    arc = Path("media") / p.relative_to(media_dir)
-                    zf.write(p, str(arc).replace("\\", "/"))
-    return buf.getvalue(), f"{meta.title_slug}.zip"
-
-
-def _safe_import_media_path(quiz_dir: Path, member: str) -> Path | None:
-    if member == "quiz.kqf" or member.endswith("/"):
+def _safe_import_member_path(quiz_dir: Path, member: str) -> Path | None:
+    """Resolve a zip entry path under ``quiz_dir``; reject traversal and absolute paths."""
+    if not member or member.endswith("/"):
         return None
-    if not member.startswith("media/"):
+    norm = member.replace("\\", "/").strip()
+    if not norm or norm.startswith("/"):
         return None
-    rel = Path(member)
-    if rel.is_absolute() or any(part == ".." for part in rel.parts):
+    rel = PurePosixPath(norm)
+    if rel.is_absolute() or ".." in rel.parts:
         return None
-    target = (quiz_dir / rel).resolve()
+    target = (quiz_dir / Path(*rel.parts)).resolve()
     base = quiz_dir.resolve()
     try:
         target.relative_to(base)
     except ValueError:
         return None
     return target
+
+
+def export_quiz_zip(app: FastAPI, quiz_id: str) -> tuple[bytes, str]:
+    paths = get_storage(app)
+    qd = quiz_dir_for(paths, quiz_id)
+    if not qd.is_dir():
+        raise HTTPException(status_code=404, detail="Nie znaleziono quizu.")
+    if not (qd / "quiz.kqf").is_file():
+        raise HTTPException(status_code=404, detail="Nie znaleziono quizu.")
+    meta = read_meta_or_rebuild(qd, quiz_id)
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for p in qd.rglob("*"):
+            if p.is_file():
+                arc = str(p.relative_to(qd)).replace("\\", "/")
+                zf.write(p, arc)
+    return buf.getvalue(), f"{meta.title_slug}.zip"
 
 
 def _read_zip_entry_bytes_limited(
@@ -303,7 +308,7 @@ def _extract_zip_member_limited(
             if written_member + len(chunk) > max_member:
                 raise HTTPException(
                     status_code=413,
-                    detail="Jeden z plików w media/ przekracza maksymalny rozmiar.",
+                    detail="Jeden z plików w archiwum przekracza maksymalny rozmiar.",
                 )
             if len(chunk) > budget[0]:
                 raise HTTPException(
@@ -340,7 +345,7 @@ def import_quiz_zip(app: FastAPI, zip_bytes: bytes) -> dict[str, str]:
                     status_code=400, detail="Niepoprawny plik quiz.kqf."
                 ) from exc
             try:
-                quiz = parse_kqf(kqf_text)
+                parse_kqf(kqf_text)
             except KqfParseError as exc:
                 raise HTTPException(
                     status_code=400, detail="Niepoprawna zawartość quiz.kqf."
@@ -348,13 +353,12 @@ def import_quiz_zip(app: FastAPI, zip_bytes: bytes) -> dict[str, str]:
             quiz_id = generate_quiz_id()
             qd = quiz_dir_for(paths, quiz_id)
             with QUIZ_WRITE_LOCK:
-                qd.mkdir(parents=True)
-                (qd / "media").mkdir(parents=True, exist_ok=True)
-                write_quiz_dir(qd, quiz, created_at=_now_iso())
+                qd.mkdir(parents=True, exist_ok=True)
+                write_text_atomic(qd / "quiz.kqf", kqf_text)
                 for name in names:
-                    if name == "quiz.kqf":
+                    if not name or name.endswith("/") or name == "quiz.kqf":
                         continue
-                    target = _safe_import_media_path(qd, name)
+                    target = _safe_import_member_path(qd, name)
                     if target is None:
                         continue
                     target.parent.mkdir(parents=True, exist_ok=True)
@@ -365,6 +369,7 @@ def import_quiz_zip(app: FastAPI, zip_bytes: bytes) -> dict[str, str]:
                         max_member=MAX_QUIZ_IMPORT_MEMBER_BYTES,
                         budget=budget,
                     )
+                read_meta_or_rebuild(qd, quiz_id)
             return {"id": quiz_id}
     except zipfile.BadZipFile as exc:
         raise HTTPException(

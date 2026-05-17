@@ -4,7 +4,13 @@ This document describes where quiz and session data live, how live sessions work
 
 ## On-disk layout
 
-The backend resolves a data directory via `COGNIRO_DATA_DIR` or, when unset, tries `/var/lib/cogniro` and falls back to a temp path if that location is not writable. See [backend/services/storage.py](../backend/services/storage.py).
+The backend resolves paths in [backend/services/storage.py](../backend/services/storage.py):
+
+- **`COGNIRO_STORAGE_DIR`** (optional) — absolute path to the `storage` directory itself (after init it contains `quizzes/` and `results/`). The parent directory is used for `uploads/quiz-assets/`. When set, **`COGNIRO_DATA_DIR` is not used** for quiz or result files.
+- **`COGNIRO_DATA_DIR`** (optional) — when `COGNIRO_STORAGE_DIR` is not set, root directory that contains `storage/` and `uploads/`. If this is unset too, the default root is the **`backend/` package directory** (next to `core/`, `services/`), so data lives at `backend/storage/…` and `backend/uploads/…` in dev.
+- If the default directory is not writable, the process falls back to a temp path under the system temp directory (`…/cogniro`).
+
+The production Docker image sets `COGNIRO_DATA_DIR=/var/lib/cogniro` so a volume can mount there without extra `.env`.
 
 Under that directory:
 
@@ -13,7 +19,7 @@ Under that directory:
   - `meta.json` — derived metadata (title, slug, timestamps, question count). If missing or corrupt, it is rebuilt from `quiz.kqf` via [backend/services/quiz_files.py](../backend/services/quiz_files.py).
   - `media/` — binary assets referenced from KQF media fields.
 - **`storage/results/{YYYY-MM-DD}/`** — JSON result snapshots written when a session is stopped. Filenames are composed from quiz id/title and stop time; see [backend/services/slug.py](../backend/services/slug.py) and [backend/services/results.py](../backend/services/results.py).
-- **`uploads/quiz-assets/`** — editor staging for `POST /admin/assets` (public prefix from `MEDIA_PUBLIC_PREFIX`).
+- **`uploads/quiz-assets/`** — editor staging for `POST /admin/assets` (public prefix from `MEDIA_PUBLIC_PREFIX`). Files stay here until referenced from a quiz; saving the quiz copies assets into that quiz’s `media/` tree. **`GET /admin/quiz/{id}/export`** zips the whole quiz directory as-is (no extra rewriting).
 
 KQF on disk is the **source of truth**; `meta.json` is a cache for listing and UI.
 
@@ -39,11 +45,16 @@ Result files are written **only on stop**, not on each submit. Participant score
 
 ## 30-day purge loop
 
-[backend/main.py](../backend/main.py) starts a background `asyncio` task in the app lifespan. It calls [purge_results_older_than](../backend/services/results.py) with `timedelta(days=RESULT_RETENTION_DAYS)` (default **30**, env `RESULT_RETENTION_DAYS`), then sleeps `PURGE_INTERVAL_SECONDS` (default **3600**, env `PURGE_INTERVAL_SECONDS`) between runs. Failures are logged; they do not crash the app.
+[backend/main.py](../backend/main.py) starts a background `asyncio` task in the app lifespan. On each iteration it:
 
-## Media gating
+1. Calls [purge_results_older_than](../backend/services/results.py) with `timedelta(days=RESULT_RETENTION_DAYS)` (default **30**, env `RESULT_RETENTION_DAYS`).
+2. Calls [purge_stale_editor_staging](../backend/services/media_assets.py), which removes **`uploads/quiz-assets/asset_*`** directories older than **`ORPHAN_ASSET_RETENTION_SECONDS`** (default **24 hours**, constant in `media_assets.py`). This is **editor-only staging**; after a quiz save, media lives under that quiz’s `media/` folder, so long-lived staging entries are safe to drop by age.
 
-`GET /media/{quiz_id}/{filename}` serves files from `storage/quizzes/{quiz_id}/media/` only while that quiz’s session is active. See [backend/routes/media.py](../backend/routes/media.py).
+Then it sleeps `PURGE_INTERVAL_SECONDS` (default **3600**, env `PURGE_INTERVAL_SECONDS`) before the next run. Failures are logged; they do not crash the app.
+
+## Quiz media files
+
+`GET /media/{quiz_id}/{filename}` serves quiz-owned files only **during an active session** for that quiz (same directory as the editor’s `./media/…` assets; admins load previews via `GET /admin/quiz/{quiz_id}/media/…` with a Bearer token). See [backend/routes/media.py](../backend/routes/media.py) and [backend/routes/admin_quiz.py](../backend/routes/admin_quiz.py).
 
 ## Decoupled deletion
 

@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 MAX_IMAGE_PIXELS = 20_000_000
 UPLOAD_CHUNK_SIZE = 64 * 1024
 ALLOWED_UPLOAD_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
-DEFAULT_DATA_DIR = "/var/lib/cogniro"
+
+# `backend/` (directory containing `core/`, `services/`, …): default root for
+# `storage/` and `uploads/` when `COGNIRO_DATA_DIR` is unset.
+_BACKEND_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_DATA_DIR = str(_BACKEND_ROOT)
 DEFAULT_MEDIA_PUBLIC_PREFIX = "/media/quiz-assets"
 
 

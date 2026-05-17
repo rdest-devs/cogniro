@@ -1,11 +1,16 @@
 'use client';
 
+import { useMemo } from 'react';
+
 import type { QuizEditorQuestionForm } from '@/app/types';
 import { cn } from '@/lib/cn';
-import { resolveMediaUrl } from '@/lib/media-url';
+import { resolveEditorQuestionImageUrl } from '@/lib/media-url';
+
+import EditorQuestionImagePreview from './EditorQuestionImagePreview';
 
 interface QuestionPreviewProps {
   question: QuizEditorQuestionForm;
+  editorQuizId?: string | null;
 }
 
 const typeLabel: Record<QuizEditorQuestionForm['type'], string> = {
@@ -61,11 +66,20 @@ function previewBody(question: QuizEditorQuestionForm) {
   }
 }
 
-export default function QuestionPreview({ question }: QuestionPreviewProps) {
-  const imageSrc =
+export default function QuestionPreview({
+  question,
+  editorQuizId,
+}: QuestionPreviewProps) {
+  const rawImage =
     typeof question.image === 'string' && question.image.trim()
-      ? resolveMediaUrl(question.image.trim())
+      ? question.image.trim()
       : null;
+
+  const imageDisplaySrc = useMemo(
+    () =>
+      rawImage ? resolveEditorQuestionImageUrl(rawImage, editorQuizId) : null,
+    [rawImage, editorQuizId],
+  );
 
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] p-4">
@@ -78,17 +92,25 @@ export default function QuestionPreview({ question }: QuestionPreviewProps) {
       <p className="text-sm text-[var(--text-dark)]">
         {question.text.trim() || 'Brak treści pytania'}
       </p>
-      {imageSrc && (
-        <div className="rounded-xl border border-[var(--border)] bg-white p-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageSrc}
-            alt="Ilustracja do pytania"
-            loading="lazy"
-            decoding="async"
-            className="w-full rounded-lg object-contain"
-          />
-        </div>
+      {rawImage && !imageDisplaySrc && (
+        <p className="text-xs text-[var(--text-muted)]">
+          Obraz z katalogu quizu — zapisz quiz, aby znać identyfikator i
+          zbudować adres podglądu.
+        </p>
+      )}
+      {imageDisplaySrc && (
+        <EditorQuestionImagePreview
+          key={imageDisplaySrc}
+          imageDisplaySrc={imageDisplaySrc}
+          alt="Ilustracja do pytania"
+          imgClassName="w-full rounded-lg object-contain"
+          errorMessage={
+            <>
+              Nie udało się załadować obrazu (plik w media/, zalogowanie w
+              panelu admina lub adres API).
+            </>
+          }
+        />
       )}
 
       <div className="flex flex-col gap-2">{previewBody(question)}</div>

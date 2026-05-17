@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 
 from core import settings
@@ -16,6 +16,8 @@ from schemas.admin_quiz import (
     QuizAssetUploadResponse,
 )
 from security.admin_auth import require_admin
+from services.quiz_files import safe_quiz_media_file_path
+from services.storage import get_storage, quiz_dir_for
 from services.admin_quiz import (
     activate_quiz,
     block_session_nickname,
@@ -81,6 +83,19 @@ async def admin_quiz_list_all(
     request: Request,
 ) -> list[AdminQuizListItemResponse]:
     return await run_in_threadpool(list_quizzes, request.app)
+
+
+@router.get("/quiz/{quiz_id}/media/{filename:path}")
+async def admin_quiz_media(
+    request: Request, quiz_id: str, filename: str
+) -> FileResponse:
+    """Serve quiz-owned media for the editor; does not require an active play session."""
+    paths = get_storage(request.app)
+    qd = quiz_dir_for(paths, quiz_id)
+    resolved = safe_quiz_media_file_path(qd, filename)
+    if resolved is None:
+        raise HTTPException(status_code=404, detail="not_found")
+    return FileResponse(resolved)
 
 
 @router.get("/quiz/{quiz_id}", response_model=AdminQuizDetailResponse)

@@ -314,121 +314,123 @@ export default function AdminDashboard({
   );
 
   return (
-    <div className="h-screen w-full bg-[var(--page-bg)]">
-      {adminView === 'panel' && (
-        <AdminPanel
-          quizzes={adminCards}
-          isLoading={adminLoading}
-          error={adminError}
-          logoHref={adminBase}
-          menuActiveItem={menuActiveItem}
-          onMenuNavigate={handleMenuNavigate}
-          onRefresh={loadAdminQuizzes}
-          onCreateQuiz={handleCreateQuiz}
-          onOpenQuiz={handleOpenQuizDetail}
-          onLogout={onLogout}
-          onImportedQuiz={(quizId) => {
-            void loadAdminQuizzes();
-            goDetail(quizId);
-          }}
-        />
-      )}
-
-      {adminView === 'detail' && (
-        <QuizDetail
-          quizzes={adminInfos}
-          selectedQuizId={resolvedSelectedQuizId}
-          resultsForQuiz={resultsForSelectedQuiz}
-          adminBase={adminBase}
-          menuActiveItem={menuActiveItem}
-          onMenuNavigate={handleMenuNavigate}
-          onCreateQuiz={handleCreateQuiz}
-          onSelectQuiz={goDetail}
-          onEditQuiz={handleEditQuiz}
-          onLogout={onLogout}
-          onQuizDeleted={loadAdminQuizzes}
-        />
-      )}
-
-      {adminView === 'running' && quizIdFromUrl && (
-        <RunningQuizView
-          quizId={quizIdFromUrl}
-          logoHref={adminBase}
-          menuActiveItem={menuActiveItem}
-          onMenuNavigate={handleMenuNavigate}
-          onStopped={(date, file) => {
-            const p = new URLSearchParams({
-              view: 'results',
-              date,
-              file,
-            });
-            router.replace(`${adminBase}?${p.toString()}`);
-          }}
-          onBack={() => {
-            const p = new URLSearchParams({ quiz: quizIdFromUrl });
-            router.push(`${adminBase}?${p.toString()}`);
-          }}
-          onCreateQuiz={handleCreateQuiz}
-          onLogout={onLogout}
-        />
-      )}
-
-      {adminView === 'results' &&
-        (resultsDate && resultsFile ? (
-          <ResultDetailView
-            adminBase={adminBase}
-            date={resultsDate}
-            file={resultsFile}
-            quizFilter={quizFilter}
+    <div className="flex h-screen min-h-0 w-full flex-col overflow-hidden bg-[var(--page-bg)]">
+      <div className="flex min-h-0 flex-1 flex-col">
+        {adminView === 'panel' && (
+          <AdminPanel
+            quizzes={adminCards}
+            isLoading={adminLoading}
+            error={adminError}
+            logoHref={adminBase}
             menuActiveItem={menuActiveItem}
             onMenuNavigate={handleMenuNavigate}
+            onRefresh={loadAdminQuizzes}
+            onCreateQuiz={handleCreateQuiz}
+            onOpenQuiz={handleOpenQuizDetail}
+            onLogout={onLogout}
+            onImportedQuiz={(quizId) => {
+              void loadAdminQuizzes();
+              goDetail(quizId);
+            }}
+          />
+        )}
+
+        {adminView === 'detail' && (
+          <QuizDetail
+            quizzes={adminInfos}
+            selectedQuizId={resolvedSelectedQuizId}
+            resultsForQuiz={resultsForSelectedQuiz}
+            adminBase={adminBase}
+            menuActiveItem={menuActiveItem}
+            onMenuNavigate={handleMenuNavigate}
+            onCreateQuiz={handleCreateQuiz}
+            onSelectQuiz={goDetail}
+            onEditQuiz={handleEditQuiz}
+            onLogout={onLogout}
+            onQuizDeleted={loadAdminQuizzes}
+          />
+        )}
+
+        {adminView === 'running' && quizIdFromUrl && (
+          <RunningQuizView
+            quizId={quizIdFromUrl}
+            logoHref={adminBase}
+            menuActiveItem={menuActiveItem}
+            onMenuNavigate={handleMenuNavigate}
+            onStopped={(date, file) => {
+              const p = new URLSearchParams({
+                view: 'results',
+                date,
+                file,
+              });
+              router.replace(`${adminBase}?${p.toString()}`);
+            }}
             onBack={() => {
-              router.push(`${adminBase}?${resultsQs({ date: resultsDate })}`);
+              const p = new URLSearchParams({ quiz: quizIdFromUrl });
+              router.push(`${adminBase}?${p.toString()}`);
             }}
             onCreateQuiz={handleCreateQuiz}
             onLogout={onLogout}
           />
-        ) : resultsDate ? (
-          <ResultsDayView
-            adminBase={adminBase}
-            date={resultsDate}
-            quizFilter={quizFilter}
-            menuActiveItem={menuActiveItem}
-            onMenuNavigate={handleMenuNavigate}
-            onBack={() => {
-              router.push(`${adminBase}?${resultsQs({})}`);
-            }}
-            onCreateQuiz={handleCreateQuiz}
-            onLogout={onLogout}
-          />
-        ) : (
-          <ResultsBrowserView
-            adminBase={adminBase}
-            quizFilter={quizFilter}
-            menuActiveItem={menuActiveItem}
-            onMenuNavigate={handleMenuNavigate}
-            onBack={() => {
-              router.push(adminBase);
-            }}
-            onCreateQuiz={handleCreateQuiz}
-            onLogout={onLogout}
-          />
-        ))}
+        )}
 
-      {adminView === 'editor' && (
-        <QuizEditor
-          mode={editorMode}
-          quizId={editorMode === 'edit' ? quizIdFromUrl : null}
-          logoHref={adminBase}
-          menuActiveItem={menuActiveItem}
-          onMenuNavigate={handleMenuNavigate}
-          onSaved={handleQuizSaved}
-          onCancel={handleEditorCancel}
-          onCreateQuiz={handleCreateQuiz}
-          onLogout={onLogout}
-          onSessionInvalid={onSessionInvalid}
-        />
-      )}
+        {adminView === 'results' &&
+          (resultsDate && resultsFile ? (
+            <ResultDetailView
+              adminBase={adminBase}
+              date={resultsDate}
+              file={resultsFile}
+              quizFilter={quizFilter}
+              menuActiveItem={menuActiveItem}
+              onMenuNavigate={handleMenuNavigate}
+              onBack={() => {
+                router.push(`${adminBase}?${resultsQs({ date: resultsDate })}`);
+              }}
+              onCreateQuiz={handleCreateQuiz}
+              onLogout={onLogout}
+            />
+          ) : resultsDate ? (
+            <ResultsDayView
+              adminBase={adminBase}
+              date={resultsDate}
+              quizFilter={quizFilter}
+              menuActiveItem={menuActiveItem}
+              onMenuNavigate={handleMenuNavigate}
+              onBack={() => {
+                router.push(`${adminBase}?${resultsQs({})}`);
+              }}
+              onCreateQuiz={handleCreateQuiz}
+              onLogout={onLogout}
+            />
+          ) : (
+            <ResultsBrowserView
+              adminBase={adminBase}
+              quizFilter={quizFilter}
+              menuActiveItem={menuActiveItem}
+              onMenuNavigate={handleMenuNavigate}
+              onBack={() => {
+                router.push(adminBase);
+              }}
+              onCreateQuiz={handleCreateQuiz}
+              onLogout={onLogout}
+            />
+          ))}
+
+        {adminView === 'editor' && (
+          <QuizEditor
+            mode={editorMode}
+            quizId={editorMode === 'edit' ? quizIdFromUrl : null}
+            logoHref={adminBase}
+            menuActiveItem={menuActiveItem}
+            onMenuNavigate={handleMenuNavigate}
+            onSaved={handleQuizSaved}
+            onCancel={handleEditorCancel}
+            onCreateQuiz={handleCreateQuiz}
+            onLogout={onLogout}
+            onSessionInvalid={onSessionInvalid}
+          />
+        )}
+      </div>
     </div>
   );
 }

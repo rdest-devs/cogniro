@@ -79,6 +79,8 @@ export default function QuizEditor({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  /** Surowy tekst pola tagów — nie można go wyprowadzić z `tags[]`, bo ginie np. końcowy przecinek. */
+  const [tagsRaw, setTagsRaw] = useState('');
 
   const formMethods = useForm<QuizEditorFormValues>({
     defaultValues: createDefaultQuizFormValues(),
@@ -124,6 +126,7 @@ export default function QuizEditor({
         }
 
         reset(toQuizEditorFormValues(apiQuiz));
+        setTagsRaw(toQuizEditorFormValues(apiQuiz).tags.join(', '));
         setExpandedIndex(0);
       } catch (error) {
         if (!isMounted) {
@@ -154,6 +157,7 @@ export default function QuizEditor({
       setIsLoading(false);
     } else {
       reset(createDefaultQuizFormValues());
+      setTagsRaw('');
       setExpandedIndex(0);
       setLoadError(null);
       setSaveError(null);
@@ -169,8 +173,6 @@ export default function QuizEditor({
   const watchedTitle = watch('title');
   const watchedDescription = watch('description') ?? '';
   const watchedAuthor = watch('author') ?? '';
-  const watchedTags = watch('tags');
-  const tagsText = (watchedTags ?? []).join(', ');
   const isMissingQuizId = mode === 'edit' && !quizId;
   const hasBlockingLoadError =
     mode === 'edit' && (isMissingQuizId || Boolean(loadError));
@@ -205,10 +207,13 @@ export default function QuizEditor({
 
         response = await updateAdminQuiz(editQuizId, payload);
         const refreshed = await getAdminQuiz(editQuizId);
-        reset(toQuizEditorFormValues(refreshed));
+        const nextValues = toQuizEditorFormValues(refreshed);
+        reset(nextValues);
+        setTagsRaw(nextValues.tags.join(', '));
       } else {
         response = await createAdminQuiz(payload);
         reset(values);
+        setTagsRaw((values.tags ?? []).join(', '));
       }
 
       const resolvedQuizId = response.id ?? quizId;
@@ -351,8 +356,9 @@ export default function QuizEditor({
                   shouldValidate: true,
                 })
               }
-              tagsText={tagsText}
+              tagsText={tagsRaw}
               onTagsTextChange={(value) => {
+                setTagsRaw(value);
                 const tags = value
                   .split(',')
                   .map((t) => t.trim())
@@ -379,6 +385,7 @@ export default function QuizEditor({
                   <QuestionListItem
                     key={field.id}
                     index={index}
+                    editorQuizId={quizId ?? null}
                     isExpanded={expandedIndex === index}
                     onToggle={() =>
                       setExpandedIndex((prevIndex) =>

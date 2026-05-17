@@ -19,7 +19,7 @@ export default function Sidebar({
   quizListHref = '/admin/',
 }: SidebarProps) {
   return (
-    <aside className="flex h-full w-[260px] flex-col bg-[var(--sidebar-bg)]">
+    <aside className="flex h-full min-h-0 w-[260px] shrink-0 flex-col overflow-y-auto overscroll-contain bg-[var(--sidebar-bg)]">
       <div className="h-px w-full bg-white/10" />
       <nav className="flex flex-1 flex-col gap-0.5 p-4 px-2">
         <div className="px-4 pt-1 pb-2">

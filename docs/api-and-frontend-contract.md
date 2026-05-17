@@ -7,6 +7,7 @@ Single reference for HTTP endpoints, media URLs, shared schemas, and how the Nex
 - **Backend base URL** — [frontend/lib/backend-url.ts](../frontend/lib/backend-url.ts): `NEXT_PUBLIC_BACKEND_URL` or `http://localhost:8000`. Paths are joined with `joinApiUrl(base, path)` (leading slashes normalized).
 - **CORS** — backend `CORS_ORIGINS` (comma-separated); dev defaults include `http://localhost:3000` and `http://127.0.0.1:3000`.
 - **Editor media public path** — `NEXT_PUBLIC_MEDIA_PUBLIC_PREFIX` + [frontend/lib/media-url.ts](../frontend/lib/media-url.ts) for resolving staged asset URLs from `POST /admin/assets`.
+- **Obrazy zapisane w quizie (`./media/…` w KQF)** — w edytorze adres `GET /admin/quiz/{quiz_id}/media/…` (Bearer); klient ładuje obraz przez `fetch` + blob ([frontend/lib/media-url.ts](../frontend/lib/media-url.ts), `AdminBearerImage`). Publicznie podczas gry: `GET /media/{quiz_id}/…` tylko gdy **sesja tego quizu jest aktywna** (`403 quiz_not_active` w przeciwnym razie).
 
 ## Admin authentication
 
@@ -33,8 +34,9 @@ All routes below require admin auth unless noted. Router prefix: **`/admin`**.
 | POST | `/admin/quiz/{quiz_id}/stop` | `{ date, filename }` for written result file. |
 | GET | `/admin/quiz/{quiz_id}/session` | Snapshot: pin, participants, blocked flags, scores. |
 | POST | `/admin/quiz/{quiz_id}/session/block` | JSON `{ nickname }` → `{ blocked: true }`. |
-| GET | `/admin/quiz/{quiz_id}/export` | `application/zip` attachment: `quiz.kqf` + `media/**`. |
-| POST | `/admin/quiz/import` | `multipart/form-data` file field `file` (zip) → `{ id }`. **Limits:** upload ≤ `MAX_QUIZ_IMPORT_ZIP_BYTES` (default 100 MiB); `quiz.kqf` uncompressed ≤ `MAX_QUIZ_IMPORT_KQF_BYTES` (default 2 MiB); each `media/*` member ≤ `MAX_QUIZ_IMPORT_MEMBER_BYTES` (default 100 MiB); total uncompressed extracted ≤ `MAX_QUIZ_IMPORT_UNCOMPRESSED_TOTAL_BYTES` (default 300 MiB). Oversize → `413`. See `backend/.env.example`. |
+| GET | `/admin/quiz/{quiz_id}/media/{filename:path}` | Plik z `storage/quizzes/{quiz_id}/media/` dla podglądu w edytorze (bez aktywnej sesji). |
+| GET | `/admin/quiz/{quiz_id}/export` | `application/zip` attachment: mirror of `storage/quizzes/{quiz_id}/` — every file under that directory (e.g. `quiz.kqf`, `meta.json`, `media/**`, any extras). |
+| POST | `/admin/quiz/import` | `multipart/form-data` file field `file` (zip) → `{ id }`. Must contain `quiz.kqf` at archive root; all other entries are written under the new quiz directory (path traversal rejected). **Limits:** upload ≤ `MAX_QUIZ_IMPORT_ZIP_BYTES` (default 100 MiB); `quiz.kqf` uncompressed ≤ `MAX_QUIZ_IMPORT_KQF_BYTES` (default 2 MiB); each non-`quiz.kqf` member ≤ `MAX_QUIZ_IMPORT_MEMBER_BYTES` (default 100 MiB); total uncompressed extracted ≤ `MAX_QUIZ_IMPORT_UNCOMPRESSED_TOTAL_BYTES` (default 300 MiB). Oversize → `413`. See `backend/.env.example`. After import, `meta.json` is validated or rebuilt so `id` matches the new folder. |
 
 Client helpers: [frontend/lib/admin-quiz/client.ts](../frontend/lib/admin-quiz/client.ts), [frontend/lib/sessions/client.ts](../frontend/lib/sessions/client.ts), [frontend/lib/import-export/client.ts](../frontend/lib/import-export/client.ts).
 
@@ -73,7 +75,7 @@ Client: [frontend/lib/play/client.ts](../frontend/lib/play/client.ts). Frontend 
 
 | Method | Path | Notes |
 |--------|------|------|
-| GET | `/media/{quiz_id}/{filename:path}` | Serves quiz `media/` only while that quiz’s session is active (`403` otherwise). |
+| GET | `/media/{quiz_id}/{filename:path}` | Serves files under `storage/quizzes/{quiz_id}/media/` (traversal-safe → `404`). **Only while that quiz’s play session is active**; otherwise `403` (`quiz_not_active`). |
 | GET | `{MEDIA_PUBLIC_PREFIX}/{asset_path}` | Default prefix `/media/quiz-assets`; staged uploads from the editor. |
 
 ## Legacy (deprecated)
