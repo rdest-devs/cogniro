@@ -1,3 +1,5 @@
+// DEPRECATED — remove with /legacy when /play is verified.
+
 import type {
   ImageAnswerOption,
   Question,

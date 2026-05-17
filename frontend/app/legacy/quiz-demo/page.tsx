@@ -1,9 +1,7 @@
+// DEPRECATED — remove with /legacy when /play is verified.
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-
-import { BACKEND_BASE_URL, joinApiUrl } from '@/lib/backend-url';
-import { resolveMediaUrl } from '@/lib/media-url';
 
 import {
   AttemptReview,
@@ -14,8 +12,10 @@ import {
   RangeSlider,
   SingleChoice,
   SliderQuestion,
-} from '../components/quiz';
-import type { QuizChoiceAnswer, QuizImage, ReviewQuestion } from '../types';
+} from '@/app/components/quiz';
+import type { QuizChoiceAnswer, QuizImage, ReviewQuestion } from '@/app/types';
+import { BACKEND_BASE_URL, joinApiUrl } from '@/lib/backend-url';
+import { resolveMediaUrl } from '@/lib/media-url';
 
 const quizStartData = {
   title: 'Quiz Informatyczny',
@@ -292,7 +292,7 @@ export default function QuizDemoPage() {
 
     try {
       const response = await fetch(
-        joinApiUrl(BACKEND_BASE_URL, 'quiz/results'),
+        joinApiUrl(BACKEND_BASE_URL, 'legacy/quiz-demo/results'),
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

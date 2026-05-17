@@ -1,12 +1,21 @@
 'use client';
 
-import { Calendar, Eye, List, Pencil, Play, Trash2 } from 'lucide-react';
+import {
+  Calendar,
+  Download,
+  Eye,
+  List,
+  Pencil,
+  Play,
+  Trash2,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 
 import StatusBadge from '@/app/components/common/StatusBadge';
 import type { QuizInfo, ResultRow } from '@/app/types';
 import { AdminQuizApiError, deleteAdminQuiz } from '@/lib/admin-quiz';
+import { downloadExport } from '@/lib/import-export/client';
 
 import AdminLayout from '../layout/AdminLayout';
 import { statusColors } from '../shared/constants';
@@ -36,6 +45,7 @@ export default function QuizDetail({
 }: QuizDetailProps) {
   const router = useRouter();
   const [deleteBusy, setDeleteBusy] = useState<string | null>(null);
+  const [exportBusy, setExportBusy] = useState<string | null>(null);
 
   const selectedQuiz = selectedQuizId
     ? quizzes.find((quiz) => quiz.id === selectedQuizId)
@@ -59,6 +69,19 @@ export default function QuizDetail({
     },
     [router, adminBase],
   );
+
+  const handleExport = useCallback(async (quizId: string) => {
+    setExportBusy(quizId);
+    try {
+      await downloadExport(quizId);
+    } catch (error) {
+      window.alert(
+        error instanceof Error ? error.message : 'Eksport nie powiódł się.',
+      );
+    } finally {
+      setExportBusy(null);
+    }
+  }, []);
 
   const handleDelete = useCallback(
     async (quizId: string) => {
@@ -146,6 +169,15 @@ export default function QuizDetail({
                 >
                   <Pencil size={14} />
                   Edytuj
+                </button>
+                <button
+                  type="button"
+                  disabled={exportBusy === quiz.id}
+                  onClick={() => void handleExport(quiz.id)}
+                  className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--border)] px-3 py-2 text-xs font-semibold text-[var(--text-dark)] hover:bg-[var(--page-bg)] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Download size={14} />
+                  Eksport (.zip)
                 </button>
                 <button
                   type="button"

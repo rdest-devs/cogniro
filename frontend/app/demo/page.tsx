@@ -14,7 +14,7 @@ import {
   RangeSlider,
   SingleChoice,
   SliderQuestion,
-} from '../components/quiz';
+} from '@/app/components/quiz';
 import {
   attemptReviewDemo,
   imageAnswersDemo,
@@ -26,7 +26,7 @@ import {
   rangeSliderDemo,
   singleChoiceDemo,
   sliderQuestionDemo,
-} from '../data/demo';
+} from '@/app/legacy/data/demo';
 
 const screens = [
   'Quiz Start',
@@ -64,7 +64,7 @@ export default function DemoPage() {
           </button>
         ))}
         <Link
-          href="/quiz-demo"
+          href="/legacy/quiz-demo"
           className="cursor-pointer rounded-lg bg-[var(--orange)] px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
         >
           Quiz demo

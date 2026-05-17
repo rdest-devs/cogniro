@@ -1,9 +1,11 @@
 'use client';
 
-import { Plus, RefreshCcw } from 'lucide-react';
+import { Plus, RefreshCcw, Upload } from 'lucide-react';
+import { useRef, useState } from 'react';
 
 import StatusBadge from '@/app/components/common/StatusBadge';
 import type { QuizCard } from '@/app/types';
+import { uploadImport } from '@/lib/import-export/client';
 
 import AdminLayout from '../layout/AdminLayout';
 import { statusColors } from '../shared/constants';
@@ -16,6 +18,7 @@ interface AdminPanelProps {
   onOpenQuiz?: (quizId: string) => void;
   onRefresh?: () => void;
   onLogout?: () => void;
+  onImportedQuiz?: (quizId: string) => void;
 }
 
 function pluralizeQuiz(n: number): string {
@@ -32,9 +35,12 @@ export default function AdminPanel({
   onOpenQuiz,
   onRefresh,
   onLogout,
+  onImportedQuiz,
 }: AdminPanelProps) {
   const canCreateQuiz = Boolean(onCreateQuiz);
   const canOpenQuiz = Boolean(onOpenQuiz);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importBusy, setImportBusy] = useState(false);
 
   return (
     <AdminLayout onCreateQuiz={onCreateQuiz} onLogout={onLogout}>
@@ -56,6 +62,42 @@ export default function AdminPanel({
               Odśwież
             </button>
           )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".zip,application/zip"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              e.target.value = '';
+              if (!file || !onImportedQuiz) {
+                return;
+              }
+              setImportBusy(true);
+              try {
+                const { id } = await uploadImport(file);
+                onImportedQuiz(id);
+              } catch (err) {
+                window.alert(
+                  err instanceof Error
+                    ? err.message
+                    : 'Import nie powiódł się.',
+                );
+              } finally {
+                setImportBusy(false);
+              }
+            }}
+          />
+          <button
+            type="button"
+            disabled={!onImportedQuiz || importBusy}
+            aria-disabled={!onImportedQuiz || importBusy}
+            onClick={() => fileInputRef.current?.click()}
+            className="flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--border)] px-3 py-2 text-xs font-semibold text-[var(--text-dark)] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Upload size={14} />
+            Importuj (.zip)
+          </button>
           <button
             type="button"
             onClick={onCreateQuiz}

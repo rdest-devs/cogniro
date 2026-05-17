@@ -45,7 +45,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## Environment variables
 
-Backend URL is shared by quiz-demo (`POST /quiz/results`), admin auth (`POST /admin/auth/login`, `POST /admin/auth/refresh`), and the admin quiz API (`GET /admin/quiz/all`, `GET`/`PUT /admin/quiz/{id}`, `POST /admin/quiz`). Paths are built with `joinApiUrl` and `BACKEND_BASE_URL` from `frontend/lib/backend-url.ts`. Configure:
+Backend URL is shared by the legacy quiz demo (`POST /legacy/quiz-demo/results`), admin auth (`POST /admin/auth/login`, `POST /admin/auth/refresh`), the admin quiz API (including `GET /admin/quiz/all`, `GET`/`PUT`/`DELETE /admin/quiz/{id}`, zip import/export), and participant play (`POST /play/{pin}/join`, `POST /play/{pin}/submit`). Paths are built with `joinApiUrl` and `BACKEND_BASE_URL` from `frontend/lib/backend-url.ts`. Configure:
 
 ```bash
 NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
@@ -53,7 +53,7 @@ NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
 # NEXT_PUBLIC_MEDIA_PUBLIC_PREFIX=/media/quiz-assets
 ```
 
-If not provided, the frontend defaults to `http://localhost:8000` (same as quiz-demo). `NEXT_PUBLIC_MEDIA_PUBLIC_PREFIX` is only needed if the backend serves quiz assets under a different public path.
+If not provided, the frontend defaults to `http://localhost:8000`. `NEXT_PUBLIC_MEDIA_PUBLIC_PREFIX` is only needed if the backend serves quiz assets under a different public path.
 
 You can start editing the page by modifying `frontend/app/page.tsx`. The page auto-updates as you edit the file.
 

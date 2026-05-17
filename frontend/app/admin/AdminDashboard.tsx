@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ResultDetailView } from '@/app/components/admin/results/ResultDetailView';
 import { ResultsBrowserView } from '@/app/components/admin/results/ResultsBrowserView';
 import { ResultsDayView } from '@/app/components/admin/results/ResultsDayView';
+import { adminPanelDemo, quizDetailDemo } from '@/app/legacy/data/demo';
 import {
   AdminQuizApiError,
   getAllAdminQuizzes,
@@ -14,7 +15,6 @@ import {
 
 import { AdminPanel, QuizDetail, QuizEditor } from '../components/admin';
 import { RunningQuizView } from '../components/admin/dashboard/RunningQuizView';
-import { adminPanelDemo, quizDetailDemo } from '../data/demo';
 import type {
   AdminQuizApiListItem,
   QuizCard,
@@ -301,6 +301,10 @@ export default function AdminDashboard({
           onCreateQuiz={handleCreateQuiz}
           onOpenQuiz={handleOpenQuizDetail}
           onLogout={onLogout}
+          onImportedQuiz={(quizId) => {
+            void loadAdminQuizzes();
+            goDetail(quizId);
+          }}
         />
       )}
 

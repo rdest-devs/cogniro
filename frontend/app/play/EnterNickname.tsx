@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import QuizStart from '@/app/components/quiz/shared/QuizStart';
-import { quizStartDemo } from '@/app/data/demo';
+import { quizStartDemo } from '@/app/legacy/data/demo';
 
 type Props = {
   code: string;
