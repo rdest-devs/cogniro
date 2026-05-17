@@ -84,6 +84,10 @@ function toApiErrorMessage(status: number): string {
 }
 
 function toAssetUploadErrorMessage(status: number): string {
+  if (status === 401 || status === 403) {
+    return 'Sesja administratora wygasła. Zaloguj się ponownie.';
+  }
+
   if (status === 400) {
     return 'Nieprawidłowy typ pliku. Wybierz JPEG, PNG lub WebP.';
   }

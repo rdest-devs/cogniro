@@ -1,7 +1,7 @@
 'use client';
 
 import ExportedImage from 'next-image-export-optimizer';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import SubmitButton from '@/app/components/common/SubmitButton';
 import type { ImageAnswerOption } from '@/app/types';
@@ -20,6 +20,17 @@ interface ImageAnswersProps {
   initialSelectedIndex?: number | null;
 }
 
+function normalizeSelectedIndex(
+  index: number | null,
+  answersCount: number,
+): number | null {
+  if (index === null || index < 0 || index >= answersCount) {
+    return null;
+  }
+
+  return index;
+}
+
 export default function ImageAnswers({
   questionNumber,
   totalQuestions,
@@ -29,18 +40,14 @@ export default function ImageAnswers({
   onSubmit,
   initialSelectedIndex = null,
 }: ImageAnswersProps) {
-  const [selected, setSelected] = useState<number | null>(() => {
-    if (
-      initialSelectedIndex === null ||
-      initialSelectedIndex < 0 ||
-      initialSelectedIndex >= answers.length
-    ) {
-      return null;
-    }
-
-    return initialSelectedIndex;
-  });
+  const [selected, setSelected] = useState<number | null>(() =>
+    normalizeSelectedIndex(initialSelectedIndex, answers.length),
+  );
   const buttonRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  useEffect(() => {
+    setSelected(normalizeSelectedIndex(initialSelectedIndex, answers.length));
+  }, [initialSelectedIndex, answers.length]);
 
   const rows: ImageAnswerOption[][] = [];
   for (let i = 0; i < answers.length; i += 2) {
