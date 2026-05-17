@@ -5,7 +5,7 @@ interface AdminLayoutProps {
   activeItem?: string;
   children: React.ReactNode;
   logoHref?: string;
-  /** Obsługa pozycji menu bocznego (Statystyki itd.). */
+  /** Sidebar item navigation handler (e.g. Statistics). */
   onMenuNavigate?: (menuItemId: string) => void;
   onCreateQuiz?: () => void;
   onLogout?: () => void;

@@ -127,6 +127,78 @@ What animal?
     assert quiz.questions[0].media.hint == "It barks."
 
 
+def test_image_directive_asset_dir_stored_as_base_path() -> None:
+    text = """---
+title: T
+---
+
+## Q1 | singlechoice
+Q?
+
+- [x] a
+- [ ] b
+
+@image: ./media/asset_cc0b501288944523b06ae7d26cf078ab
+"""
+    quiz = parse_kqf(text)
+    assert (
+        quiz.questions[0].media.image
+        == "./media/asset_cc0b501288944523b06ae7d26cf078ab"
+    )
+
+
+def test_image_directive_trailing_slash_asset_dir() -> None:
+    text = """---
+title: T
+---
+
+## Q1 | singlechoice
+Q?
+
+- [x] a
+- [ ] b
+
+@image: media/asset_x/
+"""
+    quiz = parse_kqf(text)
+    assert quiz.questions[0].media.image == "media/asset_x"
+
+
+def test_image_directive_explicit_image_webp_normalized_to_dir() -> None:
+    aid = "asset_" + "a" * 32
+    text = f"""---
+title: T
+---
+
+## Q1 | singlechoice
+Q?
+
+- [x] a
+- [ ] b
+
+@image: ./media/{aid}/image.webp
+"""
+    quiz = parse_kqf(text)
+    assert quiz.questions[0].media.image == f"./media/{aid}"
+
+
+def test_image_directive_absolute_url_unchanged() -> None:
+    text = """---
+title: T
+---
+
+## Q1 | singlechoice
+Q?
+
+- [x] a
+- [ ] b
+
+@image: https://cdn.example.com/x
+"""
+    quiz = parse_kqf(text)
+    assert quiz.questions[0].media.image == "https://cdn.example.com/x"
+
+
 def test_parses_multiple_questions() -> None:
     text = """---
 title: T

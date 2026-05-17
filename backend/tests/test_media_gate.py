@@ -91,6 +91,33 @@ def test_media_path_traversal_returns_404(
     assert r.status_code == 404
 
 
+def test_admin_quiz_media_serves_staging_before_quiz_save(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    """Editor upload writes to staging; preview GET must work before quiz PUT copies files."""
+    quiz_id = _create_quiz(client, admin_token_header)
+    data_dir = Path(os.environ["COGNIRO_DATA_DIR"])
+    staging = data_dir / "storage" / "uploads" / "quiz-assets"
+    staging.mkdir(parents=True, exist_ok=True)
+    aid = f"asset_{'b' * 32}"
+    asset_dir = staging / aid
+    asset_dir.mkdir(parents=True, exist_ok=True)
+    (asset_dir / "thumb.webp").write_bytes(b"thumb-bytes")
+    (asset_dir / "image.webp").write_bytes(b"img-bytes")
+    r_thumb = client.get(
+        f"/admin/quiz/{quiz_id}/media/{aid}/thumb.webp",
+        headers=admin_token_header,
+    )
+    assert r_thumb.status_code == 200
+    assert r_thumb.content == b"thumb-bytes"
+    r_img = client.get(
+        f"/admin/quiz/{quiz_id}/media/{aid}/image.webp",
+        headers=admin_token_header,
+    )
+    assert r_img.status_code == 200
+    assert r_img.content == b"img-bytes"
+
+
 def test_admin_quiz_media_path_traversal_returns_404(
     client: TestClient, admin_token_header: dict[str, str]
 ) -> None:

@@ -10,6 +10,8 @@ interface QuizSettingsFormProps {
   onAuthorChange: (value: string) => void;
   tagsText: string;
   onTagsTextChange: (value: string) => void;
+  showAnswerReview: boolean;
+  onShowAnswerReviewChange: (value: boolean) => void;
 }
 
 export default function QuizSettingsForm({
@@ -22,6 +24,8 @@ export default function QuizSettingsForm({
   onAuthorChange,
   tagsText,
   onTagsTextChange,
+  showAnswerReview,
+  onShowAnswerReviewChange,
 }: QuizSettingsFormProps) {
   return (
     <section className="flex flex-col gap-4 rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] p-5">
@@ -76,6 +80,24 @@ export default function QuizSettingsForm({
           placeholder="np. informatyka, egzamin"
           className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm text-[var(--text-dark)] outline-none focus:border-[var(--primary-blue)]"
         />
+      </label>
+
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[var(--border)] bg-white px-3 py-3">
+        <input
+          type="checkbox"
+          className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--primary-blue)]"
+          checked={showAnswerReview}
+          onChange={(e) => onShowAnswerReviewChange(e.target.checked)}
+        />
+        <span className="text-sm leading-snug text-[var(--text-dark)]">
+          <span className="font-semibold">
+            Pokaż przegląd odpowiedzi po quizie
+          </span>
+          <span className="mt-0.5 block text-[13px] font-normal text-[var(--text-muted)]">
+            Wyłączenie ukryje uczestnikom przycisk „Przejrzyj odpowiedzi” na
+            ekranie wyniku.
+          </span>
+        </span>
       </label>
     </section>
   );

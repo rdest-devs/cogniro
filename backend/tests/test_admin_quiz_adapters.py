@@ -88,4 +88,5 @@ def test_kqf_to_admin_detail() -> None:
     )
     assert detail.id == "quiz_abc"
     assert detail.questions[0].type == "singlechoice"
+    assert detail.show_answer_review is True
     assert detail.questions[2].type == "slider"

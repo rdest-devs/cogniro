@@ -92,6 +92,7 @@ def upsert_payload_to_kqf(
             description=payload.description,
             author=payload.author,
             tags=list(payload.tags),
+            show_answer_review=payload.show_answer_review,
         ),
         questions=questions,
     )
@@ -161,6 +162,7 @@ def kqf_to_admin_detail_payload(
         description=quiz.front_matter.description,
         author=quiz.front_matter.author,
         tags=list(quiz.front_matter.tags),
+        show_answer_review=quiz.front_matter.show_answer_review,
         status=status,
         created_at=created_at,
         updated_at=updated_at,

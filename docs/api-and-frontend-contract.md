@@ -7,7 +7,7 @@ Single reference for HTTP endpoints, media URLs, shared schemas, and how the Nex
 - **Backend base URL** — [frontend/lib/backend-url.ts](../frontend/lib/backend-url.ts): `NEXT_PUBLIC_BACKEND_URL` or `http://localhost:8000`. Paths are joined with `joinApiUrl(base, path)` (leading slashes normalized).
 - **CORS** — backend `CORS_ORIGINS` (comma-separated); dev defaults include `http://localhost:3000` and `http://127.0.0.1:3000`.
 - **Editor media public path** — `NEXT_PUBLIC_MEDIA_PUBLIC_PREFIX` + [frontend/lib/media-url.ts](../frontend/lib/media-url.ts) for resolving staged asset URLs from `POST /admin/assets`.
-- **Obrazy zapisane w quizie (`./media/…` w KQF)** — w edytorze adres `GET /admin/quiz/{quiz_id}/media/…` (Bearer); klient ładuje obraz przez `fetch` + blob ([frontend/lib/media-url.ts](../frontend/lib/media-url.ts), `AdminBearerImage`). Publicznie podczas gry: `GET /media/{quiz_id}/…` tylko gdy **sesja tego quizu jest aktywna** (`403 quiz_not_active` w przeciwnym razie).
+- **Obrazy zapisane w quizie (`./media/…` w KQF)** — w edytorze adres `GET /admin/quiz/{quiz_id}/media/…` (Bearer); klient ładuje obraz przez `fetch` + blob, najpierw `thumb.webp`, potem `image.webp` ([frontend/lib/media-url.ts](../frontend/lib/media-url.ts), `resolveEditorQuestionPlayImageUrls`, `AdminProgressiveBearerImage`). Publicznie podczas gry: `GET /media/{quiz_id}/…` tylko gdy **sesja tego quizu jest aktywna** (`403 quiz_not_active` w przeciwnym razie).
 
 ## Admin authentication
 

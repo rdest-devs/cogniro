@@ -122,7 +122,7 @@ export default function AdminDashboard({
   const editorMode: EditorMode = wantsNew ? 'create' : 'edit';
 
   const [adminQuizzes, setAdminQuizzes] = useState<AdminQuizApiListItem[]>([]);
-  /** Zaczyna od true, żeby nie odrzucać `?quiz=` przed pierwszym pobraniem z API. */
+  /** Starts true so `?quiz=` is not rejected before the first API fetch. */
   const [adminLoading, setAdminLoading] = useState(true);
   const [adminError, setAdminError] = useState<string | null>(null);
 

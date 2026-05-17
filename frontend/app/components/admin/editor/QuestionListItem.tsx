@@ -17,7 +17,10 @@ import {
   uploadAdminAsset,
 } from '@/lib/admin-quiz';
 import { cn } from '@/lib/cn';
-import { resolveEditorQuestionImageUrl } from '@/lib/media-url';
+import {
+  normalizeKqfQuestionImageToDirectoryPath,
+  resolveEditorQuestionPlayImageUrls,
+} from '@/lib/media-url';
 
 import { typeColors } from '../shared/constants';
 import EditorQuestionImagePreview from './EditorQuestionImagePreview';
@@ -25,7 +28,7 @@ import QuestionPreview from './QuestionPreview';
 
 interface QuestionListItemProps {
   index: number;
-  /** Przy edycji — URL `./media/…` → `GET /admin/quiz/{quizId}/media/…` (Bearer). */
+  /** In edit mode: `./media/…` URLs resolve to `GET /admin/quiz/{quizId}/media/…` (Bearer). */
   editorQuizId?: string | null;
   isExpanded: boolean;
   onToggle: () => void;
@@ -492,7 +495,8 @@ export default function QuestionListItem({
 
     try {
       const uploaded = await uploadAdminAsset(selectedFile);
-      setValue(`${questionPath}.image`, uploaded.url, {
+      const dirPath = normalizeKqfQuestionImageToDirectoryPath(uploaded.url);
+      setValue(`${questionPath}.image`, dirPath ?? uploaded.url, {
         shouldDirty: true,
         shouldValidate: true,
       });
@@ -510,10 +514,10 @@ export default function QuestionListItem({
       ? questionImage.trim()
       : null;
 
-  const imageDisplaySrc = useMemo(
+  const questionImageUrls = useMemo(
     () =>
       rawQuestionImage
-        ? resolveEditorQuestionImageUrl(rawQuestionImage, editorQuizId)
+        ? resolveEditorQuestionPlayImageUrls(rawQuestionImage, editorQuizId)
         : null,
     [rawQuestionImage, editorQuizId],
   );
@@ -676,16 +680,17 @@ export default function QuestionListItem({
                     </button>
                   )}
                 </div>
-                {rawQuestionImage && !imageDisplaySrc && (
+                {rawQuestionImage && !questionImageUrls && (
                   <p className="text-xs text-[var(--text-muted)]">
                     Obraz z katalogu quizu (`./media/…`) — zapisz quiz, aby znać
                     identyfikator i zbudować adres podglądu.
                   </p>
                 )}
-                {imageDisplaySrc && (
+                {questionImageUrls && (
                   <EditorQuestionImagePreview
-                    key={imageDisplaySrc}
-                    imageDisplaySrc={imageDisplaySrc}
+                    key={questionImageUrls.fullUrl}
+                    fullUrl={questionImageUrls.fullUrl}
+                    thumbUrl={questionImageUrls.thumbUrl}
                     alt="Podgląd obrazu pytania"
                     imgClassName="max-h-40 w-full rounded-lg object-contain"
                     errorMessage={

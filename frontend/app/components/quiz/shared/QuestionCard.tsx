@@ -1,7 +1,8 @@
 import ExportedImage from 'next-image-export-optimizer';
 
 import type { QuizImage } from '@/app/types';
-import { resolveMediaUrl } from '@/lib/media-url';
+
+import ProgressiveQuizImage from './ProgressiveQuizImage';
 
 interface QuestionCardProps {
   question: string;
@@ -45,14 +46,13 @@ export default function QuestionCard({
         </div>
       )}
       {image && (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          src={resolveMediaUrl(image.url)}
+        <ProgressiveQuizImage
+          thumbUrl={image.thumbUrl}
+          fullUrl={image.url}
           width={image.width}
           height={image.height}
           alt={image.alt ?? ''}
           loading={imageLoading}
-          decoding="async"
           className="mt-2 w-full rounded-2xl object-contain"
         />
       )}

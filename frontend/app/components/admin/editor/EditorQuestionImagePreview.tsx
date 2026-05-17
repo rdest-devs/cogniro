@@ -3,20 +3,23 @@
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 
+import ProgressiveQuizImage from '@/app/components/quiz/shared/ProgressiveQuizImage';
 import { isAdminQuizMediaFetchUrl } from '@/lib/media-url';
 
-import AdminBearerImage from './AdminBearerImage';
+import AdminProgressiveBearerImage from './AdminProgressiveBearerImage';
 
 type EditorQuestionImagePreviewProps = {
-  /** Parent should set `key={imageDisplaySrc}` so load errors reset when the URL changes. */
-  imageDisplaySrc: string;
+  /** Resolved fetch URLs (e.g. after `resolveEditorQuestionPlayImageUrls`). */
+  fullUrl: string;
+  thumbUrl: string;
   alt: string;
   imgClassName: string;
   errorMessage: ReactNode;
 };
 
 export default function EditorQuestionImagePreview({
-  imageDisplaySrc,
+  fullUrl,
+  thumbUrl,
   alt,
   imgClassName,
   errorMessage,
@@ -29,25 +32,22 @@ export default function EditorQuestionImagePreview({
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-white p-3">
-      {isAdminQuizMediaFetchUrl(imageDisplaySrc) ? (
-        <AdminBearerImage
-          fetchUrl={imageDisplaySrc}
+      {isAdminQuizMediaFetchUrl(fullUrl) ? (
+        <AdminProgressiveBearerImage
+          thumbFetchUrl={thumbUrl}
+          fullFetchUrl={fullUrl}
           alt={alt}
           onLoadError={() => setLoadError(true)}
           className={imgClassName}
         />
       ) : (
-        <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageDisplaySrc}
-            alt={alt}
-            loading="lazy"
-            decoding="async"
-            onError={() => setLoadError(true)}
-            className={imgClassName}
-          />
-        </>
+        <ProgressiveQuizImage
+          fullUrl={fullUrl}
+          thumbUrl={thumbUrl}
+          alt={alt}
+          className={imgClassName}
+          loading="lazy"
+        />
       )}
     </div>
   );

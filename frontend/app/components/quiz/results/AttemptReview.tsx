@@ -10,7 +10,7 @@ interface AttemptReviewProps {
   correctCount: number;
   wrongCount: number;
   scorePercent: number;
-  /** Gdy podane, pokazują się obok procentu (np. „12 / 20 pkt”). */
+  /** When set, shown next to the percent (e.g. “12 / 20 pts”). */
   scorePoints?: number;
   scoreTotal?: number;
   questions: ReviewQuestion[];
@@ -32,7 +32,7 @@ export default function AttemptReview({
     Number.isFinite(scorePoints) &&
     Number.isFinite(scoreTotal);
   return (
-    <div className="flex h-full w-full max-w-[390px] flex-col overflow-hidden bg-[var(--page-bg)]">
+    <div className="flex h-full w-full flex-col overflow-hidden bg-[var(--page-bg)]">
       <header className="flex w-full items-center justify-between px-6 pt-4">
         <button
           type="button"

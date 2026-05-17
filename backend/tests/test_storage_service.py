@@ -36,7 +36,7 @@ def test_resolve_storage_paths_respects_cogniro_storage_dir(
     assert paths.data_dir == root
     assert paths.quizzes_dir == storage_root / "quizzes"
     assert paths.results_dir == storage_root / "results"
-    assert paths.staging_dir == root / "uploads" / "quiz-assets"
+    assert paths.staging_dir == storage_root / "uploads" / "quiz-assets"
 
 
 def test_generate_quiz_id_prefix_and_uniqueness() -> None:

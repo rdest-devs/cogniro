@@ -200,6 +200,7 @@ export const quizEditorFormSchema = z.object({
       return v;
     }),
   tags: z.array(z.string().trim().min(1)),
+  showAnswerReview: z.boolean().default(true),
   questions: z
     .array(quizEditorQuestionFormSchema)
     .min(1, 'Dodaj co najmniej 1 pytanie'),
@@ -279,6 +280,7 @@ export const adminQuizApiDetailsSchema = z
     description: optionalNullableString,
     author: optionalNullableString,
     tags: z.array(z.string()).optional().default([]),
+    show_answer_review: z.boolean().optional().default(true),
     status: z.enum(['idle', 'running']).optional(),
     created_at: z.string(),
     updated_at: z.string().optional(),
@@ -447,6 +449,7 @@ export const adminQuizUpsertPayloadSchema = z.object({
       return t === '' ? null : t;
     }),
   tags: z.array(z.string().trim().min(1)),
+  show_answer_review: z.boolean().optional().default(true),
   questions: z.array(adminQuizUpsertQuestionSchema).min(1),
 });
 

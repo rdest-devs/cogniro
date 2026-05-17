@@ -5,7 +5,7 @@ export type SidebarMenuItem = {
   id: string;
   label: string;
   icon: LucideIcon;
-  /** Pozycja widoczna, ale bez nawigacji (np. w przygotowaniu). */
+  /** Visible item with no navigation (e.g. coming soon). */
   disabled?: boolean;
 };
 
@@ -33,7 +33,7 @@ export const typeColors: Record<string, string> = {
   Suwak: 'bg-[var(--wrong-fg)] text-white',
 };
 
-/** Wspólne przyciski narzędziowe admina (AdminPanel, QuizDetail). */
+/** Shared admin toolbar button styles (AdminPanel, QuizDetail). */
 export const adminToolbarButtonClass =
   'inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] px-3 py-2 text-xs font-semibold text-[var(--text-dark)] transition-colors hover:bg-[var(--page-bg)] disabled:cursor-not-allowed disabled:opacity-50';
 
@@ -43,7 +43,7 @@ export const adminPrimaryOutlineButtonClass =
 export const adminDangerOutlineButtonClass =
   'inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[var(--wrong-fg)] px-3 py-2 text-xs font-semibold text-[var(--wrong-fg)] transition-colors hover:bg-[var(--wrong-fg)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50';
 
-/** Tabela z niebieskim nagłówkiem (np. podgląd sesji z QR, demo wyników). */
+/** Table with blue header row (e.g. live session + QR, demo results). */
 export const adminBlueHeadTableClass =
   'w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card-bg)]';
 

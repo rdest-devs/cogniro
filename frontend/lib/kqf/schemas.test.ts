@@ -19,6 +19,7 @@ test('parses a minimal valid KQF-shaped quiz object', () => {
     ],
   });
   assert.equal(parsed.front_matter.title, 'T');
+  assert.equal(parsed.front_matter.show_answer_review, true);
   assert.equal(parsed.questions[0].type, 'singlechoice');
   assert.equal(parsed.questions[0].points, 1);
 });

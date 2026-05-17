@@ -27,6 +27,7 @@ import {
   singleChoiceDemo,
   sliderQuestionDemo,
 } from '@/app/legacy/data/demo';
+import { PLAY_USER_SHELL_EMBEDDED_CLASS } from '@/app/play/playShellClasses';
 
 const screens = [
   'Quiz Start',
@@ -48,7 +49,7 @@ export default function DemoPage() {
   const shouldCenterVertically = current !== 'Attempt Review';
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex min-h-dvh flex-col">
       <nav className="flex flex-wrap gap-2 border-b border-[var(--border)] bg-[var(--card-bg)] p-3">
         {screens.map((screen) => (
           <button
@@ -71,25 +72,33 @@ export default function DemoPage() {
         </Link>
       </nav>
 
-      <div
-        className={`flex flex-1 overflow-auto bg-[var(--page-bg)] ${shouldCenterVertically ? 'items-center justify-center' : 'justify-center'}`}
-      >
-        {current === 'Quiz Start' && <QuizStart {...quizStartDemo} />}
-        {current === 'Single Choice' && <SingleChoice {...singleChoiceDemo} />}
-        {current === 'Multiple Choice' && (
-          <MultipleChoice {...multipleChoiceDemo} />
-        )}
-        {current === 'Image Question' && (
-          <ImageQuestion {...imageQuestionDemo} />
-        )}
-        {current === 'Image Answers' && <ImageAnswers {...imageAnswersDemo} />}
-        {current === 'Ordering' && <Ordering {...orderingDemo} />}
-        {current === 'Slider' && <SliderQuestion {...sliderQuestionDemo} />}
-        {current === 'Range Slider' && <RangeSlider {...rangeSliderDemo} />}
-        {current === 'Quiz Results' && <QuizResults {...quizResultsDemo} />}
-        {current === 'Attempt Review' && (
-          <AttemptReview {...attemptReviewDemo} />
-        )}
+      <div className="flex min-h-0 flex-1 flex-col bg-[var(--page-bg)]">
+        <div className={PLAY_USER_SHELL_EMBEDDED_CLASS}>
+          <div
+            className={`flex min-h-0 flex-1 overflow-auto ${shouldCenterVertically ? 'items-center justify-center' : 'justify-center'}`}
+          >
+            {current === 'Quiz Start' && <QuizStart {...quizStartDemo} />}
+            {current === 'Single Choice' && (
+              <SingleChoice {...singleChoiceDemo} />
+            )}
+            {current === 'Multiple Choice' && (
+              <MultipleChoice {...multipleChoiceDemo} />
+            )}
+            {current === 'Image Question' && (
+              <ImageQuestion {...imageQuestionDemo} />
+            )}
+            {current === 'Image Answers' && (
+              <ImageAnswers {...imageAnswersDemo} />
+            )}
+            {current === 'Ordering' && <Ordering {...orderingDemo} />}
+            {current === 'Slider' && <SliderQuestion {...sliderQuestionDemo} />}
+            {current === 'Range Slider' && <RangeSlider {...rangeSliderDemo} />}
+            {current === 'Quiz Results' && <QuizResults {...quizResultsDemo} />}
+            {current === 'Attempt Review' && (
+              <AttemptReview {...attemptReviewDemo} />
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

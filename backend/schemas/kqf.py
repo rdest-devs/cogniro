@@ -14,6 +14,7 @@ class KqfFrontMatter(BaseModel):
     version: str | None = None
     language: str | None = None
     tags: list[str] = Field(default_factory=list)
+    show_answer_review: bool = True
 
     model_config = ConfigDict(extra="ignore")
 

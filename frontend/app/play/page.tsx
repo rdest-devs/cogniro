@@ -1,14 +1,16 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useState } from 'react';
+import { Suspense, useRef, useState } from 'react';
 
 import { EnterCode } from '@/app/play/EnterCode';
 import { EnterNickname } from '@/app/play/EnterNickname';
+import { PlayExperienceLayout } from '@/app/play/PlayExperienceLayout';
 import { PlayingShell } from '@/app/play/PlayingShell';
 import { PlayResult } from '@/app/play/PlayResult';
 import { type AnswerMap, calculateScore } from '@/app/play/scoring';
 import {
+  clearPlayState,
   loadPlayState,
   type PlayState,
   savePlayState,
@@ -27,6 +29,8 @@ type Stage =
       quiz: KqfQuiz;
       score: number;
       answers: AnswerMap;
+      /** True after „Spróbuj ponownie” — brak ponownego POST wyniku. */
+      skipServerSubmit?: boolean;
     };
 
 function PlayExperience({ urlCode }: { urlCode: string }) {
@@ -36,21 +40,45 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
       : { name: 'enter-code' },
   );
   const [joinError, setJoinError] = useState<string | null>(null);
+  /** Ustawiane w `onPlayAgain` — kolejne zakończenie nie wywołuje `submitPlay`. */
+  const skipSubmitAfterLocalReplayRef = useRef(false);
 
   if (stage.name === 'result') {
     return (
-      <PlayResult
-        code={stage.code}
-        nickname={stage.nickname}
-        quiz={stage.quiz}
-        score={stage.score}
-        answers={stage.answers}
-      />
+      <PlayExperienceLayout>
+        <PlayResult
+          code={stage.code}
+          nickname={stage.nickname}
+          quiz={stage.quiz}
+          score={stage.score}
+          answers={stage.answers}
+          skipServerSubmit={stage.skipServerSubmit === true}
+          onPlayAgain={() => {
+            const { code, nickname, quiz } = stage;
+            skipSubmitAfterLocalReplayRef.current = true;
+            clearPlayState(window.sessionStorage, code, nickname);
+            const nextState: PlayState = {
+              quiz,
+              currentQuestionIndex: 0,
+              answers: {},
+              startedAt: new Date().toISOString(),
+              submitted: false,
+            };
+            savePlayState(window.sessionStorage, code, nickname, nextState);
+            setStage({
+              name: 'playing',
+              code,
+              nickname,
+              state: nextState,
+            });
+          }}
+        />
+      </PlayExperienceLayout>
     );
   }
 
   return (
-    <main className="mx-auto max-w-2xl p-6">
+    <PlayExperienceLayout>
       {stage.name === 'enter-code' && (
         <EnterCode
           onSubmit={(code) => setStage({ name: 'enter-nickname', code })}
@@ -120,11 +148,12 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
               quiz: final.quiz,
               score,
               answers: final.answers,
+              skipServerSubmit: skipSubmitAfterLocalReplayRef.current,
             });
           }}
         />
       )}
-    </main>
+    </PlayExperienceLayout>
   );
 }
 
@@ -138,9 +167,11 @@ export default function PlayPage() {
   return (
     <Suspense
       fallback={
-        <main className="mx-auto max-w-2xl p-6">
-          <p className="text-sm text-zinc-500">Ładowanie…</p>
-        </main>
+        <PlayExperienceLayout>
+          <p className="px-6 py-8 text-center text-sm text-[var(--text-muted)]">
+            Ładowanie…
+          </p>
+        </PlayExperienceLayout>
       }
     >
       <PlayGate />

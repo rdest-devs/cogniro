@@ -19,7 +19,7 @@ export default function QuizLayout({
   children,
 }: QuizLayoutProps) {
   return (
-    <article className="flex h-full w-full max-w-[390px] flex-col bg-[var(--page-bg)]">
+    <article className="flex h-full w-full flex-col bg-[var(--page-bg)]">
       <ProgressBar current={questionNumber} total={totalQuestions} />
       <QuestionHeader
         current={questionNumber}

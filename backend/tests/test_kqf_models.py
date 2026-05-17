@@ -19,6 +19,7 @@ def test_front_matter_minimal() -> None:
     fm = KqfFrontMatter(title="Test")
     assert fm.title == "Test"
     assert fm.tags == []
+    assert fm.show_answer_review is True
 
 
 def test_singlechoice_requires_exactly_one_correct() -> None:

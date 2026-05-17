@@ -32,7 +32,7 @@ interface QuizEditorQuestionFormBase {
   id?: string;
   text: string;
   timeS?: number | null;
-  /** Waga punktowa pytania; w pliku KQF / API brak lub 0 → liczymy jako 1. */
+  /** Question point weight; missing or 0 in KQF / API is treated as 1. */
   points: number;
   /** KQF @image: URL or relative path from upload */
   image?: string | null;
@@ -67,6 +67,8 @@ export interface QuizEditorFormValues {
   description?: string | null;
   author?: string | null;
   tags: string[];
+  /** After the quiz: whether the player may open the answer review screen. */
+  showAnswerReview: boolean;
   questions: QuizEditorQuestionForm[];
 }
 
@@ -129,6 +131,8 @@ export interface AdminQuizApiDetails {
   description?: string | null;
   author?: string | null;
   tags?: string[];
+  /** Defaults to true; stored in KQF front matter. */
+  show_answer_review?: boolean;
   status?: 'idle' | 'running';
   created_at: string;
   updated_at?: string;
@@ -197,6 +201,7 @@ export interface AdminQuizUpsertPayload {
   description?: string | null;
   author?: string | null;
   tags: string[];
+  show_answer_review?: boolean;
   questions: AdminQuizUpsertQuestionPayload[];
 }
 

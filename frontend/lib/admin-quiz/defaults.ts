@@ -84,6 +84,7 @@ export function createDefaultQuizFormValues(): QuizEditorFormValues {
     description: null,
     author: null,
     tags: [],
+    showAnswerReview: true,
     questions: [createEmptyQuestion()],
   };
 }

@@ -24,7 +24,7 @@ export function formatArchivedScore(score: number, maxScore: number): string {
   return `${score} / ${maxScore}`;
 }
 
-/** Etykieta bez rozszerzenia `.json` (URL i API nadal używają pełnej nazwy). */
+/** Display label without `.json` suffix (URLs and API still use the full filename). */
 export function resultFileDisplayName(filename: string): string {
   return filename.toLowerCase().endsWith('.json')
     ? filename.slice(0, -'.json'.length)

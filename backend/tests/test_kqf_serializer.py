@@ -94,6 +94,28 @@ def test_serialize_emits_media_directives() -> None:
     assert "@hint: h" in text
 
 
+def test_serialize_normalizes_asset_image_webp_to_directory_line() -> None:
+    aid = "asset_" + "c" * 32
+    quiz = KqfQuiz(
+        front_matter=KqfFrontMatter(title="T"),
+        questions=[
+            KqfSingleChoice(
+                id="Q1",
+                type="singlechoice",
+                text="?",
+                choices=[
+                    KqfChoice(text="a", is_correct=True),
+                    KqfChoice(text="b", is_correct=False),
+                ],
+                media=KqfMedia(image=f"./media/{aid}/image.webp"),
+            )
+        ],
+    )
+    text = serialize_kqf(quiz)
+    assert f"@image: ./media/{aid}" in text
+    assert f"@image: ./media/{aid}/image.webp" not in text
+
+
 def test_read_write_kqf_file_roundtrip(tmp_path: Path) -> None:
     path = tmp_path / "quiz.kqf"
     quiz = KqfQuiz(

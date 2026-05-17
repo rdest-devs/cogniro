@@ -9,6 +9,7 @@ import io
 import os
 import re
 from pathlib import Path
+from urllib.parse import urlparse
 
 import frontmatter
 from pydantic import ValidationError
@@ -23,6 +24,29 @@ from schemas.kqf import (
     KqfSlider,
     KqfTrueFalse,
 )
+
+_ASSET_ID_TAIL = re.compile(r"(asset_[0-9a-f]{32})$", re.IGNORECASE)
+
+
+def _normalize_kqf_stored_image_path(value: str) -> str:
+    """KQF stores ``@image`` as ``./media/{asset_id}`` (directory), never ``…/image.webp``."""
+    s = value.strip()
+    if not s:
+        return s
+    path = s
+    if s.lower().startswith(("http://", "https://")):
+        try:
+            path = urlparse(s).path
+        except ValueError:
+            path = s
+    stripped = re.sub(r"/image\.webp$", "", path, flags=re.IGNORECASE)
+    stripped = re.sub(r"/thumb\.webp$", "", stripped, flags=re.IGNORECASE)
+    stripped = stripped.rstrip("/")
+    m = _ASSET_ID_TAIL.search(stripped)
+    if m:
+        return f"./media/{m.group(1)}"
+    return s
+
 
 _HEADER_RE = re.compile(
     r"^##\s+(?P<id>[A-Za-z0-9_-]+)\s*\|\s*(?P<type>singlechoice|multichoice|truefalse|slider)"
@@ -174,7 +198,12 @@ def _parse_question_block(block: str, header_line: int):
             continue
         directive_match = _DIRECTIVE_RE.match(line)
         if directive_match:
-            media_kwargs[directive_match.group("key")] = directive_match.group("value")
+            key = directive_match.group("key")
+            raw_val = directive_match.group("value").strip()
+            if key == "image":
+                raw_val = raw_val.rstrip("/")
+                raw_val = _normalize_kqf_stored_image_path(raw_val)
+            media_kwargs[key] = raw_val
             index += 1
             continue
         if stripped == "":
@@ -321,12 +350,14 @@ def _write_question(buf: io.StringIO, question: object) -> None:
         for key in ("image", "video", "audio", "hint"):
             value = media_kwargs.get(key)
             if value:
+                if key == "image":
+                    value = _normalize_kqf_stored_image_path(value)
                 buf.write(f"@{key}: {value}\n")
 
 
 def serialize_kqf(quiz: KqfQuiz) -> str:
     """Serialize a KqfQuiz back into KQF text. Round-trip-stable with parse_kqf."""
-    fm = quiz.front_matter.model_dump(exclude_none=True, exclude_defaults=False)
+    fm = quiz.front_matter.model_dump(exclude_none=True, exclude_defaults=True)
     if not fm.get("tags"):
         fm.pop("tags", None)
     post = frontmatter.Post("", **fm)

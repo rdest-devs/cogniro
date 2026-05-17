@@ -4,14 +4,14 @@ import { useMemo } from 'react';
 
 import type { QuizEditorQuestionForm } from '@/app/types';
 import { cn } from '@/lib/cn';
-import { resolveEditorQuestionImageUrl } from '@/lib/media-url';
+import { resolveEditorQuestionPlayImageUrls } from '@/lib/media-url';
 
 import EditorQuestionImagePreview from './EditorQuestionImagePreview';
 
 interface QuestionPreviewProps {
   question: QuizEditorQuestionForm;
   editorQuizId?: string | null;
-  /** Suma wag punktowych wszystkich pytań w quizie (podgląd na bieżąco). */
+  /** Sum of question point weights for the quiz (live preview). */
   quizMaxPoints?: number;
 }
 
@@ -78,9 +78,11 @@ export default function QuestionPreview({
       ? question.image.trim()
       : null;
 
-  const imageDisplaySrc = useMemo(
+  const imageUrls = useMemo(
     () =>
-      rawImage ? resolveEditorQuestionImageUrl(rawImage, editorQuizId) : null,
+      rawImage
+        ? resolveEditorQuestionPlayImageUrls(rawImage, editorQuizId)
+        : null,
     [rawImage, editorQuizId],
   );
 
@@ -111,16 +113,17 @@ export default function QuestionPreview({
       <p className="text-sm text-[var(--text-dark)]">
         {question.text.trim() || 'Brak treści pytania'}
       </p>
-      {rawImage && !imageDisplaySrc && (
+      {rawImage && !imageUrls && (
         <p className="text-xs text-[var(--text-muted)]">
           Obraz z katalogu quizu — zapisz quiz, aby znać identyfikator i
           zbudować adres podglądu.
         </p>
       )}
-      {imageDisplaySrc && (
+      {imageUrls && (
         <EditorQuestionImagePreview
-          key={imageDisplaySrc}
-          imageDisplaySrc={imageDisplaySrc}
+          key={imageUrls.fullUrl}
+          fullUrl={imageUrls.fullUrl}
+          thumbUrl={imageUrls.thumbUrl}
           alt="Ilustracja do pytania"
           imgClassName="w-full rounded-lg object-contain"
           errorMessage={

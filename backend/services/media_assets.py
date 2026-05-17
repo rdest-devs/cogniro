@@ -23,7 +23,7 @@ from schemas.admin_quiz import QuizAssetUploadResponse
 from services.storage import StoragePaths, get_storage
 
 _ALLOWED_PILLOW_FORMATS = {"JPEG", "PNG", "WEBP"}
-# Minimum age before periodic purge deletes ``uploads/quiz-assets/asset_*`` (editor cache).
+# Minimum age before periodic purge deletes ``storage/uploads/quiz-assets/asset_*`` (editor cache).
 ORPHAN_ASSET_RETENTION_SECONDS = 24 * 60 * 60
 _ASSET_ID_IN_STRING = re.compile(r"\b(asset_[0-9a-f]{32})\b")
 
@@ -266,7 +266,7 @@ def purge_stale_editor_staging(
     now_timestamp: float | None = None,
     min_age_seconds: int = ORPHAN_ASSET_RETENTION_SECONDS,
 ) -> int:
-    """Periodic purge: remove old ``uploads/quiz-assets/asset_*`` (editor-only; quiz media lives under each quiz after save)."""
+    """Periodic purge: remove old ``storage/uploads/quiz-assets/asset_*`` (editor cache)."""
     return _purge_staging_orphans(
         get_storage(app),
         None,

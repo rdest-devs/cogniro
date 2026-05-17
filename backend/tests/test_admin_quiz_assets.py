@@ -65,7 +65,7 @@ def test_startup_initializes_storage(monkeypatch, tmp_path: Path) -> None:
     with TestClient(app):
         assert (data_dir / "storage" / "quizzes").is_dir()
         assert (data_dir / "storage" / "results").is_dir()
-        assert (data_dir / "uploads" / "quiz-assets").is_dir()
+        assert (data_dir / "storage" / "uploads" / "quiz-assets").is_dir()
 
 
 def test_admin_quiz_create_get_update_list_delete(monkeypatch, tmp_path: Path) -> None:
@@ -106,8 +106,13 @@ def test_admin_quiz_create_get_update_list_delete(monkeypatch, tmp_path: Path) -
         update_payload = _minimal_quiz_payload()
         update_payload["title"] = "Quiz po aktualizacji"
         update_payload["questions"][0]["text"] = "Z tekstem"
+        aid = "asset_" + "d" * 32
+        staging_asset = data_dir / "storage" / "uploads" / "quiz-assets" / aid
+        staging_asset.mkdir(parents=True, exist_ok=True)
+        (staging_asset / "image.webp").write_bytes(b"\xff\xd8\xff\xd9")
+        (staging_asset / "thumb.webp").write_bytes(b"thumb")
         update_payload["questions"][0]["image"] = (
-            f"{settings.MEDIA_PUBLIC_PREFIX}/asset_demo/image.webp"
+            f"{settings.MEDIA_PUBLIC_PREFIX}/{aid}/image.webp"
         )
 
         update_response = client.put(
@@ -122,7 +127,7 @@ def test_admin_quiz_create_get_update_list_delete(monkeypatch, tmp_path: Path) -
         updated = after_update.json()
         assert updated["title"] == "Quiz po aktualizacji"
         assert updated["questions"][0]["text"] == "Z tekstem"
-        assert updated["questions"][0]["image"].endswith("/asset_demo/image.webp")
+        assert updated["questions"][0]["image"] == f"./media/{aid}"
 
         quiz_dir = data_dir / "storage" / "quizzes" / quiz_id
         assert (quiz_dir / "quiz.kqf").is_file()
@@ -241,7 +246,9 @@ def test_admin_assets_upload_and_processing(monkeypatch, tmp_path: Path) -> None
         assert payload["height"] > 0
         assert payload["alt"] == ""
 
-        asset_dir = data_dir / "uploads" / "quiz-assets" / payload["assetId"]
+        asset_dir = (
+            data_dir / "storage" / "uploads" / "quiz-assets" / payload["assetId"]
+        )
         image_path = asset_dir / "image.webp"
         thumb_path = asset_dir / "thumb.webp"
 

@@ -1,4 +1,4 @@
-"""Filesystem layout: storage/{quizzes/{quiz_id}/{quiz.kqf,meta.json,media/}, results/{date}/}."""
+"""Filesystem layout: storage/{quizzes/…, results/…, uploads/quiz-assets/ (staging)}."""
 
 from __future__ import annotations
 
@@ -13,8 +13,8 @@ from fastapi import FastAPI
 
 from core.settings import DEFAULT_DATA_DIR
 
-# Optional override: path to the `storage` directory (`quizzes/`, `results/` live here).
-# Parent of that path is used for `uploads/quiz-assets/`. When set, `COGNIRO_DATA_DIR`
+# Optional override: path to the `storage` directory (`quizzes/`, `results/`, and
+# `uploads/quiz-assets/` editor staging live here). When set, `COGNIRO_DATA_DIR`
 # does not affect quiz or result file locations.
 COGNIRO_STORAGE_DIR_ENV = "COGNIRO_STORAGE_DIR"
 
@@ -24,7 +24,7 @@ class StoragePaths:
     data_dir: Path
     quizzes_dir: Path
     results_dir: Path
-    staging_dir: Path  # editor media staging (= old uploads/quiz-assets)
+    staging_dir: Path  # editor media staging: ``{storage_root}/uploads/quiz-assets``
 
 
 # NOTE: This in-process lock only serializes writes within a single worker.
@@ -57,7 +57,7 @@ def resolve_storage_paths() -> StoragePaths:
             data_dir=data_root,
             quizzes_dir=storage_root / "quizzes",
             results_dir=storage_root / "results",
-            staging_dir=data_root / "uploads" / "quiz-assets",
+            staging_dir=storage_root / "uploads" / "quiz-assets",
         )
 
     data_dir = resolve_data_dir()
@@ -65,7 +65,7 @@ def resolve_storage_paths() -> StoragePaths:
         data_dir=data_dir,
         quizzes_dir=data_dir / "storage" / "quizzes",
         results_dir=data_dir / "storage" / "results",
-        staging_dir=data_dir / "uploads" / "quiz-assets",
+        staging_dir=data_dir / "storage" / "uploads" / "quiz-assets",
     )
 
 

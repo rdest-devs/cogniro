@@ -16,7 +16,10 @@ from schemas.admin_quiz import (
     QuizAssetUploadResponse,
 )
 from security.admin_auth import require_admin
-from services.quiz_files import safe_quiz_media_file_path
+from services.quiz_files import (
+    safe_asset_file_path_under_dir,
+    safe_quiz_media_file_path,
+)
 from services.storage import get_storage, quiz_dir_for
 from services.admin_quiz import (
     activate_quiz,
@@ -93,6 +96,8 @@ async def admin_quiz_media(
     paths = get_storage(request.app)
     qd = quiz_dir_for(paths, quiz_id)
     resolved = safe_quiz_media_file_path(qd, filename)
+    if resolved is None:
+        resolved = safe_asset_file_path_under_dir(paths.staging_dir, filename)
     if resolved is None:
         raise HTTPException(status_code=404, detail="not_found")
     return FileResponse(resolved)

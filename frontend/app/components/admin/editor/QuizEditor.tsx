@@ -30,7 +30,7 @@ import QuizSettingsForm from './QuizSettingsForm';
 interface QuizEditorProps {
   mode: 'create' | 'edit';
   quizId?: string | null;
-  /** Bazowy URL panelu (np. `/admin/`) — link „Moje Quizy” i menu boczne. */
+  /** Admin panel base URL (e.g. `/admin/`) — “My quizzes” link and sidebar. */
   logoHref?: string;
   menuActiveItem?: string;
   onMenuNavigate?: (menuItemId: string) => void;
@@ -79,7 +79,7 @@ export default function QuizEditor({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
-  /** Surowy tekst pola tagów — nie można go wyprowadzić z `tags[]`, bo ginie np. końcowy przecinek. */
+  /** Raw tags field text — cannot be derived from `tags[]` (e.g. trailing comma is lost). */
   const [tagsRaw, setTagsRaw] = useState('');
 
   const formMethods = useForm<QuizEditorFormValues>({
@@ -173,6 +173,7 @@ export default function QuizEditor({
   const watchedTitle = watch('title');
   const watchedDescription = watch('description') ?? '';
   const watchedAuthor = watch('author') ?? '';
+  const watchedShowAnswerReview = watch('showAnswerReview');
   const isMissingQuizId = mode === 'edit' && !quizId;
   const hasBlockingLoadError =
     mode === 'edit' && (isMissingQuizId || Boolean(loadError));
@@ -368,6 +369,13 @@ export default function QuizEditor({
                   shouldValidate: true,
                 });
               }}
+              showAnswerReview={watchedShowAnswerReview}
+              onShowAnswerReviewChange={(value) =>
+                setValue('showAnswerReview', value, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
               titleError={errors.title?.message}
             />
 

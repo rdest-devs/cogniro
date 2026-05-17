@@ -30,7 +30,7 @@ import {
 interface QuizDetailProps {
   quizzes: QuizInfo[];
   selectedQuizId?: string | null;
-  /** Tylko gdy panel admina pokazuje dane demo (np. błąd API) — inaczej ukryte. */
+  /** Only when the admin panel is showing demo data (e.g. API error); otherwise hidden. */
   legacyDemoResultsEnabled?: boolean;
   resultsForQuiz: ResultRow[];
   adminBase: string;

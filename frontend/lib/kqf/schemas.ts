@@ -13,6 +13,7 @@ export const kqfFrontMatterSchema = z.object({
   version: nullableJsonString,
   language: nullableJsonString,
   tags: z.array(z.string()).default([]),
+  show_answer_review: z.boolean().optional().default(true),
 });
 
 export const kqfMediaSchema = z.object({

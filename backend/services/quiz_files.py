@@ -6,6 +6,7 @@ import json
 import logging
 import re
 import shutil
+from urllib.parse import urlparse
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
@@ -129,12 +130,12 @@ def max_points_from_quiz_dir(quiz_dir: Path) -> int:
     return sum(q.points for q in quiz.questions)
 
 
-def safe_quiz_media_file_path(quiz_dir: Path, filename: str) -> Path | None:
-    """Resolve ``filename`` under ``quiz_dir/media`` with traversal checks; or None."""
+def safe_asset_file_path_under_dir(media_root: Path, filename: str) -> Path | None:
+    """Resolve ``filename`` under ``media_root`` with traversal checks; or None."""
     rel = PurePosixPath(filename)
     if rel.is_absolute() or any(p in {"..", "."} for p in rel.parts):
         return None
-    base = (quiz_dir / "media").resolve()
+    base = media_root.resolve()
     target = (base / Path(*rel.parts)).resolve()
     try:
         target.relative_to(base)
@@ -148,6 +149,11 @@ def safe_quiz_media_file_path(quiz_dir: Path, filename: str) -> Path | None:
         if parent.is_symlink():
             return None
     return target
+
+
+def safe_quiz_media_file_path(quiz_dir: Path, filename: str) -> Path | None:
+    """Resolve ``filename`` under ``quiz_dir/media`` with traversal checks; or None."""
+    return safe_asset_file_path_under_dir(quiz_dir / "media", filename)
 
 
 def _materialize_one_media_url(
@@ -164,7 +170,7 @@ def _materialize_one_media_url(
         aid = m.group(1)
         dest_img = quiz_media_root / aid / "image.webp"
         if dest_img.is_file():
-            return f"./media/{aid}/image.webp"
+            return f"./media/{aid}"
         src_img = staging_dir / aid / "image.webp"
         if src_img.is_file():
             dest_img.parent.mkdir(parents=True, exist_ok=True)
@@ -176,7 +182,7 @@ def _materialize_one_media_url(
                 shutil.rmtree(staging_dir / aid)
             except OSError:
                 pass
-            return f"./media/{aid}/image.webp"
+            return f"./media/{aid}"
         return url
 
     if s.startswith("./media/"):
@@ -187,6 +193,9 @@ def _materialize_one_media_url(
         return url
     target = quiz_media_root / tail
     if target.is_file():
+        m_tail = _ASSET_ID.search(tail)
+        if m_tail:
+            return f"./media/{m_tail.group(1)}"
         return f"./media/{tail}"
     return url
 
@@ -212,8 +221,8 @@ def _rel_under_media_from_media_url(url: str | None) -> str | None:
 def _expanded_quiz_media_relpaths(quiz: KqfQuiz) -> set[str]:
     """Relative posix paths under ``media/`` that this quiz content keeps (files).
 
-    For each ``…/image.webp`` reference, ``…/thumb.webp`` in the same directory is
-    also retained so paired thumbnails are not orphaned while the image stays.
+    For ``…/image.webp`` or ``./media/{asset_id}`` (directory form), the paired
+    ``thumb.webp`` in the same asset folder is also retained.
     """
     rels: set[str] = set()
     for q in quiz.questions:
@@ -225,6 +234,11 @@ def _expanded_quiz_media_relpaths(quiz: KqfQuiz) -> set[str]:
             p = PurePosixPath(rel)
             if p.name == "image.webp" and len(p.parts) > 1:
                 rels.add(str(p.parent / "thumb.webp"))
+            elif (
+                len(p.parts) == 1 and p.name.startswith("asset_") and "." not in p.name
+            ):
+                rels.add(f"{rel}/image.webp")
+                rels.add(f"{rel}/thumb.webp")
     return rels
 
 
@@ -335,7 +349,12 @@ def kqf_with_absolute_media(quiz: KqfQuiz, quiz_id: str, origin: str) -> KqfQuiz
         cleaned = value.lstrip("./")
         if cleaned.startswith("media/"):
             cleaned = cleaned[len("media/") :]
-        return f"{origin.rstrip('/')}/media/{quiz_id}/{cleaned}"
+        out = f"{origin.rstrip('/')}/media/{quiz_id}/{cleaned}"
+        path = urlparse(out).path.rstrip("/")
+        leaf = path.split("/")[-1] if path else ""
+        if leaf and "." not in leaf:
+            return out.rstrip("/")
+        return out
 
     copy = quiz.model_copy(deep=True)
     for q in copy.questions:

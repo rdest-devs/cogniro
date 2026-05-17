@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from schemas.kqf import KqfChoice, KqfFrontMatter, KqfQuiz, KqfSingleChoice
+from schemas.kqf import KqfChoice, KqfFrontMatter, KqfMedia, KqfQuiz, KqfSingleChoice
 from services.quiz_files import (
     QuizMeta,
     derive_meta_from_kqf,
+    kqf_with_absolute_media,
     read_meta_or_rebuild,
     read_quiz_kqf,
     write_quiz_dir,
@@ -81,3 +82,50 @@ def test_derive_meta() -> None:
     )
     assert meta.id == "quiz_abc"
     assert meta.question_count == 1
+
+
+def test_kqf_with_absolute_media_asset_dir_no_image_suffix() -> None:
+    quiz = KqfQuiz(
+        front_matter=_example_quiz().front_matter,
+        questions=[
+            KqfSingleChoice(
+                id="Q1",
+                type="singlechoice",
+                text="?",
+                choices=[
+                    KqfChoice(text="a", is_correct=True),
+                    KqfChoice(text="b", is_correct=False),
+                ],
+                media=KqfMedia(
+                    image="./media/asset_cc0b501288944523b06ae7d26cf078ab",
+                ),
+            )
+        ],
+    )
+    out = kqf_with_absolute_media(quiz, "quiz_xyz", "http://api.example.com")
+    assert (
+        out.questions[0].media.image
+        == "http://api.example.com/media/quiz_xyz/asset_cc0b501288944523b06ae7d26cf078ab"
+    )
+
+
+def test_kqf_with_absolute_media_explicit_file_unchanged_leaf() -> None:
+    quiz = KqfQuiz(
+        front_matter=_example_quiz().front_matter,
+        questions=[
+            KqfSingleChoice(
+                id="Q1",
+                type="singlechoice",
+                text="?",
+                choices=[
+                    KqfChoice(text="a", is_correct=True),
+                    KqfChoice(text="b", is_correct=False),
+                ],
+                media=KqfMedia(image="./media/dog.jpg"),
+            )
+        ],
+    )
+    out = kqf_with_absolute_media(quiz, "quiz_xyz", "http://api.example.com")
+    assert (
+        out.questions[0].media.image == "http://api.example.com/media/quiz_xyz/dog.jpg"
+    )

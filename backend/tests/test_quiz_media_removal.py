@@ -45,7 +45,7 @@ def test_update_quiz_deletes_obsolete_media_files(
     (media_dir / "image.webp").write_bytes(b"\xff\xd8\xff\xd9")
     (media_dir / "thumb.webp").write_bytes(b"thumb")
 
-    p_with = _minimal_upsert(image=f"./media/{asset_dir}/image.webp")
+    p_with = _minimal_upsert(image=f"./media/{asset_dir}")
     assert (
         client.put(
             f"/admin/quiz/{quiz_id}",

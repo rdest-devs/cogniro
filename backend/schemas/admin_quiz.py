@@ -126,6 +126,7 @@ class AdminQuizUpsertPayload(BaseModel):
     description: str | None = None
     author: str | None = None
     tags: list[str] = Field(default_factory=list)
+    show_answer_review: bool = True
     questions: list[AdminQuizQuestionPayload] = Field(min_length=1)
 
     model_config = ConfigDict(extra="ignore")
@@ -146,6 +147,7 @@ class AdminQuizDetailResponse(BaseModel):
     description: str | None = None
     author: str | None = None
     tags: list[str] = Field(default_factory=list)
+    show_answer_review: bool = True
     status: Literal["idle", "running"] = "idle"
     created_at: str
     updated_at: str

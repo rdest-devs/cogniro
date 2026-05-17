@@ -14,29 +14,33 @@ type Props = {
 export function EnterNickname({ code, joinError, onJoin }: Props) {
   const [busy, setBusy] = useState(false);
   return (
-    <div>
-      <p className="mb-2 text-sm text-zinc-500">
-        Kod: <code>{code}</code>
-      </p>
-      {joinError && (
-        <p className="mb-2 rounded border border-red-200 bg-red-50 p-2 text-sm text-red-800">
-          {joinError}
-        </p>
-      )}
-      <QuizStart
-        title="Dołącz do quizu"
-        description={`Wpisz pseudonim, aby wejść do quizu. Kod sesji: ${code}.`}
-        logoUrl={quizStartDemo.logoUrl}
-        disabled={busy}
-        onStart={async (nick: string) => {
-          setBusy(true);
-          try {
-            await onJoin(nick);
-          } finally {
-            setBusy(false);
-          }
-        }}
-      />
+    <div className="flex min-h-0 w-full flex-1 flex-col bg-[var(--page-bg)]">
+      {joinError ? (
+        <div className="shrink-0 px-6 pt-4">
+          <p className="rounded-2xl border border-[var(--wrong-fg)] bg-[var(--wrong-bg)] px-4 py-3 text-center text-sm font-medium text-[var(--wrong-fg)]">
+            {joinError}
+          </p>
+        </div>
+      ) : null}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <div className="my-auto w-full">
+          <QuizStart
+            title="Dołącz do quizu"
+            description="Wpisz pseudonim widoczny dla prowadzącego."
+            logoUrl={quizStartDemo.logoUrl}
+            disabled={busy}
+            sessionCode={code}
+            onStart={async (nick: string) => {
+              setBusy(true);
+              try {
+                await onJoin(nick);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }

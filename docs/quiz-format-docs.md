@@ -183,7 +183,7 @@ Optional, placed after answer content. Each directive is a single line:
 
 | Directive | Description                          | Value type   |
 |-----------|--------------------------------------|--------------|
-| `@image`  | Display image with question          | URL or path  |
+| `@image`  | Display image with question          | URL, path to file, or relative ``media/...`` asset **directory** (last path segment has no extension; on disk that folder holds ``image.webp`` + ``thumb.webp``) |
 | `@video`  | Autoplay video before/during question| URL or path  |
 | `@audio`  | Play audio clip                      | URL or path  |
 | `@hint`   | Optional hint shown to players       | Plain text   |
@@ -196,6 +196,19 @@ Multiple media directives may be used per question. Order determines render prio
 @audio: ./sounds/intro.mp3
 @hint: Think about the Cold War era.
 ```
+
+**Asset directory:** for paths under ``media/`` whose last segment has no file extension, the value is stored as the **folder path** (no ``/image.webp`` suffix in the parsed model). On disk that folder still contains ``image.webp`` and ``thumb.webp`` (admin export layout). Examples:
+
+```
+@image: ./media/asset_cc0b501288944523b06ae7d26cf078ab
+@image: ./media/asset_cc0b501288944523b06ae7d26cf078ab/
+```
+
+``http(s)`` URLs and non-asset paths (e.g. ``dog.jpg``) are stored unchanged. A legacy line ``@image: ./media/{asset_…}/image.webp`` (or ``thumb.webp``) for a canonical ``asset_{32 hex}`` id is **normalized** to ``./media/{asset_…}`` when parsing or serializing.
+
+**Play session join:** ``kqf_with_absolute_media`` turns relative ``media/...`` into absolute URLs under ``{origin}/media/{quiz_id}/...``. If the URL’s last path segment has **no** extension, the join result is the **asset base URL** (no trailing ``/image.webp``); the participant app then appends ``/image.webp`` and ``/thumb.webp`` once when building image props (``resolveKqfPlayImageUrls`` in ``frontend/lib/media-url.ts``).
+
+**Runtime loading (participant app):** ``ProgressiveQuizImage`` loads ``thumbUrl`` first when it differs from ``fullUrl``, then swaps to ``fullUrl`` after the full image is loaded in memory. ``resolveKqfPlayImageUrls`` builds ``fullUrl``/``thumbUrl`` from the join URL (asset directory → append ``/image.webp`` and ``/thumb.webp`` once).
 
 ---
 
@@ -236,6 +249,7 @@ directive_key = "image" | "video" | "audio" | "hint" ;
    - `@slider:` block: read indented `key: value` lines until indent breaks
    - Lines matching `@key: value` after answers are directives
 4. Validate per-type constraints (correct count, slider fields, etc.)
+5. For `@image`, relative ``media/...`` values with no filename on the last segment are stored as the **asset directory path** (no ``/image.webp`` in the model); see **Media Directives** above.
 
 ---
 

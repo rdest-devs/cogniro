@@ -9,7 +9,7 @@ import { menuItems } from '../shared/constants';
 interface SidebarProps {
   activeItem?: string;
   onNavigate?: (item: string) => void;
-  /** Adres listy „Moje Quizy” (domyślnie jak logo: `/admin/`). */
+  /** “My quizzes” list URL (defaults with logo, e.g. `/admin/`). */
   quizListHref?: string;
 }
 

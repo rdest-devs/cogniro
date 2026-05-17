@@ -9,6 +9,7 @@ import type {
   QuizEditorFormValues,
   QuizEditorQuestionForm,
 } from '@/app/types';
+import { normalizeKqfQuestionImageToDirectoryPath } from '@/lib/media-url';
 
 import { createDefaultQuizFormValues, createQuestionForType } from './defaults';
 import { adminQuizUpsertPayloadSchema, quizEditorFormSchema } from './schemas';
@@ -50,7 +51,7 @@ function mapApiQuestionToForm(q: AdminQuizApiQuestion): QuizEditorQuestionForm {
     typeof q.points === 'number' && Number.isFinite(q.points) && q.points >= 1
       ? Math.trunc(q.points)
       : 1;
-  const image = q.image ?? null;
+  const image = normalizeKqfQuestionImageToDirectoryPath(q.image ?? undefined);
   const hint = q.hint ?? null;
 
   switch (q.type) {
@@ -135,8 +136,9 @@ function coerceApiQuestionLoose(
     raw.points >= 1
       ? Math.trunc(raw.points)
       : 1;
-  const image =
-    typeof raw.image === 'string' && raw.image.trim() ? raw.image : null;
+  const image = normalizeKqfQuestionImageToDirectoryPath(
+    typeof raw.image === 'string' ? raw.image : undefined,
+  );
   const hint =
     typeof raw.hint === 'string' && raw.hint.trim() ? raw.hint : null;
 
@@ -264,6 +266,7 @@ export function toQuizEditorFormValues(
     description: quiz.description ?? null,
     author: quiz.author ?? null,
     tags: Array.isArray(quiz.tags) ? quiz.tags : [],
+    showAnswerReview: quiz.show_answer_review !== false,
     questions:
       mappedQuestions.length > 0
         ? mappedQuestions
@@ -292,7 +295,7 @@ function mapQuestionToPayload(
     text: q.text.trim(),
     time_s: q.timeS ?? undefined,
     points: q.points,
-    image: q.image?.trim() ? q.image.trim() : undefined,
+    image: normalizeKqfQuestionImageToDirectoryPath(q.image) ?? undefined,
     hint: q.hint?.trim() ? q.hint.trim() : undefined,
   };
 
@@ -341,6 +344,7 @@ export function toAdminQuizUpsertPayload(
     description: values.description?.trim() ? values.description.trim() : null,
     author: values.author?.trim() ? values.author.trim() : null,
     tags: trimTags(values.tags),
+    show_answer_review: values.showAnswerReview,
     questions: values.questions.map(mapQuestionToPayload),
   };
 
@@ -387,6 +391,6 @@ export function switchQuestionTypePreservingCommon(
     hint: current.hint,
     timeS: current.timeS,
     points: current.points,
-    image: current.image,
+    image: normalizeKqfQuestionImageToDirectoryPath(current.image) ?? null,
   });
 }

@@ -69,7 +69,8 @@ def test_export_bundles_staged_editor_assets(
         assert f"media/{aid}/image.webp" in names
         assert f"media/{aid}/thumb.webp" in names
         kqf_text = zf.read("quiz.kqf").decode("utf-8")
-        assert f"./media/{aid}/image.webp" in kqf_text
+        assert f"@image: ./media/{aid}" in kqf_text
+        assert f"./media/{aid}/image.webp" not in kqf_text
 
 
 def test_export_zip_includes_every_file_in_quiz_dir(
