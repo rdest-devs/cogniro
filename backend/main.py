@@ -13,6 +13,7 @@ from routes.admin_auth import router as admin_auth_router  # noqa: E402
 from routes.admin_quiz import router as admin_quiz_router  # noqa: E402
 from routes.media import router as media_router  # noqa: E402
 from routes.nick import router as nick_router  # noqa: E402
+from routes.play import router as play_router  # noqa: E402
 from routes.user import router as user_router  # noqa: E402
 from security.admin_auth import reload_admin_auth_config  # noqa: E402
 from services.storage import initialize_storage  # noqa: E402
@@ -51,6 +52,7 @@ app.include_router(user_router, prefix="/quiz")
 app.include_router(admin_quiz_router, prefix="/admin")
 app.include_router(admin_auth_router, prefix="/admin")
 app.include_router(nick_router)
+app.include_router(play_router)
 app.include_router(media_router)
 
 

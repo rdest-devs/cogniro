@@ -122,3 +122,28 @@ def update_last_activated_at(quiz_dir: Path, ts: str) -> None:
         last_activated_at=ts,
     )
     write_meta_json_atomic(quiz_dir / "meta.json", new)
+
+
+def kqf_with_absolute_media(quiz: KqfQuiz, quiz_id: str, origin: str) -> KqfQuiz:
+    """Rewrite relative `./media/...` (or `media/...`) paths to absolute backend URLs.
+
+    Absolute values (http(s) or leading ``/``) are left unchanged. Intended for
+    active play sessions only (caller should ensure the quiz session is live).
+    """
+
+    def rewrite(value: str | None) -> str | None:
+        if value is None:
+            return None
+        if value.startswith(("http://", "https://", "/")):
+            return value
+        cleaned = value.lstrip("./")
+        if cleaned.startswith("media/"):
+            cleaned = cleaned[len("media/") :]
+        return f"{origin.rstrip('/')}/media/{quiz_id}/{cleaned}"
+
+    copy = quiz.model_copy(deep=True)
+    for q in copy.questions:
+        q.media.image = rewrite(q.media.image)
+        q.media.video = rewrite(q.media.video)
+        q.media.audio = rewrite(q.media.audio)
+    return copy

@@ -1,0 +1,133 @@
+from __future__ import annotations
+
+from fastapi.testclient import TestClient
+
+
+def _minimal_quiz_payload(*, image: str | None = None) -> dict:
+    q: dict = {
+        "title": "Quiz testowy",
+        "questions": [
+            {
+                "text": "Pytanie?",
+                "type": "singlechoice",
+                "choices": [
+                    {"text": "A", "is_correct": True},
+                    {"text": "B", "is_correct": False},
+                ],
+            }
+        ],
+    }
+    if image is not None:
+        q["questions"][0]["image"] = image
+    return q
+
+
+def _create_quiz(client: TestClient, headers: dict[str, str], **kwargs: object) -> str:
+    r = client.post(
+        "/admin/quiz",
+        json=_minimal_quiz_payload(**kwargs),
+        headers=headers,
+    )
+    assert r.status_code == 200
+    return r.json()["id"]
+
+
+def test_join_unknown_pin_returns_404(client: TestClient) -> None:
+    r = client.post("/play/AAAAAA/join", json={"nickname": "Ala"})
+    assert r.status_code == 404
+
+
+def test_join_returns_quiz_payload(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    quiz_id = _create_quiz(client, admin_token_header)
+    pin = client.post(
+        f"/admin/quiz/{quiz_id}/activate", headers=admin_token_header
+    ).json()["pin"]
+    r = client.post(f"/play/{pin}/join", json={"nickname": "Ala"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["front_matter"]["title"]
+    assert body["questions"][0]["type"] == "singlechoice"
+
+
+def test_join_rewrites_relative_media_url(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    quiz_id = _create_quiz(client, admin_token_header, image="./media/dog.jpg")
+    pin = client.post(
+        f"/admin/quiz/{quiz_id}/activate", headers=admin_token_header
+    ).json()["pin"]
+    r = client.post(f"/play/{pin}/join", json={"nickname": "U1"})
+    assert r.status_code == 200
+    img = r.json()["questions"][0]["media"]["image"]
+    assert img.startswith("http://")
+    assert f"/media/{quiz_id}/dog.jpg" in img
+
+
+def test_duplicate_nickname_returns_409(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    quiz_id = _create_quiz(client, admin_token_header)
+    pin = client.post(
+        f"/admin/quiz/{quiz_id}/activate", headers=admin_token_header
+    ).json()["pin"]
+    client.post(f"/play/{pin}/join", json={"nickname": "Ala"})
+    r = client.post(f"/play/{pin}/join", json={"nickname": "Ala"})
+    assert r.status_code == 409
+
+
+def test_duplicate_nickname_casefold_returns_409(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    quiz_id = _create_quiz(client, admin_token_header)
+    pin = client.post(
+        f"/admin/quiz/{quiz_id}/activate", headers=admin_token_header
+    ).json()["pin"]
+    client.post(f"/play/{pin}/join", json={"nickname": "Ala"})
+    r = client.post(f"/play/{pin}/join", json={"nickname": "ALA"})
+    assert r.status_code == 409
+
+
+def test_submit_happy_path(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    quiz_id = _create_quiz(client, admin_token_header)
+    pin = client.post(
+        f"/admin/quiz/{quiz_id}/activate", headers=admin_token_header
+    ).json()["pin"]
+    client.post(f"/play/{pin}/join", json={"nickname": "Ala"})
+    r = client.post(f"/play/{pin}/submit", json={"nickname": "Ala", "score": 1000})
+    assert r.status_code == 200
+    assert r.json() == {"accepted": True}
+
+
+def test_submit_blocked_returns_400_violation(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    quiz_id = _create_quiz(client, admin_token_header)
+    pin = client.post(
+        f"/admin/quiz/{quiz_id}/activate", headers=admin_token_header
+    ).json()["pin"]
+    client.post(f"/play/{pin}/join", json={"nickname": "Bartek"})
+    client.post(
+        f"/admin/quiz/{quiz_id}/session/block",
+        json={"nickname": "Bartek"},
+        headers=admin_token_header,
+    )
+    r = client.post(f"/play/{pin}/submit", json={"nickname": "Bartek", "score": 100})
+    assert r.status_code == 400
+    assert r.json()["detail"]["error"] == "nickname_violation"
+
+
+def test_submit_twice_returns_409(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    quiz_id = _create_quiz(client, admin_token_header)
+    pin = client.post(
+        f"/admin/quiz/{quiz_id}/activate", headers=admin_token_header
+    ).json()["pin"]
+    client.post(f"/play/{pin}/join", json={"nickname": "Ala"})
+    client.post(f"/play/{pin}/submit", json={"nickname": "Ala", "score": 1})
+    r = client.post(f"/play/{pin}/submit", json={"nickname": "Ala", "score": 2})
+    assert r.status_code == 409
