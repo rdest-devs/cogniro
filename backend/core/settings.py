@@ -8,7 +8,6 @@ UPLOAD_CHUNK_SIZE = 64 * 1024
 ALLOWED_UPLOAD_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
 DEFAULT_DATA_DIR = "/var/lib/cogniro"
 DEFAULT_MEDIA_PUBLIC_PREFIX = "/media/quiz-assets"
-QUIZZES_FILENAME = "quizzes.json"
 
 
 def normalize_media_public_prefix(prefix: str | None) -> str:

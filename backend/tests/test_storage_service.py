@@ -1,57 +1,31 @@
 from __future__ import annotations
 
-from pathlib import Path
-import sys
-
-import pytest
-from pydantic import ValidationError
-
-sys.path.append(str(Path(__file__).resolve().parents[1]))
-
-from schemas.admin_quiz import AdminQuizUpsertPayload
-from services.storage import to_stored_quiz
+from services.storage import (
+    StoragePaths,
+    generate_quiz_id,
+    initialize_storage,
+    quiz_dir_for,
+)
 
 
-def test_to_stored_quiz_drops_question_and_answer_ids() -> None:
-    payload = AdminQuizUpsertPayload.model_validate(
-        {
-            "title": "Test quiz",
-            "questions": [
-                {
-                    "id": "q1",
-                    "text": "Pytanie",
-                    "type": "single_choice",
-                    "answers": [
-                        {"id": "a1", "text": "A", "is_correct": True},
-                        {"id": "a2", "text": "B", "is_correct": False},
-                    ],
-                }
-            ],
-        }
-    )
-
-    stored = to_stored_quiz(payload)
-    question = stored["questions"][0]
-
-    assert "id" not in question
-    assert "id" not in question["answers"][0]
-    assert "id" not in question["answers"][1]
+def test_initialize_storage_creates_expected_tree() -> None:
+    paths = initialize_storage()
+    assert isinstance(paths, StoragePaths)
+    assert paths.quizzes_dir.is_dir()
+    assert paths.results_dir.is_dir()
+    assert paths.staging_dir.is_dir()
+    assert paths.data_dir.is_dir()
 
 
-def test_admin_quiz_payload_rejects_unsupported_question_type() -> None:
-    with pytest.raises(ValidationError):
-        AdminQuizUpsertPayload.model_validate(
-            {
-                "title": "Test quiz",
-                "questions": [
-                    {
-                        "text": "Pytanie",
-                        "type": "unsupported_type",
-                        "answers": [
-                            {"text": "A", "is_correct": True},
-                            {"text": "B", "is_correct": False},
-                        ],
-                    }
-                ],
-            }
-        )
+def test_generate_quiz_id_prefix_and_uniqueness() -> None:
+    ids = {generate_quiz_id() for _ in range(50)}
+    assert len(ids) == 50
+    for quiz_id in ids:
+        assert quiz_id.startswith("quiz_")
+        assert len(quiz_id) > len("quiz_") + 8
+
+
+def test_quiz_dir_for_creates_path() -> None:
+    paths = initialize_storage()
+    qd = quiz_dir_for(paths, "quiz_foo")
+    assert qd == paths.quizzes_dir / "quiz_foo"

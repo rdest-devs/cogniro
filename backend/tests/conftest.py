@@ -38,6 +38,11 @@ def _admin_auth_per_test(monkeypatch: pytest.MonkeyPatch) -> None:
     yield
 
 
+@pytest.fixture(autouse=True)
+def _cogniro_data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("COGNIRO_DATA_DIR", str(tmp_path / "cogniro-data"))
+
+
 @pytest.fixture
 def client() -> Iterator[TestClient]:
     from main import app
