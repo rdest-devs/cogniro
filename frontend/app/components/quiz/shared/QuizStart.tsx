@@ -8,6 +8,7 @@ interface QuizStartProps {
   description: string;
   logoUrl: string;
   onStart?: (name: string) => void;
+  disabled?: boolean;
 }
 
 export default function QuizStart({
@@ -15,6 +16,7 @@ export default function QuizStart({
   description,
   logoUrl,
   onStart,
+  disabled = false,
 }: QuizStartProps) {
   const [name, setName] = useState('');
 
@@ -61,7 +63,7 @@ export default function QuizStart({
         {/* Start Button */}
         <button
           onClick={() => name.trim() && onStart?.(name.trim())}
-          disabled={!name.trim()}
+          disabled={disabled || !name.trim()}
           className="w-full cursor-pointer rounded-2xl bg-[var(--orange)] px-6 py-4 text-center text-base font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Rozpocznij przygodę
