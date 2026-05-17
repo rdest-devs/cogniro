@@ -17,7 +17,7 @@ from services.storage import (
 def _safe_int(value: object, default: int = 0) -> int:
     try:
         return int(value)
-    except TypeError, ValueError:
+    except (TypeError, ValueError):
         return default
 
 
