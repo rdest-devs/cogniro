@@ -11,14 +11,13 @@ import {
   getStoredAdminToken,
   refreshAdminToken,
 } from '@/lib/admin-auth/client';
-import { BACKEND_BASE_URL, joinApiUrl } from '@/lib/backend-url';
-
 import {
   adminAssetUploadResponseSchema,
   adminQuizApiDetailsSchema,
   adminQuizApiListSchema,
   adminQuizSaveResponseSchema,
-} from './schemas';
+} from '@/lib/admin-quiz/schemas';
+import { BACKEND_BASE_URL, joinApiUrl } from '@/lib/backend-url';
 
 interface ApiErrorBody {
   error?: string;

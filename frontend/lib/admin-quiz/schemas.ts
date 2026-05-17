@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-import { questionTypeValues } from '@/app/types/admin-editor';
+import { kqfQuestionTypeValues } from '@/app/types/admin-editor';
 
-export const questionTypeSchema = z.enum(questionTypeValues);
+export const kqfQuestionTypeSchema = z.enum(kqfQuestionTypeValues);
 
 export const quizImageSchema = z.object({
   assetId: z.string().trim().min(1),
@@ -13,181 +13,425 @@ export const quizImageSchema = z.object({
   alt: z.string(),
 });
 
-function requireTextOrImage(
-  value: { text: string; image?: unknown },
-  ctx: z.RefinementCtx,
-  message: string,
-): void {
-  if (!value.text.trim() && !value.image) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message,
-      path: ['text'],
-    });
-  }
+const optionalId = z
+  .union([z.string(), z.number()])
+  .nullish()
+  .transform((v) => (v == null ? undefined : String(v)));
+
+const optionalTrimmedString = z
+  .string()
+  .nullish()
+  .transform((v) => (v == null ? undefined : v));
+
+const optionalNullableString = z
+  .union([z.string(), z.null()])
+  .optional()
+  .transform((v) => (v === undefined ? undefined : v));
+
+function countCorrectChoices(choices: { isCorrect: boolean }[]): number {
+  return choices.filter((c) => c.isCorrect).length;
 }
 
-function requireAnswerTextOrImage(
-  answer: { text: string; image?: unknown },
-  ctx: z.RefinementCtx,
-): void {
-  requireTextOrImage(answer, ctx, 'Odpowiedź musi mieć tekst lub obraz');
-}
+const editorChoiceSchema = z.object({
+  text: z.string(),
+  isCorrect: z.boolean(),
+});
 
-function requireQuestionTextOrImage(
-  question: { text: string; image?: unknown },
-  ctx: z.RefinementCtx,
-): void {
-  requireTextOrImage(question, ctx, 'Pytanie musi mieć treść lub obraz');
-}
+const questionCommonFormSchema = z.object({
+  id: z.string().optional(),
+  text: z.string().min(1, 'Treść pytania jest wymagana'),
+  timeS: z
+    .union([z.number().int().positive(), z.nan()])
+    .nullable()
+    .optional()
+    .transform((v) =>
+      v === undefined || v === null || Number.isNaN(v) ? null : v,
+    ),
+  points: z
+    .union([z.number().int().min(0), z.nan()])
+    .nullable()
+    .optional()
+    .transform((v) =>
+      v === undefined || v === null || Number.isNaN(v) ? null : v,
+    ),
+  image: z
+    .union([z.string().trim().min(1), z.literal(''), z.null()])
+    .optional()
+    .transform((v) => {
+      if (v === undefined || v === null || v === '') {
+        return null;
+      }
+      return v;
+    }),
+  hint: z
+    .union([z.string(), z.literal(''), z.null()])
+    .optional()
+    .transform((v) => {
+      if (v === undefined || v === null || v === '') {
+        return null;
+      }
+      return v;
+    }),
+});
 
-const editorAnswerSchema = z
-  .object({
-    id: z.string().optional(),
-    text: z.string(),
-    isCorrect: z.boolean(),
-    image: quizImageSchema.optional(),
+const editorSingleChoiceSchema = questionCommonFormSchema
+  .extend({
+    type: z.literal('singlechoice'),
+    choices: z
+      .array(editorChoiceSchema)
+      .min(2, 'Minimum 2 odpowiedzi')
+      .max(6, 'Maksimum 6 odpowiedzi'),
   })
-  .superRefine(requireAnswerTextOrImage);
-
-const editorQuestionSchema = z
-  .object({
-    id: z.string().optional(),
-    text: z.string(),
-    type: questionTypeSchema,
-    image: quizImageSchema.optional(),
-    answers: z
-      .array(editorAnswerSchema)
-      .min(2, 'Pytanie musi mieć co najmniej 2 odpowiedzi'),
-  })
-  .superRefine((question, ctx) => {
-    requireQuestionTextOrImage(question, ctx);
-
-    const correctAnswersCount = question.answers.filter(
-      (answer) => answer.isCorrect,
-    ).length;
-
-    if (question.type === 'single_choice' && correctAnswersCount !== 1) {
+  .superRefine((q, ctx) => {
+    const n = countCorrectChoices(q.choices);
+    if (n !== 1) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Pytanie jednokrotne musi mieć dokładnie 1 poprawną odpowiedź',
-        path: ['answers'],
+        message: 'Jednokrotny wybór wymaga dokładnie 1 poprawnej odpowiedzi',
+        path: ['choices'],
       });
     }
+    for (const [i, c] of q.choices.entries()) {
+      if (!c.text.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Tekst odpowiedzi jest wymagany',
+          path: ['choices', i, 'text'],
+        });
+      }
+    }
+  });
 
-    if (question.type === 'multiple_choice' && correctAnswersCount < 1) {
+const editorMultiChoiceSchema = questionCommonFormSchema
+  .extend({
+    type: z.literal('multichoice'),
+    choices: z
+      .array(editorChoiceSchema)
+      .min(2, 'Minimum 2 odpowiedzi')
+      .max(8, 'Maksimum 8 odpowiedzi'),
+  })
+  .superRefine((q, ctx) => {
+    if (countCorrectChoices(q.choices) < 1) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message:
-          'Pytanie wielokrotne musi mieć co najmniej 1 poprawną odpowiedź',
-        path: ['answers'],
+        message: 'Wielokrotny wybór wymaga co najmniej 1 poprawnej odpowiedzi',
+        path: ['choices'],
+      });
+    }
+    for (const [i, c] of q.choices.entries()) {
+      if (!c.text.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Tekst odpowiedzi jest wymagany',
+          path: ['choices', i, 'text'],
+        });
+      }
+    }
+  });
+
+const editorTrueFalseSchema = questionCommonFormSchema.extend({
+  type: z.literal('truefalse'),
+  correct: z.boolean(),
+});
+
+const editorSliderSchema = questionCommonFormSchema
+  .extend({
+    type: z.literal('slider'),
+    correct: z.coerce.number().finite(),
+    min: z.coerce.number().finite(),
+    max: z.coerce.number().finite(),
+    step: z.coerce.number().finite().positive().default(1),
+    tolerance: z.coerce.number().finite().min(0).default(0),
+    unit: z
+      .union([z.string(), z.literal(''), z.null()])
+      .optional()
+      .transform((v) => {
+        if (v === undefined || v === null || v === '') {
+          return null;
+        }
+        return v;
+      }),
+  })
+  .superRefine((q, ctx) => {
+    if (q.min >= q.max) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Min musi być mniejsze niż max',
+        path: ['min'],
+      });
+    }
+    if (q.correct < q.min || q.correct > q.max) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Poprawna wartość musi być w zakresie [min, max]',
+        path: ['correct'],
       });
     }
   });
 
+export const quizEditorQuestionFormSchema = z.discriminatedUnion('type', [
+  editorSingleChoiceSchema,
+  editorMultiChoiceSchema,
+  editorTrueFalseSchema,
+  editorSliderSchema,
+]);
+
 export const quizEditorFormSchema = z.object({
   title: z.string().trim().min(1, 'Tytuł quizu jest wymagany'),
-  timeLimit: z.number().int().positive().nullable(),
-  shuffleQuestions: z.boolean(),
-  showAnswersAfter: z.boolean(),
-  showLeaderboardAfter: z.boolean(),
+  description: z
+    .union([z.string(), z.literal(''), z.null()])
+    .optional()
+    .transform((v) => {
+      if (v === undefined || v === null || v === '') {
+        return null;
+      }
+      return v;
+    }),
+  author: z
+    .union([z.string(), z.literal(''), z.null()])
+    .optional()
+    .transform((v) => {
+      if (v === undefined || v === null || v === '') {
+        return null;
+      }
+      return v;
+    }),
+  tags: z.array(z.string().trim().min(1)),
   questions: z
-    .array(editorQuestionSchema)
+    .array(quizEditorQuestionFormSchema)
     .min(1, 'Dodaj co najmniej 1 pytanie'),
 });
 
-const apiIdSchema = z.union([z.string(), z.number()]);
-const apiOptionalIdSchema = apiIdSchema
-  .nullish()
-  .transform((value) => (value == null ? undefined : value));
-const apiOptionalStringSchema = z
-  .string()
-  .nullish()
-  .transform((value) => (value == null ? undefined : value));
-const apiOptionalQuizImageSchema = quizImageSchema
-  .nullish()
-  .transform((value) => (value == null ? undefined : value));
+const apiChoiceSchema = z.object({
+  text: z.string(),
+  is_correct: z.boolean(),
+});
 
-export const adminQuizApiAnswerSchema = z
+const apiQuestionCommon = {
+  id: optionalId,
+  text: z.string(),
+  time_s: z.coerce.number().int().positive().nullish(),
+  points: z.coerce.number().int().min(0).nullish(),
+  image: optionalNullableString,
+  hint: optionalNullableString,
+};
+
+const adminQuizApiSingleSchema = z
   .object({
-    id: apiOptionalIdSchema,
-    text: apiOptionalStringSchema,
-    content: apiOptionalStringSchema,
-    is_correct: z.boolean().optional(),
-    isCorrect: z.boolean().optional(),
-    image: apiOptionalQuizImageSchema,
+    ...apiQuestionCommon,
+    type: z.literal('singlechoice'),
+    choices: z.array(apiChoiceSchema).min(1),
   })
   .passthrough();
 
-export const adminQuizApiQuestionSchema = z
+const adminQuizApiMultiSchema = z
   .object({
-    id: apiOptionalIdSchema,
-    text: apiOptionalStringSchema,
-    content: apiOptionalStringSchema,
-    type: apiOptionalStringSchema,
-    image: apiOptionalQuizImageSchema,
-    answers: z.array(adminQuizApiAnswerSchema).default([]),
+    ...apiQuestionCommon,
+    type: z.literal('multichoice'),
+    choices: z.array(apiChoiceSchema).min(1),
   })
   .passthrough();
+
+const adminQuizApiTrueFalseSchema = z
+  .object({
+    ...apiQuestionCommon,
+    type: z.literal('truefalse'),
+    correct: z.boolean(),
+  })
+  .passthrough();
+
+const adminQuizApiSliderSchema = z
+  .object({
+    ...apiQuestionCommon,
+    type: z.literal('slider'),
+    correct: z.coerce.number(),
+    min: z.coerce.number(),
+    max: z.coerce.number(),
+    step: z.coerce.number().optional(),
+    tolerance: z.coerce.number().optional(),
+    unit: optionalTrimmedString,
+  })
+  .passthrough();
+
+export const adminQuizApiQuestionSchema = z.discriminatedUnion('type', [
+  adminQuizApiSingleSchema,
+  adminQuizApiMultiSchema,
+  adminQuizApiTrueFalseSchema,
+  adminQuizApiSliderSchema,
+]);
 
 export const adminQuizApiDetailsSchema = z
   .object({
-    id: apiOptionalIdSchema.transform((value) =>
-      value === undefined ? undefined : String(value),
-    ),
+    id: optionalId.transform((v) => (v === undefined ? '' : v)),
     title: z.string(),
-    status: z.string().optional(),
-    time_limit: z.coerce.number().nullable(),
-    shuffle_questions: z.boolean(),
-    show_answers_after: z.boolean(),
-    show_leaderboard_after: z.boolean().default(false),
+    description: optionalNullableString,
+    author: optionalNullableString,
+    tags: z.array(z.string()).optional().default([]),
+    status: z.enum(['idle', 'running']).optional(),
+    created_at: z.string(),
+    updated_at: z.string().optional(),
+    last_activated_at: z.string().nullable().optional(),
     questions: z.array(adminQuizApiQuestionSchema).default([]),
   })
   .passthrough();
 
 export const adminQuizApiListItemSchema = z
   .object({
-    id: apiIdSchema.transform((value) => String(value)),
+    id: z.union([z.string(), z.number()]).transform((v) => String(v)),
     title: z.string(),
-    status: z.string(),
+    status: z.enum(['idle', 'running']),
     created_at: z.string(),
-    participants_count: z.coerce.number(),
+    last_activated_at: z.string().nullable().optional(),
+    question_count: z.coerce.number().int().min(0),
   })
   .passthrough();
 
 export const adminQuizApiListSchema = z.array(adminQuizApiListItemSchema);
 
-const adminQuizPayloadAnswerSchema = z
-  .object({
-    id: z.string().optional(),
-    text: z.string(),
-    image: quizImageSchema.optional(),
-    is_correct: z.boolean(),
-  })
-  .superRefine(requireAnswerTextOrImage);
+const upsertChoiceSchema = z.object({
+  text: z.string().trim().min(1),
+  is_correct: z.boolean(),
+});
 
-const adminQuizPayloadQuestionSchema = z
+const upsertCommon = {
+  id: z.string().optional(),
+  text: z.string().trim().min(1),
+  time_s: z.number().int().positive().nullable().optional(),
+  points: z.number().int().min(0).nullable().optional(),
+  image: z
+    .union([z.string(), z.literal(''), z.null()])
+    .optional()
+    .transform((v) => {
+      if (v === undefined || v === null || v === '') {
+        return undefined;
+      }
+      const t = v.trim();
+      return t === '' ? undefined : t;
+    }),
+  hint: z
+    .union([z.string(), z.literal(''), z.null()])
+    .optional()
+    .transform((v) => {
+      if (v === undefined || v === null || v === '') {
+        return undefined;
+      }
+      const t = v.trim();
+      return t === '' ? undefined : t;
+    }),
+};
+
+const upsertSingleSchema = z
   .object({
-    id: z.string().optional(),
-    text: z.string(),
-    image: quizImageSchema.optional(),
-    type: questionTypeSchema,
-    answers: z.array(adminQuizPayloadAnswerSchema).min(2),
+    ...upsertCommon,
+    type: z.literal('singlechoice'),
+    choices: z.array(upsertChoiceSchema).min(2).max(6),
   })
-  .superRefine(requireQuestionTextOrImage);
+  .superRefine((q, ctx) => {
+    const correct = q.choices.filter((c) => c.is_correct).length;
+    if (correct !== 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'singlechoice wymaga dokładnie 1 poprawnej odpowiedzi',
+        path: ['choices'],
+      });
+    }
+  });
+
+const upsertMultiSchema = z
+  .object({
+    ...upsertCommon,
+    type: z.literal('multichoice'),
+    choices: z.array(upsertChoiceSchema).min(2).max(8),
+  })
+  .superRefine((q, ctx) => {
+    if (!q.choices.some((c) => c.is_correct)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'multichoice wymaga co najmniej 1 poprawnej odpowiedzi',
+        path: ['choices'],
+      });
+    }
+  });
+
+const upsertTrueFalseSchema = z.object({
+  ...upsertCommon,
+  type: z.literal('truefalse'),
+  correct: z.boolean(),
+});
+
+const upsertSliderSchema = z
+  .object({
+    ...upsertCommon,
+    type: z.literal('slider'),
+    correct: z.number().finite(),
+    min: z.number().finite(),
+    max: z.number().finite(),
+    step: z.number().finite().positive().default(1),
+    tolerance: z.number().finite().min(0).default(0),
+    unit: z
+      .union([z.string(), z.literal(''), z.null()])
+      .optional()
+      .transform((v) => {
+        if (v === undefined || v === null || v === '') {
+          return undefined;
+        }
+        const t = v.trim();
+        return t === '' ? undefined : t;
+      }),
+  })
+  .superRefine((q, ctx) => {
+    if (q.min >= q.max) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'min must be < max',
+        path: ['min'],
+      });
+    }
+    if (q.correct < q.min || q.correct > q.max) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'correct must be in [min, max]',
+        path: ['correct'],
+      });
+    }
+  });
+
+const adminQuizUpsertQuestionSchema = z.discriminatedUnion('type', [
+  upsertSingleSchema,
+  upsertMultiSchema,
+  upsertTrueFalseSchema,
+  upsertSliderSchema,
+]);
 
 export const adminQuizUpsertPayloadSchema = z.object({
   title: z.string().trim().min(1),
-  time_limit: z.number().int().positive().nullable(),
-  shuffle_questions: z.boolean(),
-  show_answers_after: z.boolean(),
-  show_leaderboard_after: z.boolean(),
-  questions: z.array(adminQuizPayloadQuestionSchema).min(1),
+  description: z
+    .union([z.string(), z.literal(''), z.null()])
+    .optional()
+    .transform((v) => {
+      if (v === undefined || v === null || v === '') {
+        return null;
+      }
+      const t = v.trim();
+      return t === '' ? null : t;
+    }),
+  author: z
+    .union([z.string(), z.literal(''), z.null()])
+    .optional()
+    .transform((v) => {
+      if (v === undefined || v === null || v === '') {
+        return null;
+      }
+      const t = v.trim();
+      return t === '' ? null : t;
+    }),
+  tags: z.array(z.string().trim().min(1)),
+  questions: z.array(adminQuizUpsertQuestionSchema).min(1),
 });
 
 export const adminQuizSaveResponseSchema = z
   .object({
-    id: apiOptionalIdSchema,
+    id: optionalId,
   })
   .passthrough()
   .transform((data) => ({
