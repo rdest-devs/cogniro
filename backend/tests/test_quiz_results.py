@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from services.quiz_results import MOCK_QUESTIONS
+from legacy.quiz_demo_service import MOCK_QUESTIONS
 
 
 def _full_correct_payload() -> dict:
@@ -32,7 +32,7 @@ def _full_correct_payload() -> dict:
 
 
 def test_quiz_results_returns_points_and_percentage(client: TestClient) -> None:
-    response = client.post("/quiz/results", json=_full_correct_payload())
+    response = client.post("/legacy/quiz-demo/results", json=_full_correct_payload())
 
     assert response.status_code == 200
     data = response.json()
@@ -52,7 +52,7 @@ def test_quiz_results_hides_review_when_env_disabled(
 ) -> None:
     monkeypatch.setenv("QUIZ_SHOW_ANSWER_REVIEW", "false")
 
-    response = client.post("/quiz/results", json=_full_correct_payload())
+    response = client.post("/legacy/quiz-demo/results", json=_full_correct_payload())
 
     assert response.status_code == 200
     data = response.json()
@@ -67,7 +67,7 @@ def test_quiz_results_shows_review_when_env_enabled(
 ) -> None:
     monkeypatch.setenv("QUIZ_SHOW_ANSWER_REVIEW", "true")
 
-    response = client.post("/quiz/results", json=_full_correct_payload())
+    response = client.post("/legacy/quiz-demo/results", json=_full_correct_payload())
 
     assert response.status_code == 200
     data = response.json()

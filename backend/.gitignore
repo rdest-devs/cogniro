@@ -206,3 +206,7 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# --- runtime data (under COGNIRO_DATA_DIR; default /var/lib/cogniro) ---
+storage/
+data/

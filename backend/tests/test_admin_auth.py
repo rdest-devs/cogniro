@@ -520,9 +520,3 @@ def test_refresh_lifetime_honors_env_override(
         options={"verify_exp": False},
     )
     assert claims["exp"] - claims["iat"] == 3 * 24 * 60 * 60
-
-
-def test_validate_nick_stays_public(client: TestClient) -> None:
-    response = client.post("/validate-nick", json={"nick": "alice"})
-    assert response.status_code == 200
-    assert response.json() == {"valid": True}

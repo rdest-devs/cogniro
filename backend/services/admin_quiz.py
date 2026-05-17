@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import io
 import os
 import shutil
+import zipfile
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException
@@ -24,6 +27,7 @@ from services.quiz_files import (
     write_quiz_dir,
 )
 from services import sessions
+from services.kqf import KqfParseError, parse_kqf
 from services.results import ResultEntry, write_result_file
 from services.storage import (
     QUIZ_WRITE_LOCK,
@@ -216,3 +220,84 @@ def stop_quiz(app: FastAPI, quiz_id: str) -> dict[str, str]:
         entries=entries,
     )
     return {"date": stopped_at.strftime("%Y-%m-%d"), "filename": filename}
+
+
+def export_quiz_zip(app: FastAPI, quiz_id: str) -> tuple[bytes, str]:
+    paths = get_storage(app)
+    qd = quiz_dir_for(paths, quiz_id)
+    if not qd.is_dir():
+        raise HTTPException(status_code=404, detail="Nie znaleziono quizu.")
+    kqf_path = qd / "quiz.kqf"
+    if not kqf_path.is_file():
+        raise HTTPException(status_code=404, detail="Nie znaleziono quizu.")
+    meta = read_meta_or_rebuild(qd, quiz_id)
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.write(kqf_path, "quiz.kqf")
+        media_dir = qd / "media"
+        if media_dir.is_dir():
+            for p in media_dir.rglob("*"):
+                if p.is_file():
+                    arc = Path("media") / p.relative_to(media_dir)
+                    zf.write(p, str(arc).replace("\\", "/"))
+    return buf.getvalue(), f"{meta.title_slug}.zip"
+
+
+def _safe_import_media_path(quiz_dir: Path, member: str) -> Path | None:
+    if member == "quiz.kqf" or member.endswith("/"):
+        return None
+    if not member.startswith("media/"):
+        return None
+    rel = Path(member)
+    if rel.is_absolute() or any(part == ".." for part in rel.parts):
+        return None
+    target = (quiz_dir / rel).resolve()
+    base = quiz_dir.resolve()
+    try:
+        target.relative_to(base)
+    except ValueError:
+        return None
+    return target
+
+
+def import_quiz_zip(app: FastAPI, zip_bytes: bytes) -> dict[str, str]:
+    paths = get_storage(app)
+    try:
+        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+            names = zf.namelist()
+            if "quiz.kqf" not in names:
+                raise HTTPException(
+                    status_code=400, detail="Archiwum musi zawierać quiz.kqf."
+                )
+            try:
+                kqf_text = zf.read("quiz.kqf").decode("utf-8")
+            except UnicodeDecodeError as exc:
+                raise HTTPException(
+                    status_code=400, detail="Niepoprawny plik quiz.kqf."
+                ) from exc
+            try:
+                quiz = parse_kqf(kqf_text)
+            except KqfParseError as exc:
+                raise HTTPException(
+                    status_code=400, detail="Niepoprawna zawartość quiz.kqf."
+                ) from exc
+            quiz_id = generate_quiz_id()
+            qd = quiz_dir_for(paths, quiz_id)
+            with QUIZ_WRITE_LOCK:
+                qd.mkdir(parents=True)
+                (qd / "media").mkdir(parents=True, exist_ok=True)
+                write_quiz_dir(qd, quiz, created_at=_now_iso())
+                for name in names:
+                    if name == "quiz.kqf":
+                        continue
+                    target = _safe_import_media_path(qd, name)
+                    if target is None:
+                        continue
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    with zf.open(name) as src, target.open("wb") as dst:
+                        dst.write(src.read())
+            return {"id": quiz_id}
+    except zipfile.BadZipFile as exc:
+        raise HTTPException(
+            status_code=400, detail="Niepoprawne archiwum ZIP."
+        ) from exc

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import datetime as dt
 
+from fastapi.testclient import TestClient
+
 from services.results import purge_results_older_than
 from services.storage import initialize_storage
 
@@ -20,3 +22,8 @@ def test_purge_removes_only_old_dates() -> None:
     assert not (paths.results_dir / "2026-05-01").exists()
     assert (paths.results_dir / "2026-05-15").is_dir()
     assert (paths.results_dir / "2026-05-17").is_dir()
+
+
+def test_health_succeeds_with_purge_lifespan(client: TestClient) -> None:
+    """FastAPI lifespan starts the purge task; smoke-check the app still serves."""
+    assert client.get("/health").status_code == 200

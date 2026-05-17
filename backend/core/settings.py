@@ -19,6 +19,20 @@ def normalize_media_public_prefix(prefix: str | None) -> str:
 MEDIA_PUBLIC_PREFIX = normalize_media_public_prefix(os.getenv("MEDIA_PUBLIC_PREFIX"))
 
 
+def _env_int(key: str, default: int) -> int:
+    raw = os.getenv(key)
+    if raw is None:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
+
+
+RESULT_RETENTION_DAYS = _env_int("RESULT_RETENTION_DAYS", 30)
+PURGE_INTERVAL_SECONDS = _env_int("PURGE_INTERVAL_SECONDS", 3600)
+
+
 def env_bool(key: str, default: bool) -> bool:
     raw = os.getenv(key)
     if raw is None:

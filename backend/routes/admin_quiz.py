@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, File, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from schemas.admin_quiz import (
@@ -19,8 +20,10 @@ from services.admin_quiz import (
     block_session_nickname,
     create_quiz,
     delete_quiz,
+    export_quiz_zip,
     get_quiz,
     get_session_snapshot,
+    import_quiz_zip,
     list_quizzes,
     stop_quiz,
     update_quiz,
@@ -107,3 +110,22 @@ async def admin_quiz_session(quiz_id: str) -> dict:
 async def admin_quiz_session_block(quiz_id: str, body: BlockBody) -> dict[str, bool]:
     await run_in_threadpool(block_session_nickname, quiz_id, body.nickname)
     return {"blocked": True}
+
+
+@router.get("/quiz/{quiz_id}/export")
+async def admin_quiz_export(request: Request, quiz_id: str) -> Response:
+    data, filename = await run_in_threadpool(export_quiz_zip, request.app, quiz_id)
+    return Response(
+        content=data,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.post("/quiz/import", response_model=AdminQuizSaveResponse)
+async def admin_quiz_import(
+    request: Request, file: UploadFile = File(...)
+) -> AdminQuizSaveResponse:
+    raw = await file.read()
+    result = await run_in_threadpool(import_quiz_zip, request.app, raw)
+    return AdminQuizSaveResponse(id=result["id"])
