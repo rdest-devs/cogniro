@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from io import BytesIO
 from pathlib import Path, PurePosixPath
+import shutil
+import time
 import uuid
 
 from fastapi import FastAPI, HTTPException, UploadFile
@@ -20,6 +22,7 @@ from schemas.admin_quiz import QuizAssetUploadResponse
 from services.storage import get_storage
 
 _ALLOWED_PILLOW_FORMATS = {"JPEG", "PNG", "WEBP"}
+ORPHAN_ASSET_RETENTION_SECONDS = 24 * 60 * 60
 
 
 def _is_safe_asset_path(asset_path: str) -> bool:
@@ -152,6 +155,76 @@ async def upload_asset(app: FastAPI, file: UploadFile) -> QuizAssetUploadRespons
 
     raw_data = await _read_upload_with_limit(file, MAX_UPLOAD_BYTES)
     return await run_in_threadpool(_process_upload_bytes, app, raw_data)
+
+
+def _extract_referenced_asset_ids(quizzes: list[dict]) -> set[str]:
+    referenced: set[str] = set()
+
+    for quiz in quizzes:
+        if not isinstance(quiz, dict):
+            continue
+        questions = quiz.get("questions", [])
+        if not isinstance(questions, list):
+            continue
+
+        for question in questions:
+            if not isinstance(question, dict):
+                continue
+
+            question_image = question.get("image")
+            if isinstance(question_image, dict):
+                asset_id = question_image.get("assetId")
+                if isinstance(asset_id, str) and asset_id:
+                    referenced.add(asset_id)
+
+            answers = question.get("answers", [])
+            if not isinstance(answers, list):
+                continue
+            for answer in answers:
+                if not isinstance(answer, dict):
+                    continue
+                answer_image = answer.get("image")
+                if not isinstance(answer_image, dict):
+                    continue
+                asset_id = answer_image.get("assetId")
+                if isinstance(asset_id, str) and asset_id:
+                    referenced.add(asset_id)
+
+    return referenced
+
+
+def cleanup_orphaned_assets(
+    app: FastAPI,
+    quizzes: list[dict],
+    *,
+    now_timestamp: float | None = None,
+    min_age_seconds: int = ORPHAN_ASSET_RETENTION_SECONDS,
+) -> int:
+    storage = get_storage(app)
+    referenced_asset_ids = _extract_referenced_asset_ids(quizzes)
+    now = time.time() if now_timestamp is None else now_timestamp
+    cutoff = now - max(min_age_seconds, 0)
+    removed = 0
+
+    try:
+        children = list(storage.uploads_quiz_assets_dir.iterdir())
+    except OSError:
+        return 0
+
+    for child in children:
+        try:
+            if not child.is_dir() or not child.name.startswith("asset_"):
+                continue
+            if child.name in referenced_asset_ids:
+                continue
+            if child.stat().st_mtime > cutoff:
+                continue
+            shutil.rmtree(child)
+            removed += 1
+        except OSError:
+            continue
+
+    return removed
 
 
 def serve_asset(app: FastAPI, asset_path: str) -> FileResponse:

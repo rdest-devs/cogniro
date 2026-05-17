@@ -277,7 +277,15 @@ def test_resolve_data_dir_falls_back_when_default_is_not_writable(
 
     readonly_default = tmp_path / "readonly-default"
     readonly_default.mkdir()
-    readonly_default.chmod(0o555)
+
+    real_write_text = Path.write_text
+
+    def write_text_probe(self: Path, data: str, *args, **kwargs) -> int:
+        if self.parent == readonly_default and self.name.startswith(".write_probe_"):
+            raise OSError("simulated read-only directory")
+        return real_write_text(self, data, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "write_text", write_text_probe)
 
     monkeypatch.delenv("COGNIRO_DATA_DIR", raising=False)
     monkeypatch.setattr(storage_service, "DEFAULT_DATA_DIR", str(readonly_default))

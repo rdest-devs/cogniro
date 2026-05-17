@@ -28,9 +28,9 @@ MOCK_QUESTIONS = [
     {
         "id": 3,
         "type": "single",
-        "text": "Który schemat blokowy przedstawia pętlę while?",
-        "answers": ["Schemat A", "Schemat B", "Schemat C"],
-        "correct_indices": [1],
+        "text": "Co przedstawia ten schemat?",
+        "answers": ["Pętla while", "Instrukcja switch", "Sortowanie bąbelkowe"],
+        "correct_indices": [0],
     },
     {
         "id": 4,
