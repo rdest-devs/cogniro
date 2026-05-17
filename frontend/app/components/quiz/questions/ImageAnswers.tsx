@@ -1,7 +1,7 @@
 'use client';
 
 import ExportedImage from 'next-image-export-optimizer';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 import SubmitButton from '@/app/components/common/SubmitButton';
 import type { ImageAnswerOption } from '@/app/types';
@@ -40,14 +40,25 @@ export default function ImageAnswers({
   onSubmit,
   initialSelectedIndex = null,
 }: ImageAnswersProps) {
-  const [selected, setSelected] = useState<number | null>(() =>
-    normalizeSelectedIndex(initialSelectedIndex, answers.length),
+  const selectionScope = `${questionNumber}:${question}:${answers
+    .map((answer) => answer.label)
+    .join('|')}`;
+  const normalizedInitialSelection = normalizeSelectedIndex(
+    initialSelectedIndex,
+    answers.length,
   );
+  const [localSelection, setLocalSelection] = useState<{
+    scope: string;
+    index: number | null;
+  }>({
+    scope: selectionScope,
+    index: normalizedInitialSelection,
+  });
   const buttonRefs = useRef<Array<HTMLButtonElement | null>>([]);
-
-  useEffect(() => {
-    setSelected(normalizeSelectedIndex(initialSelectedIndex, answers.length));
-  }, [initialSelectedIndex, answers.length]);
+  const selected =
+    localSelection.scope === selectionScope
+      ? localSelection.index
+      : normalizedInitialSelection;
 
   const rows: ImageAnswerOption[][] = [];
   for (let i = 0; i < answers.length; i += 2) {
@@ -72,7 +83,7 @@ export default function ImageAnswers({
       return;
     }
 
-    setSelected(nextIndex);
+    setLocalSelection({ scope: selectionScope, index: nextIndex });
     buttonRefs.current[nextIndex]?.focus();
   };
 
@@ -105,7 +116,9 @@ export default function ImageAnswers({
                   role="radio"
                   aria-checked={isSelected}
                   tabIndex={idx === activeIndex ? 0 : -1}
-                  onClick={() => setSelected(idx)}
+                  onClick={() =>
+                    setLocalSelection({ scope: selectionScope, index: idx })
+                  }
                   onKeyDown={(event) => handleChoiceKeyDown(event, idx)}
                   className={cn(
                     'flex flex-1 cursor-pointer flex-col overflow-hidden rounded-2xl transition-all',
