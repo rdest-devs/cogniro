@@ -99,6 +99,10 @@ function toAssetUploadErrorMessage(status: number): string {
   return 'Nie udało się przesłać obrazu.';
 }
 
+function isLikelyMachineCode(value: string): boolean {
+  return /^[a-z0-9_]+$/i.test(value);
+}
+
 function getErrorMessage(errorBody: ApiErrorBody, fallback: string): string {
   if (typeof errorBody.reason === 'string' && errorBody.reason.trim()) {
     return errorBody.reason;
@@ -108,14 +112,22 @@ function getErrorMessage(errorBody: ApiErrorBody, fallback: string): string {
     return errorBody.error;
   }
 
-  if (typeof errorBody.detail === 'string' && errorBody.detail.trim()) {
-    return errorBody.detail;
+  if (typeof errorBody.detail === 'string') {
+    const detail = errorBody.detail.trim();
+    if (detail && !isLikelyMachineCode(detail)) {
+      return detail;
+    }
   }
 
   if (Array.isArray(errorBody.detail)) {
-    const firstDetail = errorBody.detail.find(
-      (detail) => typeof detail.msg === 'string' && detail.msg.trim(),
-    )?.msg;
+    const firstDetail = errorBody.detail.find((detail) => {
+      if (typeof detail.msg !== 'string') {
+        return false;
+      }
+
+      const message = detail.msg.trim();
+      return Boolean(message) && !isLikelyMachineCode(message);
+    })?.msg;
 
     if (firstDetail) {
       return firstDetail;

@@ -1,7 +1,7 @@
 'use client';
 
 import ExportedImage from 'next-image-export-optimizer';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import SubmitButton from '@/app/components/common/SubmitButton';
 import type { ImageAnswerOption } from '@/app/types';
@@ -17,6 +17,7 @@ interface ImageAnswersProps {
   question: string;
   answers: ImageAnswerOption[];
   onSubmit?: (selectedIndex: number) => void;
+  initialSelectedIndex?: number | null;
 }
 
 export default function ImageAnswers({
@@ -26,13 +27,47 @@ export default function ImageAnswers({
   question,
   answers,
   onSubmit,
+  initialSelectedIndex = null,
 }: ImageAnswersProps) {
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number | null>(() => {
+    if (
+      initialSelectedIndex === null ||
+      initialSelectedIndex < 0 ||
+      initialSelectedIndex >= answers.length
+    ) {
+      return null;
+    }
+
+    return initialSelectedIndex;
+  });
+  const buttonRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const rows: ImageAnswerOption[][] = [];
   for (let i = 0; i < answers.length; i += 2) {
     rows.push(answers.slice(i, i + 2));
   }
+
+  const activeIndex = selected ?? 0;
+
+  const handleChoiceKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    idx: number,
+  ) => {
+    let nextIndex = idx;
+
+    if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
+      event.preventDefault();
+      nextIndex = (idx + 1) % answers.length;
+    } else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+      event.preventDefault();
+      nextIndex = (idx - 1 + answers.length) % answers.length;
+    } else {
+      return;
+    }
+
+    setSelected(nextIndex);
+    buttonRefs.current[nextIndex]?.focus();
+  };
 
   return (
     <QuizLayout
@@ -56,10 +91,15 @@ export default function ImageAnswers({
               return (
                 <button
                   key={answer.label}
+                  ref={(node) => {
+                    buttonRefs.current[idx] = node;
+                  }}
                   type="button"
                   role="radio"
                   aria-checked={isSelected}
+                  tabIndex={idx === activeIndex ? 0 : -1}
                   onClick={() => setSelected(idx)}
+                  onKeyDown={(event) => handleChoiceKeyDown(event, idx)}
                   className={cn(
                     'flex flex-1 cursor-pointer flex-col overflow-hidden rounded-2xl transition-all',
                     isSelected

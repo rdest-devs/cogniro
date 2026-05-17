@@ -31,7 +31,9 @@ export function resolveMediaUrl(url: string): string {
     return url;
   }
 
-  if (!url.startsWith(MEDIA_PUBLIC_PREFIX)) {
+  const isMediaPath =
+    url === MEDIA_PUBLIC_PREFIX || url.startsWith(`${MEDIA_PUBLIC_PREFIX}/`);
+  if (!isMediaPath) {
     return url;
   }
 

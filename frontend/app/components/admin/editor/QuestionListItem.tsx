@@ -192,6 +192,7 @@ export default function QuestionListItem({
     };
 
   const panelId = `question-panel-${index}`;
+  const questionImageInputId = `question-${index}-image-upload`;
 
   return (
     <article>
@@ -223,7 +224,7 @@ export default function QuestionListItem({
         <button
           type="button"
           onClick={onRemove}
-          disabled={!canRemove}
+          disabled={!canRemove || uploadingKeys.size > 0}
           className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--wrong-fg)] disabled:cursor-not-allowed disabled:opacity-40"
           aria-label={`Usuń pytanie ${index + 1}`}
         >
@@ -258,7 +259,10 @@ export default function QuestionListItem({
                   Obraz pytania (opcjonalnie)
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--text-dark)]">
+                  <label
+                    htmlFor={questionImageInputId}
+                    className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--text-dark)]"
+                  >
                     {uploadingKeys.has('question') ? (
                       <Loader2 size={14} className="animate-spin" />
                     ) : (
@@ -266,9 +270,10 @@ export default function QuestionListItem({
                     )}
                     Prześlij obraz
                     <input
+                      id={questionImageInputId}
                       type="file"
                       accept="image/png,image/jpeg,image/webp"
-                      className="hidden"
+                      className="sr-only"
                       disabled={uploadingKeys.has('question')}
                       onChange={handleQuestionImageUpload}
                     />
@@ -344,6 +349,7 @@ export default function QuestionListItem({
                     `${answersPath}.${answerIndex}.image` as const;
                   const answerInputId = `question-${index}-answer-${answerIndex}-text`;
                   const answerLabelId = `${answerInputId}-label`;
+                  const answerImageInputId = `question-${index}-answer-${answerIndex}-image-upload`;
                   const answerText = watch(answerTextPath);
                   const answerImage = watch(answerImagePath);
                   const isCorrect = watch(answerCorrectPath);
@@ -407,7 +413,10 @@ export default function QuestionListItem({
                         )}
 
                         <div className="flex flex-wrap items-center gap-2">
-                          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--text-dark)]">
+                          <label
+                            htmlFor={answerImageInputId}
+                            className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--text-dark)]"
+                          >
                             {uploadingKeys.has(`answer-${answerIndex}`) ? (
                               <Loader2 size={14} className="animate-spin" />
                             ) : (
@@ -415,9 +424,10 @@ export default function QuestionListItem({
                             )}
                             Obraz odpowiedzi
                             <input
+                              id={answerImageInputId}
                               type="file"
                               accept="image/png,image/jpeg,image/webp"
-                              className="hidden"
+                              className="sr-only"
                               disabled={uploadingKeys.has(
                                 `answer-${answerIndex}`,
                               )}

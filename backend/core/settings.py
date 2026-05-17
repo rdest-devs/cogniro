@@ -24,4 +24,10 @@ def env_bool(key: str, default: bool) -> bool:
     raw = os.getenv(key)
     if raw is None:
         return default
-    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+    value = raw.strip().lower()
+    if value in {"1", "true", "yes", "on"}:
+        return True
+    if value in {"0", "false", "no", "off"}:
+        return False
+    return default

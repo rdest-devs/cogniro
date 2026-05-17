@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 
 import pytest
+from pydantic import ValidationError
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
@@ -38,7 +39,7 @@ def test_to_stored_quiz_drops_question_and_answer_ids() -> None:
 
 
 def test_admin_quiz_payload_rejects_unsupported_question_type() -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         AdminQuizUpsertPayload.model_validate(
             {
                 "title": "Test quiz",
