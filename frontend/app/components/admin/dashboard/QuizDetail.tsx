@@ -1,9 +1,12 @@
 'use client';
 
-import { Calendar, Eye, List, Pencil, Trash2 } from 'lucide-react';
+import { Calendar, Eye, List, Pencil, Play, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useState } from 'react';
 
 import StatusBadge from '@/app/components/common/StatusBadge';
 import type { QuizInfo, ResultRow } from '@/app/types';
+import { AdminQuizApiError, deleteAdminQuiz } from '@/lib/admin-quiz';
 
 import AdminLayout from '../layout/AdminLayout';
 import { statusColors } from '../shared/constants';
@@ -12,24 +15,77 @@ interface QuizDetailProps {
   quizzes: QuizInfo[];
   selectedQuizId?: string | null;
   resultsForQuiz: ResultRow[];
+  adminBase: string;
   onCreateQuiz?: () => void;
   onEditQuiz?: (quizId: string) => void;
   onSelectQuiz?: (quizId: string) => void;
   onLogout?: () => void;
+  onQuizDeleted?: () => void;
 }
 
 export default function QuizDetail({
   quizzes,
   selectedQuizId,
   resultsForQuiz,
+  adminBase,
   onCreateQuiz,
   onEditQuiz,
   onSelectQuiz,
   onLogout,
+  onQuizDeleted,
 }: QuizDetailProps) {
+  const router = useRouter();
+  const [deleteBusy, setDeleteBusy] = useState<string | null>(null);
+
   const selectedQuiz = selectedQuizId
     ? quizzes.find((quiz) => quiz.id === selectedQuizId)
     : quizzes[0];
+
+  const goRunning = useCallback(
+    (quizId: string) => {
+      const qs = new URLSearchParams({ quiz: quizId, view: 'running' });
+      router.push(`${adminBase}?${qs.toString()}`);
+    },
+    [router, adminBase],
+  );
+
+  const goResults = useCallback(
+    (quizId: string) => {
+      const qs = new URLSearchParams({
+        view: 'results',
+        quizFilter: quizId,
+      });
+      router.push(`${adminBase}?${qs.toString()}`);
+    },
+    [router, adminBase],
+  );
+
+  const handleDelete = useCallback(
+    async (quizId: string) => {
+      if (
+        !confirm('Na pewno usunąć ten quiz? Tej operacji nie można cofnąć.')
+      ) {
+        return;
+      }
+      setDeleteBusy(quizId);
+      try {
+        await deleteAdminQuiz(quizId);
+        onQuizDeleted?.();
+        router.push(adminBase);
+      } catch (error) {
+        if (error instanceof AdminQuizApiError && error.status === 409) {
+          window.alert('Nie można usunąć quizu w trakcie sesji.');
+        } else if (error instanceof Error) {
+          window.alert(error.message);
+        } else {
+          window.alert('Nie udało się usunąć quizu.');
+        }
+      } finally {
+        setDeleteBusy(null);
+      }
+    },
+    [router, adminBase, onQuizDeleted],
+  );
 
   return (
     <AdminLayout onCreateQuiz={onCreateQuiz} onLogout={onLogout}>
@@ -82,7 +138,7 @@ export default function QuizDetail({
                 </div>
               )}
 
-              <nav className="flex items-center gap-2">
+              <nav className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => onEditQuiz?.(quiz.id)}
@@ -93,18 +149,25 @@ export default function QuizDetail({
                 </button>
                 <button
                   type="button"
-                  disabled
-                  title="Funkcja niedostępna"
-                  className="flex cursor-not-allowed items-center gap-1.5 rounded-xl border border-[var(--orange)] px-3 py-2 text-xs font-semibold text-[var(--orange)] opacity-40"
+                  onClick={() => goRunning(quiz.id)}
+                  className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--text-dark)] px-3 py-2 text-xs font-semibold text-[var(--text-dark)] hover:bg-[var(--text-dark)] hover:text-white"
+                >
+                  <Play size={14} />
+                  Uruchom quiz
+                </button>
+                <button
+                  type="button"
+                  onClick={() => goResults(quiz.id)}
+                  className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--orange)] px-3 py-2 text-xs font-semibold text-[var(--orange)] hover:bg-[var(--orange)] hover:text-white"
                 >
                   <Eye size={14} />
                   Wyniki
                 </button>
                 <button
                   type="button"
-                  disabled
-                  title="Funkcja niedostępna"
-                  className="flex cursor-not-allowed items-center gap-1.5 rounded-xl border border-[var(--wrong-fg)] px-3 py-2 text-xs font-semibold text-[var(--wrong-fg)] opacity-40"
+                  disabled={deleteBusy === quiz.id}
+                  onClick={() => void handleDelete(quiz.id)}
+                  className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--wrong-fg)] px-3 py-2 text-xs font-semibold text-[var(--wrong-fg)] hover:bg-[var(--wrong-fg)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Trash2 size={14} />
                   Usuń
@@ -117,7 +180,7 @@ export default function QuizDetail({
         {selectedQuiz && (
           <section className="flex flex-col gap-4">
             <h2 className="text-base font-bold text-[var(--text-dark)]">
-              Wyniki — {selectedQuiz.title}
+              Wyniki (demo) — {selectedQuiz.title}
             </h2>
 
             <table className="w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card-bg)]">
@@ -144,7 +207,8 @@ export default function QuizDetail({
                       colSpan={4}
                       className="px-4 py-8 text-center text-sm text-[var(--text-muted)]"
                     >
-                      Brak wyników dla tego quizu.
+                      Brak danych demo dla tego quizu. Rzeczywiste wyniki w
+                      sekcji Wyniki.
                     </td>
                   </tr>
                 ) : (

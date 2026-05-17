@@ -3,6 +3,9 @@
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { ResultDetailView } from '@/app/components/admin/results/ResultDetailView';
+import { ResultsBrowserView } from '@/app/components/admin/results/ResultsBrowserView';
+import { ResultsDayView } from '@/app/components/admin/results/ResultsDayView';
 import {
   AdminQuizApiError,
   getAllAdminQuizzes,
@@ -10,6 +13,7 @@ import {
 } from '@/lib/admin-quiz';
 
 import { AdminPanel, QuizDetail, QuizEditor } from '../components/admin';
+import { RunningQuizView } from '../components/admin/dashboard/RunningQuizView';
 import { adminPanelDemo, quizDetailDemo } from '../data/demo';
 import type {
   AdminQuizApiListItem,
@@ -18,7 +22,7 @@ import type {
   ResultRow,
 } from '../types';
 
-type AdminView = 'panel' | 'detail' | 'editor';
+type AdminView = 'panel' | 'detail' | 'editor' | 'running' | 'results';
 type EditorMode = 'create' | 'edit';
 
 const demoQuizIds = new Set(
@@ -91,13 +95,29 @@ export default function AdminDashboard({
   const quizIdFromUrl = searchParams.get('quiz');
   const wantsNew = searchParams.get('new') === '1';
   const wantsEdit = searchParams.get('edit') === '1';
+  const viewParam = searchParams.get('view');
+  const resultsDate = searchParams.get('date');
+  const resultsFile = searchParams.get('file');
+  const quizFilter = searchParams.get('quizFilter');
 
   const adminView: AdminView = useMemo(() => {
-    if (wantsNew) return 'editor';
-    if (quizIdFromUrl && wantsEdit) return 'editor';
-    if (quizIdFromUrl) return 'detail';
+    if (viewParam === 'results') {
+      return 'results';
+    }
+    if (viewParam === 'running' && quizIdFromUrl) {
+      return 'running';
+    }
+    if (wantsNew) {
+      return 'editor';
+    }
+    if (quizIdFromUrl && wantsEdit) {
+      return 'editor';
+    }
+    if (quizIdFromUrl) {
+      return 'detail';
+    }
     return 'panel';
-  }, [wantsNew, quizIdFromUrl, wantsEdit]);
+  }, [viewParam, wantsNew, quizIdFromUrl, wantsEdit]);
 
   const editorMode: EditorMode = wantsNew ? 'create' : 'edit';
 
@@ -136,6 +156,9 @@ export default function AdminDashboard({
     if (adminLoading || wantsNew || !quizIdFromUrl) {
       return;
     }
+    if (viewParam === 'results') {
+      return;
+    }
 
     if (adminError) {
       if (!demoQuizIds.has(quizIdFromUrl)) {
@@ -159,6 +182,7 @@ export default function AdminDashboard({
     adminQuizzes,
     router,
     adminBase,
+    viewParam,
   ]);
 
   const adminCards = useMemo(
@@ -255,6 +279,17 @@ export default function AdminDashboard({
     router.push(adminBase);
   }, [wantsNew, quizIdFromUrl, router, adminBase]);
 
+  const resultsQs = useCallback(
+    (extra: Record<string, string>) => {
+      const p = new URLSearchParams({ view: 'results', ...extra });
+      if (quizFilter) {
+        p.set('quizFilter', quizFilter);
+      }
+      return p.toString();
+    },
+    [quizFilter],
+  );
+
   return (
     <div className="h-screen w-full bg-[var(--page-bg)]">
       {adminView === 'panel' && (
@@ -274,12 +309,70 @@ export default function AdminDashboard({
           quizzes={adminInfos}
           selectedQuizId={resolvedSelectedQuizId}
           resultsForQuiz={resultsForSelectedQuiz}
+          adminBase={adminBase}
           onCreateQuiz={handleCreateQuiz}
           onSelectQuiz={goDetail}
           onEditQuiz={handleEditQuiz}
           onLogout={onLogout}
+          onQuizDeleted={loadAdminQuizzes}
         />
       )}
+
+      {adminView === 'running' && quizIdFromUrl && (
+        <RunningQuizView
+          quizId={quizIdFromUrl}
+          onStopped={(date, file) => {
+            const p = new URLSearchParams({
+              view: 'results',
+              date,
+              file,
+            });
+            router.replace(`${adminBase}?${p.toString()}`);
+          }}
+          onBack={() => {
+            const p = new URLSearchParams({ quiz: quizIdFromUrl });
+            router.push(`${adminBase}?${p.toString()}`);
+          }}
+          onCreateQuiz={handleCreateQuiz}
+          onLogout={onLogout}
+        />
+      )}
+
+      {adminView === 'results' &&
+        (resultsDate && resultsFile ? (
+          <ResultDetailView
+            adminBase={adminBase}
+            date={resultsDate}
+            file={resultsFile}
+            quizFilter={quizFilter}
+            onBack={() => {
+              router.push(`${adminBase}?${resultsQs({ date: resultsDate })}`);
+            }}
+            onCreateQuiz={handleCreateQuiz}
+            onLogout={onLogout}
+          />
+        ) : resultsDate ? (
+          <ResultsDayView
+            adminBase={adminBase}
+            date={resultsDate}
+            quizFilter={quizFilter}
+            onBack={() => {
+              router.push(`${adminBase}?${resultsQs({})}`);
+            }}
+            onCreateQuiz={handleCreateQuiz}
+            onLogout={onLogout}
+          />
+        ) : (
+          <ResultsBrowserView
+            adminBase={adminBase}
+            quizFilter={quizFilter}
+            onBack={() => {
+              router.push(adminBase);
+            }}
+            onCreateQuiz={handleCreateQuiz}
+            onLogout={onLogout}
+          />
+        ))}
 
       {adminView === 'editor' && (
         <QuizEditor
