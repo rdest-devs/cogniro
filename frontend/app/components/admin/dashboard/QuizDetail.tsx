@@ -36,7 +36,6 @@ interface QuizDetailProps {
   adminBase: string;
   menuActiveItem?: string;
   onMenuNavigate?: (menuItemId: string) => void;
-  onCreateQuiz?: () => void;
   onEditQuiz?: (quizId: string) => void;
   onSelectQuiz?: (quizId: string) => void;
   onLogout?: () => void;
@@ -51,7 +50,6 @@ export default function QuizDetail({
   adminBase,
   menuActiveItem = '',
   onMenuNavigate,
-  onCreateQuiz,
   onEditQuiz,
   onSelectQuiz,
   onLogout,
@@ -129,7 +127,6 @@ export default function QuizDetail({
       activeItem={menuActiveItem}
       logoHref={adminBase}
       onMenuNavigate={onMenuNavigate}
-      onCreateQuiz={onCreateQuiz}
       onLogout={onLogout}
     >
       <div className="flex flex-col gap-6">

@@ -7,7 +7,6 @@ interface AdminLayoutProps {
   logoHref?: string;
   /** Sidebar item navigation handler (e.g. Statistics). */
   onMenuNavigate?: (menuItemId: string) => void;
-  onCreateQuiz?: () => void;
   onLogout?: () => void;
 }
 
@@ -16,7 +15,6 @@ export default function AdminLayout({
   children,
   logoHref = '/admin/',
   onMenuNavigate,
-  onCreateQuiz,
   onLogout,
 }: AdminLayoutProps) {
   return (
@@ -28,11 +26,7 @@ export default function AdminLayout({
       />
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <TopBar
-          logoHref={logoHref}
-          onCreateQuiz={onCreateQuiz}
-          onLogout={onLogout}
-        />
+        <TopBar logoHref={logoHref} onLogout={onLogout} />
         <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-8">
           {children}
         </main>

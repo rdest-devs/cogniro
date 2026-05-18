@@ -40,7 +40,6 @@ type Props = {
   onMenuNavigate?: (menuItemId: string) => void;
   onStopped: (date: string, filename: string) => void;
   onBack: () => void;
-  onCreateQuiz?: () => void;
   onLogout?: () => void;
 };
 
@@ -51,7 +50,6 @@ export function RunningQuizView({
   onMenuNavigate,
   onStopped,
   onBack,
-  onCreateQuiz,
   onLogout,
 }: Props) {
   const [activation, setActivation] = useState<{
@@ -91,7 +89,6 @@ export function RunningQuizView({
         activeItem={menuActiveItem}
         logoHref={logoHref}
         onMenuNavigate={onMenuNavigate}
-        onCreateQuiz={onCreateQuiz}
         onLogout={onLogout}
       >
         <p>Błąd: {err}</p>
@@ -113,7 +110,6 @@ export function RunningQuizView({
         activeItem={menuActiveItem}
         logoHref={logoHref}
         onMenuNavigate={onMenuNavigate}
-        onCreateQuiz={onCreateQuiz}
         onLogout={onLogout}
       >
         <p>Uruchamianie…</p>
@@ -126,7 +122,6 @@ export function RunningQuizView({
       activeItem={menuActiveItem}
       logoHref={logoHref}
       onMenuNavigate={onMenuNavigate}
-      onCreateQuiz={onCreateQuiz}
       onLogout={onLogout}
     >
       <div className="mb-4 flex flex-wrap gap-3">

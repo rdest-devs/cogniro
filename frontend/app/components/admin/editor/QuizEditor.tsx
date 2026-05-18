@@ -36,7 +36,6 @@ interface QuizEditorProps {
   onMenuNavigate?: (menuItemId: string) => void;
   onSaved?: (quizId: string) => void;
   onCancel?: () => void;
-  onCreateQuiz?: () => void;
   onLogout?: () => void;
   onSessionInvalid?: () => void;
 }
@@ -69,7 +68,6 @@ export default function QuizEditor({
   onMenuNavigate,
   onSaved,
   onCancel,
-  onCreateQuiz,
   onLogout,
   onSessionInvalid,
 }: QuizEditorProps) {
@@ -260,7 +258,6 @@ export default function QuizEditor({
       activeItem={menuActiveItem}
       logoHref={logoHref}
       onMenuNavigate={onMenuNavigate}
-      onCreateQuiz={onCreateQuiz}
       onLogout={onLogout}
     >
       <FormProvider {...formMethods}>

@@ -26,7 +26,6 @@ type Props = {
   menuActiveItem?: string;
   onMenuNavigate?: (menuItemId: string) => void;
   onBack: () => void;
-  onCreateQuiz?: () => void;
   onLogout?: () => void;
 };
 
@@ -38,7 +37,6 @@ export function ResultDetailView({
   menuActiveItem = 'statystyki',
   onMenuNavigate,
   onBack,
-  onCreateQuiz,
   onLogout,
 }: Props) {
   const [payload, setPayload] = useState<unknown>(null);
@@ -87,7 +85,6 @@ export function ResultDetailView({
       activeItem={menuActiveItem}
       logoHref={adminBase}
       onMenuNavigate={onMenuNavigate}
-      onCreateQuiz={onCreateQuiz}
       onLogout={onLogout}
     >
       <div className="mb-4 flex flex-wrap gap-3">

@@ -17,7 +17,6 @@ type Props = {
   menuActiveItem?: string;
   onMenuNavigate?: (menuItemId: string) => void;
   onBack: () => void;
-  onCreateQuiz?: () => void;
   onLogout?: () => void;
 };
 
@@ -60,7 +59,6 @@ export function ResultsBrowserView({
   menuActiveItem = 'statystyki',
   onMenuNavigate,
   onBack,
-  onCreateQuiz,
   onLogout,
 }: Props) {
   const router = useRouter();
@@ -116,7 +114,6 @@ export function ResultsBrowserView({
       activeItem={menuActiveItem}
       logoHref={adminBase}
       onMenuNavigate={onMenuNavigate}
-      onCreateQuiz={onCreateQuiz}
       onLogout={onLogout}
     >
       <div className="mb-4 flex flex-wrap gap-3">

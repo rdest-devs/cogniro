@@ -368,7 +368,6 @@ export default function AdminDashboard({
             adminBase={adminBase}
             menuActiveItem={menuActiveItem}
             onMenuNavigate={handleMenuNavigate}
-            onCreateQuiz={handleCreateQuiz}
             onSelectQuiz={goEditorEdit}
             onEditQuiz={handleEditQuiz}
             onLogout={onLogout}
@@ -394,7 +393,6 @@ export default function AdminDashboard({
               const p = new URLSearchParams({ quiz: quizIdFromUrl });
               router.push(`${adminBase}?${p.toString()}`);
             }}
-            onCreateQuiz={handleCreateQuiz}
             onLogout={onLogout}
           />
         )}
@@ -411,7 +409,6 @@ export default function AdminDashboard({
               onBack={() => {
                 router.push(`${adminBase}?${resultsQs({ date: resultsDate })}`);
               }}
-              onCreateQuiz={handleCreateQuiz}
               onLogout={onLogout}
             />
           ) : resultsDate ? (
@@ -424,7 +421,6 @@ export default function AdminDashboard({
               onBack={() => {
                 router.push(`${adminBase}?${resultsQs({})}`);
               }}
-              onCreateQuiz={handleCreateQuiz}
               onLogout={onLogout}
             />
           ) : (
@@ -436,7 +432,6 @@ export default function AdminDashboard({
               onBack={() => {
                 router.push(adminBase);
               }}
-              onCreateQuiz={handleCreateQuiz}
               onLogout={onLogout}
             />
           ))}
@@ -450,7 +445,6 @@ export default function AdminDashboard({
             onMenuNavigate={handleMenuNavigate}
             onSaved={handleQuizSaved}
             onCancel={handleEditorCancel}
-            onCreateQuiz={handleCreateQuiz}
             onLogout={onLogout}
             onSessionInvalid={onSessionInvalid}
           />

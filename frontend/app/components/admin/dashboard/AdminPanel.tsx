@@ -53,7 +53,6 @@ export default function AdminPanel({
       activeItem={menuActiveItem}
       logoHref={logoHref}
       onMenuNavigate={onMenuNavigate}
-      onCreateQuiz={onCreateQuiz}
       onLogout={onLogout}
     >
       <header className="flex items-center justify-between">
