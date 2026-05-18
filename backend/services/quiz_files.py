@@ -239,6 +239,23 @@ def _expanded_quiz_media_relpaths(quiz: KqfQuiz) -> set[str]:
             ):
                 rels.add(f"{rel}/image.webp")
                 rels.add(f"{rel}/thumb.webp")
+        # Include choice images
+        if hasattr(q, "choices"):
+            for choice in q.choices:
+                if not choice.image:
+                    continue
+                rel = _rel_under_media_from_media_url(choice.image)
+                if not rel:
+                    continue
+                rels.add(rel)
+                p = PurePosixPath(rel)
+                if (
+                    len(p.parts) == 1
+                    and p.name.startswith("asset_")
+                    and "." not in p.name
+                ):
+                    rels.add(f"{rel}/image.webp")
+                    rels.add(f"{rel}/thumb.webp")
     return rels
 
 
@@ -317,6 +334,14 @@ def materialize_staging_media_into_quiz_dir(
             q.media = m.model_copy(
                 update={"image": new_image, "video": new_video, "audio": new_audio}
             )
+        # NEW: materialize choice images
+        if hasattr(q, "choices"):
+            for choice in q.choices:
+                new_choice_image = _materialize_one_media_url(
+                    choice.image, staging_dir, quiz_media
+                )
+                if new_choice_image != choice.image:
+                    choice.image = new_choice_image
     return out
 
 

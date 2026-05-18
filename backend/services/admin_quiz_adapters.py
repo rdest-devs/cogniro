@@ -52,7 +52,7 @@ def upsert_payload_to_kqf(
                 KqfSingleChoice(
                     type="singlechoice",
                     choices=[
-                        KqfChoice(text=c.text, is_correct=c.is_correct)
+                        KqfChoice(text=c.text, is_correct=c.is_correct, image=c.image)
                         for c in q.choices
                     ],
                     **common,
@@ -63,7 +63,7 @@ def upsert_payload_to_kqf(
                 KqfMultiChoice(
                     type="multichoice",
                     choices=[
-                        KqfChoice(text=c.text, is_correct=c.is_correct)
+                        KqfChoice(text=c.text, is_correct=c.is_correct, image=c.image)
                         for c in q.choices
                     ],
                     **common,
@@ -122,7 +122,9 @@ def kqf_to_admin_detail_payload(
                 AdminQuizSingleChoicePayload(
                     type="singlechoice",
                     choices=[
-                        AdminQuizChoicePayload(text=c.text, is_correct=c.is_correct)
+                        AdminQuizChoicePayload(
+                            text=c.text, is_correct=c.is_correct, image=c.image
+                        )
                         for c in q.choices
                     ],
                     **common,
@@ -133,7 +135,9 @@ def kqf_to_admin_detail_payload(
                 AdminQuizMultiChoicePayload(
                     type="multichoice",
                     choices=[
-                        AdminQuizChoicePayload(text=c.text, is_correct=c.is_correct)
+                        AdminQuizChoicePayload(
+                            text=c.text, is_correct=c.is_correct, image=c.image
+                        )
                         for c in q.choices
                     ],
                     **common,

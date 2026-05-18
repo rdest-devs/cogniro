@@ -114,6 +114,14 @@ def test_admin_quiz_create_get_update_list_delete(monkeypatch, tmp_path: Path) -
         update_payload["questions"][0]["image"] = (
             f"{settings.MEDIA_PUBLIC_PREFIX}/{aid}/image.webp"
         )
+        aid2 = "asset_" + "e" * 32
+        staging_asset2 = data_dir / "storage" / "uploads" / "quiz-assets" / aid2
+        staging_asset2.mkdir(parents=True, exist_ok=True)
+        (staging_asset2 / "image.webp").write_bytes(b"\xff\xd8\xff\xd9")
+        (staging_asset2 / "thumb.webp").write_bytes(b"thumb2")
+        update_payload["questions"][0]["choices"][0]["image"] = (
+            f"{settings.MEDIA_PUBLIC_PREFIX}/{aid2}/image.webp"
+        )
 
         update_response = client.put(
             f"/admin/quiz/{quiz_id}",
@@ -128,6 +136,7 @@ def test_admin_quiz_create_get_update_list_delete(monkeypatch, tmp_path: Path) -
         assert updated["title"] == "Quiz po aktualizacji"
         assert updated["questions"][0]["text"] == "Z tekstem"
         assert updated["questions"][0]["image"] == f"./media/{aid}"
+        assert updated["questions"][0]["choices"][0]["image"] == f"./media/{aid2}"
 
         quiz_dir = data_dir / "storage" / "quizzes" / quiz_id
         assert (quiz_dir / "quiz.kqf").is_file()

@@ -59,8 +59,15 @@ class _AdminQuizPayloadBase(BaseModel):
 
 
 class AdminQuizChoicePayload(BaseModel):
-    text: str = Field(min_length=1)
+    text: str = ""
     is_correct: bool
+    image: str | None = None
+
+    @model_validator(mode="after")
+    def _validate_text_or_image(self) -> "AdminQuizChoicePayload":
+        if not self.text.strip() and not (self.image and self.image.strip()):
+            raise ValueError("choice must have text or image")
+        return self
 
 
 class AdminQuizSingleChoicePayload(_AdminQuizPayloadBase):
