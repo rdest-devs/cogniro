@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { BarChart3, FileText, Settings } from 'lucide-react';
+import { BarChart3, BookOpen, FileText, Settings } from 'lucide-react';
 
 export type SidebarMenuItem = {
   id: string;
@@ -11,6 +11,7 @@ export type SidebarMenuItem = {
 
 export const menuItems: SidebarMenuItem[] = [
   { id: 'quizy', label: 'Moje Quizy', icon: FileText },
+  { id: 'details', label: 'Szczegóły quizów', icon: BookOpen },
   { id: 'statystyki', label: 'Statystyki', icon: BarChart3 },
   { id: 'ustawienia', label: 'Ustawienia', icon: Settings, disabled: true },
 ];

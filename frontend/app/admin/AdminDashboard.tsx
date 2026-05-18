@@ -22,7 +22,13 @@ import type {
   ResultRow,
 } from '../types';
 
-type AdminView = 'panel' | 'detail' | 'editor' | 'running' | 'results';
+type AdminView =
+  | 'panel'
+  | 'detail'
+  | 'details'
+  | 'editor'
+  | 'running'
+  | 'results';
 type EditorMode = 'create' | 'edit';
 
 const demoQuizIds = new Set(
@@ -106,6 +112,9 @@ export default function AdminDashboard({
     }
     if (viewParam === 'running' && quizIdFromUrl) {
       return 'running';
+    }
+    if (viewParam === 'details') {
+      return 'details';
     }
     if (wantsNew) {
       return 'editor';
@@ -209,7 +218,11 @@ export default function AdminDashboard({
   );
 
   const resolvedSelectedQuizId = useMemo(() => {
-    if (adminView === 'detail' || (adminView === 'editor' && wantsEdit)) {
+    if (
+      adminView === 'detail' ||
+      adminView === 'details' ||
+      (adminView === 'editor' && wantsEdit)
+    ) {
       if (quizIdFromUrl) {
         return quizIdFromUrl;
       }
@@ -253,13 +266,6 @@ export default function AdminDashboard({
   const handleCreateQuiz = useCallback(() => {
     goEditorNew();
   }, [goEditorNew]);
-
-  const handleOpenQuizDetail = useCallback(
-    (quizId: string) => {
-      goDetail(quizId);
-    },
-    [goDetail],
-  );
 
   const handleEditQuiz = useCallback(
     (quizId: string) => {
@@ -308,6 +314,9 @@ export default function AdminDashboard({
     if (adminView === 'panel') {
       return 'quizy';
     }
+    if (adminView === 'detail' || adminView === 'details') {
+      return 'details';
+    }
     return '';
   }, [adminView]);
 
@@ -315,6 +324,10 @@ export default function AdminDashboard({
     (itemId: string) => {
       if (itemId === 'statystyki') {
         router.push(`${adminBase}?view=results`);
+        return;
+      }
+      if (itemId === 'details') {
+        router.push(`${adminBase}?view=details`);
         return;
       }
       if (itemId === 'quizy') {
@@ -337,7 +350,7 @@ export default function AdminDashboard({
             onMenuNavigate={handleMenuNavigate}
             onRefresh={loadAdminQuizzes}
             onCreateQuiz={handleCreateQuiz}
-            onOpenQuiz={handleOpenQuizDetail}
+            onOpenQuiz={handleEditQuiz}
             onLogout={onLogout}
             onImportedQuiz={(quizId) => {
               void loadAdminQuizzes();
@@ -346,7 +359,7 @@ export default function AdminDashboard({
           />
         )}
 
-        {adminView === 'detail' && (
+        {(adminView === 'detail' || adminView === 'details') && (
           <QuizDetail
             quizzes={adminInfos}
             selectedQuizId={resolvedSelectedQuizId}
@@ -356,7 +369,7 @@ export default function AdminDashboard({
             menuActiveItem={menuActiveItem}
             onMenuNavigate={handleMenuNavigate}
             onCreateQuiz={handleCreateQuiz}
-            onSelectQuiz={goDetail}
+            onSelectQuiz={goEditorEdit}
             onEditQuiz={handleEditQuiz}
             onLogout={onLogout}
             onQuizDeleted={loadAdminQuizzes}
