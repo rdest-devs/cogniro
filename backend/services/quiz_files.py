@@ -337,10 +337,12 @@ def materialize_staging_media_into_quiz_dir(
         # NEW: materialize choice images
         if hasattr(q, "choices"):
             for choice in q.choices:
+                if not choice.image:
+                    continue
                 new_choice_image = _materialize_one_media_url(
                     choice.image, staging_dir, quiz_media
                 )
-                if new_choice_image != choice.image:
+                if new_choice_image is not None and new_choice_image != choice.image:
                     choice.image = new_choice_image
     return out
 
@@ -386,4 +388,8 @@ def kqf_with_absolute_media(quiz: KqfQuiz, quiz_id: str, origin: str) -> KqfQuiz
         q.media.image = rewrite(q.media.image)
         q.media.video = rewrite(q.media.video)
         q.media.audio = rewrite(q.media.audio)
+        if hasattr(q, "choices"):
+            for choice in q.choices:
+                if choice.image:
+                    choice.image = rewrite(choice.image)
     return copy
