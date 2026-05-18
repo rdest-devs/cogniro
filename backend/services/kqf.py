@@ -333,7 +333,8 @@ def _write_question(buf: io.StringIO, question: object) -> None:
     if isinstance(question, (KqfSingleChoice, KqfMultiChoice)):
         for choice in question.choices:
             mark = "x" if choice.is_correct else " "
-            buf.write(f"- [{mark}] {choice.text}\n")
+            text_part = f" {choice.text}" if choice.text else ""
+            buf.write(f"- [{mark}]{text_part}\n")
             if choice.image:
                 buf.write(f"@image: {_normalize_kqf_stored_image_path(choice.image)}\n")
     elif isinstance(question, KqfTrueFalse):

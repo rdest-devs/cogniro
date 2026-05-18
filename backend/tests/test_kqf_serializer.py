@@ -141,10 +141,44 @@ def test_serialize_choice_image_directive() -> None:
     )
 
     out = serialize_kqf(quiz)
-    assert "- [x]" in out
+    assert "- [x]\n" in out
     assert "@image: ./media/asset_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" in out
     assert "- [ ] Paris" in out
     assert "@image: ./media/asset_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" in out
+
+
+def test_roundtrip_image_only_choice() -> None:
+    quiz = KqfQuiz(
+        front_matter=KqfFrontMatter(title="T"),
+        questions=[
+            KqfSingleChoice(
+                id="Q1",
+                type="singlechoice",
+                text="Question?",
+                choices=[
+                    KqfChoice(
+                        text="",
+                        is_correct=True,
+                        image="./media/asset_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    ),
+                    KqfChoice(
+                        text="Paris",
+                        is_correct=False,
+                    ),
+                ],
+            )
+        ],
+    )
+    from services.kqf import parse_kqf
+
+    out = serialize_kqf(quiz)
+    reparsed = parse_kqf(out)
+    assert reparsed.questions[0].choices[0].text == ""
+    assert (
+        reparsed.questions[0].choices[0].image
+        == "./media/asset_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    )
+    assert reparsed.questions[0].choices[1].text == "Paris"
 
 
 def test_read_write_kqf_file_roundtrip(tmp_path: Path) -> None:
