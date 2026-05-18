@@ -32,10 +32,24 @@ function countCorrectChoices(choices: { isCorrect: boolean }[]): number {
   return choices.filter((c) => c.isCorrect).length;
 }
 
-const editorChoiceSchema = z.object({
-  text: z.string(),
-  isCorrect: z.boolean(),
-});
+const editorChoiceSchema = z
+  .object({
+    text: z.string(),
+    isCorrect: z.boolean(),
+    image: z
+      .union([z.string().trim().min(1), z.literal(''), z.null()])
+      .optional()
+      .transform((v) => (v === undefined || v === null || v === '' ? null : v)),
+  })
+  .superRefine((c, ctx) => {
+    if (!c.text.trim() && !c.image) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Odpowiedź musi mieć tekst lub obraz',
+        path: ['text'],
+      });
+    }
+  });
 
 const questionCommonFormSchema = z.object({
   id: z.string().optional(),
@@ -94,15 +108,6 @@ const editorSingleChoiceSchema = questionCommonFormSchema
         path: ['choices'],
       });
     }
-    for (const [i, c] of q.choices.entries()) {
-      if (!c.text.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Tekst odpowiedzi jest wymagany',
-          path: ['choices', i, 'text'],
-        });
-      }
-    }
   });
 
 const editorMultiChoiceSchema = questionCommonFormSchema
@@ -120,15 +125,6 @@ const editorMultiChoiceSchema = questionCommonFormSchema
         message: 'Wielokrotny wybór wymaga co najmniej 1 poprawnej odpowiedzi',
         path: ['choices'],
       });
-    }
-    for (const [i, c] of q.choices.entries()) {
-      if (!c.text.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Tekst odpowiedzi jest wymagany',
-          path: ['choices', i, 'text'],
-        });
-      }
     }
   });
 
@@ -209,6 +205,10 @@ export const quizEditorFormSchema = z.object({
 const apiChoiceSchema = z.object({
   text: z.string(),
   is_correct: z.boolean(),
+  image: z
+    .union([z.string().trim().min(1), z.literal(''), z.null()])
+    .optional()
+    .transform((v) => (v === undefined || v === null || v === '' ? null : v)),
 });
 
 const apiQuestionCommon = {
@@ -302,10 +302,30 @@ export const adminQuizApiListItemSchema = z
 
 export const adminQuizApiListSchema = z.array(adminQuizApiListItemSchema);
 
-const upsertChoiceSchema = z.object({
-  text: z.string().trim().min(1),
-  is_correct: z.boolean(),
-});
+const upsertChoiceSchema = z
+  .object({
+    text: z.string().trim(),
+    is_correct: z.boolean(),
+    image: z
+      .union([z.string(), z.literal(''), z.null()])
+      .optional()
+      .transform((v) => {
+        if (v === undefined || v === null || v === '') {
+          return undefined;
+        }
+        const t = v.trim();
+        return t === '' ? undefined : t;
+      }),
+  })
+  .superRefine((c, ctx) => {
+    if (!c.text && !c.image) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'choice must have text or image',
+        path: ['text'],
+      });
+    }
+  });
 
 const upsertCommon = {
   id: z.string().optional(),

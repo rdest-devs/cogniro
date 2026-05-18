@@ -40,6 +40,8 @@ function mapApiChoiceToForm(c: AdminQuizApiChoice): QuizEditorChoiceForm {
   return {
     text: c.text,
     isCorrect: c.is_correct,
+    image:
+      normalizeKqfQuestionImageToDirectoryPath(c.image ?? undefined) ?? null,
   };
 }
 
@@ -186,7 +188,7 @@ function coerceApiQuestionLoose(
 
   const choices: QuizEditorChoiceForm[] = rawChoices.map((item) => {
     if (!item || typeof item !== 'object') {
-      return { text: '', isCorrect: false };
+      return { text: '', isCorrect: false, image: null };
     }
     const o = item as Record<string, unknown>;
     const choiceText =
@@ -196,7 +198,11 @@ function coerceApiQuestionLoose(
           ? o.content
           : '';
     const isCorrect = Boolean(o.is_correct ?? o.isCorrect);
-    return { text: choiceText, isCorrect };
+    const image =
+      typeof o.image === 'string' && o.image.trim()
+        ? (normalizeKqfQuestionImageToDirectoryPath(o.image) ?? null)
+        : null;
+    return { text: choiceText, isCorrect, image };
   });
 
   const padded =
@@ -207,6 +213,7 @@ function coerceApiQuestionLoose(
           ...Array.from({ length: 2 - choices.length }, () => ({
             text: '',
             isCorrect: false,
+            image: null,
           })),
         ];
 
@@ -279,8 +286,15 @@ export function toQuizEditorFormValues(
 function mapFormChoiceToPayload(c: QuizEditorChoiceForm): {
   text: string;
   is_correct: boolean;
+  image?: string | null;
 } {
-  return { text: c.text.trim(), is_correct: c.isCorrect };
+  return {
+    text: c.text.trim(),
+    is_correct: c.isCorrect,
+    image:
+      normalizeKqfQuestionImageToDirectoryPath(c.image ?? undefined) ??
+      undefined,
+  };
 }
 
 function trimTags(tags: string[]): string[] {

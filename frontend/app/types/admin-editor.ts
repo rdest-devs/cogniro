@@ -26,6 +26,7 @@ export type KqfQuestionType = (typeof kqfQuestionTypeValues)[number];
 export interface QuizEditorChoiceForm {
   text: string;
   isCorrect: boolean;
+  image?: string | null;
 }
 
 interface QuizEditorQuestionFormBase {
@@ -76,6 +77,7 @@ export interface QuizEditorFormValues {
 export interface AdminQuizApiChoice {
   text: string;
   is_correct: boolean;
+  image?: string | null;
 }
 
 export type AdminQuizApiQuestion =
@@ -158,7 +160,11 @@ export type AdminQuizUpsertQuestionPayload =
       points: number;
       image?: string | null;
       hint?: string | null;
-      choices: Array<{ text: string; is_correct: boolean }>;
+      choices: Array<{
+        text: string;
+        is_correct: boolean;
+        image?: string | null;
+      }>;
     }
   | {
       id?: string;
@@ -168,7 +174,11 @@ export type AdminQuizUpsertQuestionPayload =
       points: number;
       image?: string | null;
       hint?: string | null;
-      choices: Array<{ text: string; is_correct: boolean }>;
+      choices: Array<{
+        text: string;
+        is_correct: boolean;
+        image?: string | null;
+      }>;
     }
   | {
       id?: string;
