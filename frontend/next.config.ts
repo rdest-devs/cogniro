@@ -1,5 +1,28 @@
 import type { NextConfig } from 'next';
 
+// Allow /_next/* HMR resources from the LAN IP when using pnpm dev on a local network.
+// Derived from NEXT_PUBLIC_BACKEND_URL — frontend and backend share the same IP.
+function devOrigins(): string[] {
+  const explicit = process.env.NEXT_PUBLIC_ALLOWED_DEV_ORIGIN;
+  if (explicit) {
+    try {
+      return [new URL(explicit).hostname];
+    } catch {
+      return [explicit];
+    }
+  }
+  const raw = process.env.NEXT_PUBLIC_BACKEND_URL;
+  if (!raw) return [];
+  try {
+    const { hostname } = new URL(raw);
+    return hostname && hostname !== 'localhost' && hostname !== '127.0.0.1'
+      ? [hostname]
+      : [];
+  } catch {
+    return [];
+  }
+}
+
 const nextConfig: NextConfig = {
   /* config options here */
   output: 'export',
@@ -13,6 +36,7 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
   },
+  allowedDevOrigins: devOrigins(),
   transpilePackages: ['next-image-export-optimizer'],
   env: {
     nextImageExportOptimizer_imageFolderPath: 'public/images',
