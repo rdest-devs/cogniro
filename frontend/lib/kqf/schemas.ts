@@ -31,8 +31,9 @@ const defaultKqfMedia: z.infer<typeof kqfMediaSchema> = {
 };
 
 export const kqfChoiceSchema = z.object({
-  text: z.string().min(1),
+  text: z.string().default(''),
   is_correct: z.boolean(),
+  image: nullableJsonString,
 });
 
 function normalizeKqfPoints(value: unknown): number {

@@ -8,7 +8,7 @@ import { TrueFalseQuestion } from '@/app/components/quiz/questions/TrueFalseQues
 import QuestionCard from '@/app/components/quiz/shared/QuestionCard';
 import QuizLayout from '@/app/components/quiz/shared/QuizLayout';
 import type { PlayState } from '@/app/play/storage';
-import type { QuizImage } from '@/app/types';
+import type { QuizChoiceAnswer, QuizImage } from '@/app/types';
 import { resolveKqfPlayImageUrls } from '@/lib/media-url';
 
 function sliderTicks(min: number, max: number): number[] {
@@ -32,6 +32,28 @@ function questionImage(media?: { image?: string }): QuizImage | undefined {
     width: 0,
     height: 0,
     alt: '',
+  };
+}
+
+function choiceAnswer(c: {
+  text: string;
+  image?: string;
+}): string | QuizChoiceAnswer {
+  const raw = c.image?.trim();
+  if (!raw) {
+    return c.text;
+  }
+  const { fullUrl, thumbUrl } = resolveKqfPlayImageUrls(raw);
+  return {
+    text: c.text,
+    image: {
+      assetId: '',
+      url: fullUrl,
+      thumbUrl,
+      width: 0,
+      height: 0,
+      alt: '',
+    },
   };
 }
 
@@ -69,7 +91,7 @@ export function PlayingShell({ state, onChange, onFinish }: Props) {
           time="--:--"
           question={q.text}
           questionImage={qImage}
-          answers={q.choices.map((c) => c.text)}
+          answers={q.choices.map(choiceAnswer)}
           onSubmit={(idx) => advance(idx)}
         />
       )}
@@ -81,7 +103,7 @@ export function PlayingShell({ state, onChange, onFinish }: Props) {
           time="--:--"
           question={q.text}
           questionImage={qImage}
-          answers={q.choices.map((c) => c.text)}
+          answers={q.choices.map(choiceAnswer)}
           onSubmit={(indices) => advance(indices)}
         />
       )}
