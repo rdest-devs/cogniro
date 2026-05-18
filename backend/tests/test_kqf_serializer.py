@@ -116,6 +116,37 @@ def test_serialize_normalizes_asset_image_webp_to_directory_line() -> None:
     assert f"@image: ./media/{aid}/image.webp" not in text
 
 
+def test_serialize_choice_image_directive() -> None:
+    quiz = KqfQuiz(
+        front_matter=KqfFrontMatter(title="T"),
+        questions=[
+            KqfSingleChoice(
+                id="Q1",
+                type="singlechoice",
+                text="Question?",
+                choices=[
+                    KqfChoice(
+                        text="",
+                        is_correct=True,
+                        image="./media/asset_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    ),
+                    KqfChoice(
+                        text="Paris",
+                        is_correct=False,
+                        image="./media/asset_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                    ),
+                ],
+            )
+        ],
+    )
+
+    out = serialize_kqf(quiz)
+    assert "- [x]" in out
+    assert "@image: ./media/asset_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" in out
+    assert "- [ ] Paris" in out
+    assert "@image: ./media/asset_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" in out
+
+
 def test_read_write_kqf_file_roundtrip(tmp_path: Path) -> None:
     path = tmp_path / "quiz.kqf"
     quiz = KqfQuiz(

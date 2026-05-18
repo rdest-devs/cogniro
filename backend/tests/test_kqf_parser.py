@@ -253,3 +253,31 @@ title: T
 """
     with pytest.raises(KqfParseError, match="@slider"):
         parse_kqf(text)
+
+
+def test_parses_choice_image_directive() -> None:
+    text = """
+---
+title: T
+---
+
+## Q1 | singlechoice | 10s | 1pts
+Question?
+
+- [x]
+@image: ./media/asset_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+- [ ] Paris
+@image: ./media/asset_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+"""
+
+    quiz = parse_kqf(text)
+    assert quiz.questions[0].choices[0].text == ""
+    assert (
+        quiz.questions[0].choices[0].image
+        == "./media/asset_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    )
+    assert quiz.questions[0].choices[1].text == "Paris"
+    assert (
+        quiz.questions[0].choices[1].image
+        == "./media/asset_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    )

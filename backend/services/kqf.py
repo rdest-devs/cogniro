@@ -52,7 +52,7 @@ _HEADER_RE = re.compile(
     r"^##\s+(?P<id>[A-Za-z0-9_-]+)\s*\|\s*(?P<type>singlechoice|multichoice|truefalse|slider)"
     r"(?:\s*\|\s*(?P<time>\d+)s)?(?:\s*\|\s*(?P<points>\d+)pts)?\s*$"
 )
-_CHOICE_RE = re.compile(r"^-\s*\[(?P<mark>[ xX])\]\s+(?P<text>.+?)\s*$")
+_CHOICE_RE = re.compile(r"^-\s*\[(?P<mark>[ xX])\](?:\s+(?P<text>.+?))?\s*$")
 _DIRECTIVE_RE = re.compile(r"^@(?P<key>image|video|audio|hint):\s*(?P<value>.+?)\s*$")
 _SLIDER_FIELD_RE = re.compile(
     r"^\s{2,}(?P<key>correct|min|max|step|tolerance|unit):\s*(?P<value>.+?)\s*$"
@@ -162,7 +162,8 @@ def _parse_question_block(block: str, header_line: int):
     }
 
     text_lines: list[str] = []
-    choices: list[KqfChoice] = []
+    raw_choices: list[dict] = []
+    last_raw_choice: dict | None = None
     media_kwargs: dict[str, str] = {}
     slider_fields: dict[str, str] = {}
 
@@ -188,12 +189,9 @@ def _parse_question_block(block: str, header_line: int):
         choice_match = _CHOICE_RE.match(line)
         if choice_match:
             mark = choice_match.group("mark").lower()
-            choices.append(
-                KqfChoice(
-                    text=choice_match.group("text"),
-                    is_correct=mark == "x",
-                )
-            )
+            choice_text = choice_match.group("text") or ""
+            last_raw_choice = {"text": choice_text, "is_correct": mark == "x"}
+            raw_choices.append(last_raw_choice)
             index += 1
             continue
         directive_match = _DIRECTIVE_RE.match(line)
@@ -203,17 +201,24 @@ def _parse_question_block(block: str, header_line: int):
             if key == "image":
                 raw_val = raw_val.rstrip("/")
                 raw_val = _normalize_kqf_stored_image_path(raw_val)
+                if last_raw_choice is not None and not slider_fields:
+                    last_raw_choice["image"] = raw_val
+                    index += 1
+                    continue
             media_kwargs[key] = raw_val
             index += 1
             continue
         if stripped == "":
+            last_raw_choice = None
             index += 1
             continue
-        if not choices and not slider_fields:
+        if not raw_choices and not slider_fields:
             text_lines.append(stripped)
             index += 1
             continue
         index += 1
+
+    choices: list[KqfChoice] = [KqfChoice(**c) for c in raw_choices]
 
     question_text = " ".join(text_lines).strip()
     media = KqfMedia(**media_kwargs) if media_kwargs else KqfMedia()
@@ -329,6 +334,8 @@ def _write_question(buf: io.StringIO, question: object) -> None:
         for choice in question.choices:
             mark = "x" if choice.is_correct else " "
             buf.write(f"- [{mark}] {choice.text}\n")
+            if choice.image:
+                buf.write(f"@image: {_normalize_kqf_stored_image_path(choice.image)}\n")
     elif isinstance(question, KqfTrueFalse):
         buf.write(f"- [{'x' if question.correct else ' '}] True\n")
         buf.write(f"- [{'x' if not question.correct else ' '}] False\n")
