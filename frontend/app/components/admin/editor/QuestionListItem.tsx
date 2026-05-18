@@ -3,6 +3,7 @@
 import { ChevronDown, Loader2, Plus, Trash2, Upload } from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import { useMemo, useState } from 'react';
+import type { Path } from 'react-hook-form';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 
 import StatusBadge from '@/app/components/common/StatusBadge';
@@ -62,7 +63,13 @@ function toUploadErrorMessage(error: unknown): string {
   return 'Nie udało się przesłać obrazu.';
 }
 
-function ChoiceAnswersSection({ questionIndex }: { questionIndex: number }) {
+function ChoiceAnswersSection({
+  questionIndex,
+  editorQuizId,
+}: {
+  questionIndex: number;
+  editorQuizId?: string | null;
+}) {
   const {
     control,
     register,
@@ -83,6 +90,22 @@ function ChoiceAnswersSection({ questionIndex }: { questionIndex: number }) {
     control,
     name: choicesPath,
   });
+
+  const [choiceUploadingKeys, setChoiceUploadingKeys] = useState<Set<string>>(
+    new Set(),
+  );
+  const [choiceUploadError, setChoiceUploadError] = useState<string | null>(
+    null,
+  );
+
+  const addChoiceUploadingKey = (key: string) =>
+    setChoiceUploadingKeys((prev) => new Set(prev).add(key));
+  const removeChoiceUploadingKey = (key: string) =>
+    setChoiceUploadingKeys((prev) => {
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
 
   // Field errors for discriminated question unions are not narrowed by RHF.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -109,6 +132,31 @@ function ChoiceAnswersSection({ questionIndex }: { questionIndex: number }) {
     void trigger(questionPath);
   };
 
+  const handleAnswerImageUpload =
+    (answerIdx: number) => async (event: ChangeEvent<HTMLInputElement>) => {
+      const selectedFile = event.target.files?.[0];
+      event.currentTarget.value = '';
+      if (!selectedFile) return;
+      const key = `answer-${answerIdx}`;
+      setChoiceUploadError(null);
+      addChoiceUploadingKey(key);
+      try {
+        const uploaded = await uploadAdminAsset(selectedFile);
+        const dirPath = normalizeKqfQuestionImageToDirectoryPath(uploaded.url);
+        const imgPath =
+          `${choicesPath}.${answerIdx}.image` as Path<QuizEditorFormValues>;
+        setValue(imgPath, dirPath ?? uploaded.url, {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+        void trigger(questionPath);
+      } catch (error) {
+        setChoiceUploadError(toUploadErrorMessage(error));
+      } finally {
+        removeChoiceUploadingKey(key);
+      }
+    };
+
   return (
     <fieldset className="flex flex-col gap-2">
       <legend className="text-[13px] font-medium text-[var(--text-muted)]">
@@ -123,8 +171,19 @@ function ChoiceAnswersSection({ questionIndex }: { questionIndex: number }) {
         const answerLabelId = `${answerInputId}-label`;
         const answerText = watch(answerTextPath);
         const isCorrect = watch(answerCorrectPath);
+        const answerImage = watch(
+          `${choicesPath}.${answerIndex}.image` as Path<QuizEditorFormValues>,
+        ) as string | null | undefined;
         const answerError =
           questionErrors?.choices?.[answerIndex]?.text?.message;
+
+        const rawAnswerImage =
+          typeof answerImage === 'string' && answerImage.trim()
+            ? answerImage.trim()
+            : null;
+        const answerImageUrls = rawAnswerImage
+          ? resolveEditorQuestionPlayImageUrls(rawAnswerImage, editorQuizId)
+          : null;
 
         return (
           <div key={answerField.id} className="flex items-start gap-2">
@@ -175,6 +234,63 @@ function ChoiceAnswersSection({ questionIndex }: { questionIndex: number }) {
                   {answerError}
                 </span>
               )}
+
+              {/* Answer image upload */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={cn(
+                    'relative inline-flex min-h-[2.25rem] cursor-pointer items-center gap-2 overflow-hidden rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--text-dark)]',
+                    choiceUploadingKeys.has(`answer-${answerIndex}`) &&
+                      'cursor-wait opacity-60',
+                  )}
+                >
+                  <span className="pointer-events-none inline-flex items-center gap-2">
+                    {choiceUploadingKeys.has(`answer-${answerIndex}`) ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Upload size={14} />
+                    )}
+                    Prześlij obraz
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    disabled={choiceUploadingKeys.has(`answer-${answerIndex}`)}
+                    onChange={handleAnswerImageUpload(answerIndex)}
+                    aria-label={`Prześlij obraz odpowiedzi ${answerIndex + 1}`}
+                    className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+                  />
+                </span>
+                {rawAnswerImage && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setValue(
+                        `${choicesPath}.${answerIndex}.image` as Path<QuizEditorFormValues>,
+                        null,
+                        {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        },
+                      );
+                      void trigger(questionPath);
+                    }}
+                    className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--wrong-fg)]"
+                  >
+                    Usuń obraz
+                  </button>
+                )}
+              </div>
+              {answerImageUrls && (
+                <EditorQuestionImagePreview
+                  key={answerImageUrls.fullUrl}
+                  fullUrl={answerImageUrls.fullUrl}
+                  thumbUrl={answerImageUrls.thumbUrl}
+                  alt={`Podgląd obrazu odpowiedzi ${answerIndex + 1}`}
+                  imgClassName="max-h-28 w-full rounded-lg object-contain"
+                  errorMessage={<>Nie udało się załadować obrazu odpowiedzi.</>}
+                />
+              )}
             </div>
 
             <button
@@ -192,7 +308,7 @@ function ChoiceAnswersSection({ questionIndex }: { questionIndex: number }) {
 
       <button
         type="button"
-        onClick={() => append({ text: '', isCorrect: false })}
+        onClick={() => append({ text: '', isCorrect: false, image: null })}
         disabled={fields.length >= maxChoices}
         className="mt-1 flex cursor-pointer items-center gap-2 self-start rounded-xl border border-dashed border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--primary-blue)] disabled:cursor-not-allowed disabled:opacity-40"
       >
@@ -206,6 +322,15 @@ function ChoiceAnswersSection({ questionIndex }: { questionIndex: number }) {
           {questionErrors.choices?.message ??
             questionErrors.choices?.root?.message}
         </span>
+      )}
+
+      {choiceUploadError && (
+        <div
+          role="alert"
+          className="rounded-xl border border-[var(--wrong-fg)] bg-white px-3 py-2 text-xs text-[var(--wrong-fg)]"
+        >
+          {choiceUploadError}
+        </div>
       )}
     </fieldset>
   );
@@ -731,7 +856,10 @@ export default function QuestionListItem({
 
               {(questionType === 'singlechoice' ||
                 questionType === 'multichoice') && (
-                <ChoiceAnswersSection questionIndex={index} />
+                <ChoiceAnswersSection
+                  questionIndex={index}
+                  editorQuizId={editorQuizId}
+                />
               )}
 
               {questionType === 'truefalse' && (

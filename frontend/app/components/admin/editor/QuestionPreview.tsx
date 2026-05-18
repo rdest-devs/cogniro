@@ -22,23 +22,46 @@ const typeLabel: Record<QuizEditorQuestionForm['type'], string> = {
   slider: 'Suwak',
 };
 
-function previewBody(question: QuizEditorQuestionForm) {
+function previewBody(
+  question: QuizEditorQuestionForm,
+  editorQuizId?: string | null,
+) {
   switch (question.type) {
     case 'singlechoice':
     case 'multichoice':
-      return question.choices.map((choice, i) => (
-        <div
-          key={i}
-          className={cn(
-            'rounded-xl border px-3 py-2 text-sm',
-            choice.isCorrect
-              ? 'border-[var(--orange)] bg-[var(--selected-bg)] font-semibold'
-              : 'border-[var(--border)] bg-white',
-          )}
-        >
-          {choice.text.trim() || `Odpowiedź ${i + 1}`}
-        </div>
-      ));
+      return question.choices.map((choice, i) => {
+        const rawChoiceImage =
+          typeof choice.image === 'string' && choice.image.trim()
+            ? choice.image.trim()
+            : null;
+        const choiceImageUrls = rawChoiceImage
+          ? resolveEditorQuestionPlayImageUrls(rawChoiceImage, editorQuizId)
+          : null;
+        return (
+          <div
+            key={i}
+            className={cn(
+              'rounded-xl border px-3 py-2 text-sm',
+              choice.isCorrect
+                ? 'border-[var(--orange)] bg-[var(--selected-bg)] font-semibold'
+                : 'border-[var(--border)] bg-white',
+            )}
+          >
+            {choice.text.trim() ||
+              (!rawChoiceImage ? `Odpowiedź ${i + 1}` : '')}
+            {choiceImageUrls && (
+              <EditorQuestionImagePreview
+                key={choiceImageUrls.fullUrl}
+                fullUrl={choiceImageUrls.fullUrl}
+                thumbUrl={choiceImageUrls.thumbUrl}
+                alt={`Odpowiedź ${i + 1}`}
+                imgClassName="mt-1 max-h-20 w-full rounded object-contain"
+                errorMessage={<>Brak obrazu</>}
+              />
+            )}
+          </div>
+        );
+      });
     case 'truefalse':
       return (
         <p className="text-sm text-[var(--text-dark)]">
@@ -135,7 +158,9 @@ export default function QuestionPreview({
         />
       )}
 
-      <div className="flex flex-col gap-2">{previewBody(question)}</div>
+      <div className="flex flex-col gap-2">
+        {previewBody(question, editorQuizId)}
+      </div>
     </div>
   );
 }
