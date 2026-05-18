@@ -127,3 +127,38 @@ def test_admin_quiz_media_path_traversal_returns_404(
         headers=admin_token_header,
     )
     assert r.status_code == 404
+
+
+def test_admin_asset_media_serves_staging_without_quiz_id(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    """New quiz has no ID yet; editor must preview via /admin/assets/{id}/{file}."""
+    data_dir = Path(os.environ["COGNIRO_DATA_DIR"])
+    staging = data_dir / "storage" / "uploads" / "quiz-assets"
+    staging.mkdir(parents=True, exist_ok=True)
+    aid = f"asset_{'c' * 32}"
+    asset_dir = staging / aid
+    asset_dir.mkdir(parents=True, exist_ok=True)
+    (asset_dir / "image.webp").write_bytes(b"img-data")
+    (asset_dir / "thumb.webp").write_bytes(b"thumb-data")
+    r_img = client.get(f"/admin/assets/{aid}/image.webp", headers=admin_token_header)
+    assert r_img.status_code == 200
+    assert r_img.content == b"img-data"
+    r_thumb = client.get(f"/admin/assets/{aid}/thumb.webp", headers=admin_token_header)
+    assert r_thumb.status_code == 200
+    assert r_thumb.content == b"thumb-data"
+
+
+def test_admin_asset_media_requires_auth(client: TestClient) -> None:
+    r = client.get(f"/admin/assets/asset_{'d' * 32}/image.webp")
+    assert r.status_code == 401
+
+
+def test_admin_asset_media_path_traversal_returns_404(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    r = client.get(
+        "/admin/assets/..%2Fetc%2Fpasswd/image.webp",
+        headers=admin_token_header,
+    )
+    assert r.status_code == 404

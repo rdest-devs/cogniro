@@ -131,6 +131,20 @@ async def admin_asset_upload(
     return await upload_asset(request.app, file)
 
 
+@router.get("/assets/{asset_id}/{filename}")
+async def admin_asset_media(
+    request: Request, asset_id: str, filename: str
+) -> FileResponse:
+    """Serve a staging asset for editor preview before the quiz is saved."""
+    paths = get_storage(request.app)
+    resolved = safe_asset_file_path_under_dir(
+        paths.staging_dir, f"{asset_id}/{filename}"
+    )
+    if resolved is None:
+        raise HTTPException(status_code=404, detail="not_found")
+    return FileResponse(resolved)
+
+
 @router.post("/quiz/{quiz_id}/activate", response_model=ActivateResponse)
 async def admin_quiz_activate(request: Request, quiz_id: str) -> ActivateResponse:
     data = await run_in_threadpool(activate_quiz, request.app, quiz_id)

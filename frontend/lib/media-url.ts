@@ -108,11 +108,14 @@ export function normalizeKqfQuestionImageToDirectoryPath(
   return raw;
 }
 
-/** True when the URL targets admin-only quiz media (Bearer required; plain `<img src>` will not work). */
+/** True when the URL targets admin-only media (Bearer required; plain `<img src>` will not work). */
 export function isAdminQuizMediaFetchUrl(url: string): boolean {
   try {
     const path = new URL(url).pathname;
-    return /\/admin\/quiz\/[^/]+\/media\//.test(path);
+    return (
+      /\/admin\/quiz\/[^/]+\/media\//.test(path) ||
+      /\/admin\/assets\//.test(path)
+    );
   } catch {
     return false;
   }
@@ -138,7 +141,8 @@ export function resolveEditorQuestionImageUrl(
   }
   const id = quizId?.trim();
   if (!id) {
-    return null;
+    // New quiz not yet saved — use the admin staging endpoint (Bearer-protected).
+    return joinApiUrl(BACKEND_BASE_URL, `admin/assets/${tail}`);
   }
   return joinApiUrl(BACKEND_BASE_URL, `admin/quiz/${id}/media/${tail}`);
 }

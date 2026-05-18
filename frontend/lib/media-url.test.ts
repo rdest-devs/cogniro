@@ -70,10 +70,13 @@ describe('normalizeKqfQuestionImageToDirectoryPath', () => {
 });
 
 describe('resolveEditorQuestionPlayImageUrls', () => {
-  it('returns null for ./media/… when quiz id is missing', () => {
-    assert.equal(
+  it('uses admin staging endpoint for ./media/… when quiz id is missing', () => {
+    assert.deepEqual(
       resolveEditorQuestionPlayImageUrls('./media/asset_abc', null),
-      null,
+      {
+        fullUrl: 'http://localhost:8000/admin/assets/asset_abc/image.webp',
+        thumbUrl: 'http://localhost:8000/admin/assets/asset_abc/thumb.webp',
+      },
     );
   });
 
