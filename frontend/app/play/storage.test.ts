@@ -32,12 +32,26 @@ test('storageKey shape', () => {
   assert.equal(storageKey('ABC123', 'Ala'), 'cogniro:play:ABC123:Ala:state');
 });
 
+const validQuiz = {
+  front_matter: { title: 'T', tags: [] as string[], show_answer_review: true },
+  questions: [
+    {
+      id: 'Q1',
+      type: 'truefalse' as const,
+      text: 'Czy?',
+      points: 1,
+      media: {},
+      correct: true,
+    },
+  ],
+};
+
 test('save/load/clear roundtrip', () => {
   const s = fakeStorage();
   const state = {
-    quiz: { front_matter: { title: 'T' }, questions: [] } as never,
+    quiz: validQuiz as never,
     currentQuestionIndex: 1,
-    answers: { Q1: 'a' },
+    answers: { Q1: true } as Record<string, unknown>,
     startedAt: 't',
     submitted: false,
   };
@@ -50,6 +64,16 @@ test('save/load/clear roundtrip', () => {
 test('loadPlayState returns null and clears entry on corrupt JSON', () => {
   const s = fakeStorage();
   s.setItem(storageKey('ABC123', 'Ala'), '{not valid json');
+  assert.equal(loadPlayState(s, 'ABC123', 'Ala'), null);
+  assert.equal(s.getItem(storageKey('ABC123', 'Ala')), null);
+});
+
+test('loadPlayState returns null and clears entry when shape is wrong', () => {
+  const s = fakeStorage();
+  s.setItem(
+    storageKey('ABC123', 'Ala'),
+    JSON.stringify({ quiz: { front_matter: { title: 'T' }, questions: [] } }),
+  );
   assert.equal(loadPlayState(s, 'ABC123', 'Ala'), null);
   assert.equal(s.getItem(storageKey('ABC123', 'Ala')), null);
 });

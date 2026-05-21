@@ -126,8 +126,12 @@ export function ResultDetailView({
           className={adminDangerOutlineButtonClass}
           onClick={async () => {
             if (confirm(`Usunąć plik ${file}?`)) {
-              await deleteResult(date, file);
-              onBack();
+              try {
+                await deleteResult(date, file);
+                onBack();
+              } catch (e) {
+                setErr(String(e));
+              }
             }
           }}
         >

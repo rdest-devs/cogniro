@@ -169,8 +169,12 @@ export function RunningQuizView({
             type="button"
             className={adminDangerOutlineButtonClass}
             onClick={async () => {
-              const r = await stopQuiz(quizId);
-              onStopped(r.date, r.filename);
+              try {
+                const r = await stopQuiz(quizId);
+                onStopped(r.date, r.filename);
+              } catch (e) {
+                setErr(String(e));
+              }
             }}
           >
             <CircleStop size={14} aria-hidden />
@@ -224,8 +228,12 @@ export function RunningQuizView({
                           type="button"
                           className={adminDangerOutlineButtonClass}
                           onClick={async () => {
-                            await blockNickname(quizId, p.nickname);
-                            setSnap(await getSessionSnapshot(quizId));
+                            try {
+                              await blockNickname(quizId, p.nickname);
+                              setSnap(await getSessionSnapshot(quizId));
+                            } catch (e) {
+                              setErr(String(e));
+                            }
                           }}
                         >
                           <Ban size={14} aria-hidden />

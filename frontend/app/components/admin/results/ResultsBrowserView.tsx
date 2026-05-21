@@ -195,8 +195,12 @@ export function ResultsBrowserView({
                           e.stopPropagation();
                           if (confirm(`Usunąć plik ${r.filename}?`)) {
                             void (async () => {
-                              await deleteResult(r.date, r.filename);
-                              await loadAll();
+                              try {
+                                await deleteResult(r.date, r.filename);
+                                await loadAll();
+                              } catch (err) {
+                                setErr(String(err));
+                              }
                             })();
                           }
                         }}

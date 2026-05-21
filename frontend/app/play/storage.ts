@@ -1,4 +1,4 @@
-import type { KqfQuiz } from '@/lib/kqf';
+import { type KqfQuiz, kqfQuizSchema } from '@/lib/kqf';
 
 export type PlayState = {
   quiz: KqfQuiz;
@@ -21,6 +21,19 @@ export function savePlayState(
   s.setItem(storageKey(code, nickname), JSON.stringify(state));
 }
 
+function isPlayStateShape(o: unknown): o is PlayState {
+  if (!o || typeof o !== 'object') return false;
+  const r = o as Record<string, unknown>;
+  return (
+    typeof r.currentQuestionIndex === 'number' &&
+    typeof r.startedAt === 'string' &&
+    typeof r.submitted === 'boolean' &&
+    r.answers !== null &&
+    typeof r.answers === 'object' &&
+    kqfQuizSchema.safeParse(r.quiz).success
+  );
+}
+
 export function loadPlayState(
   s: Storage,
   code: string,
@@ -29,7 +42,12 @@ export function loadPlayState(
   const raw = s.getItem(storageKey(code, nickname));
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as PlayState;
+    const parsed: unknown = JSON.parse(raw);
+    if (!isPlayStateShape(parsed)) {
+      s.removeItem(storageKey(code, nickname));
+      return null;
+    }
+    return parsed;
   } catch {
     s.removeItem(storageKey(code, nickname));
     return null;

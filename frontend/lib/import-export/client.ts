@@ -24,7 +24,9 @@ export async function downloadExport(quizId: string): Promise<void> {
   a.href = objectUrl;
   a.download = name;
   a.click();
-  URL.revokeObjectURL(objectUrl);
+  // Defer revoke so the browser has time to start the download —
+  // revoking synchronously after click() aborts the request in some browsers.
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
 }
 
 export type ImportResult = {

@@ -136,10 +136,14 @@ export function ResultsDayView({
                 className={adminDangerOutlineButtonClass}
                 onClick={async () => {
                   if (confirm(`Usunąć plik ${f.filename}?`)) {
-                    await deleteResult(date, f.filename);
-                    setFiles((prev) =>
-                      prev.filter((x) => x.filename !== f.filename),
-                    );
+                    try {
+                      await deleteResult(date, f.filename);
+                      setFiles((prev) =>
+                        prev.filter((x) => x.filename !== f.filename),
+                      );
+                    } catch (e) {
+                      setErr(String(e));
+                    }
                   }
                 }}
               >
