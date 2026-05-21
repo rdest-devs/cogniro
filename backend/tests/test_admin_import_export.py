@@ -214,3 +214,91 @@ def test_import_rejects_upload_over_zip_limit(
         headers=admin_token_header,
     )
     assert r.status_code == 413
+
+
+def test_import_returns_empty_skipped_on_clean_import(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    quiz_id = _create_quiz(client, admin_token_header)
+    zip_bytes = client.get(
+        f"/admin/quiz/{quiz_id}/export", headers=admin_token_header
+    ).content
+    r = client.post(
+        "/admin/quiz/import",
+        files={"file": ("q.zip", zip_bytes, "application/zip")},
+        headers=admin_token_header,
+    )
+    assert r.status_code == 200
+    assert r.json()["skipped"] == []
+
+
+def test_import_skips_oversize_member_and_keeps_quiz(
+    client: TestClient,
+    admin_token_header: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Per-file size overrun → drop that file, list it in `skipped`, keep quiz."""
+    from main import app
+    from services.storage import get_storage, quiz_dir_for
+
+    quiz_id = _create_quiz(client, admin_token_header)
+    paths = get_storage(app)
+    qd = quiz_dir_for(paths, quiz_id)
+    (qd / "small.txt").write_text("ok\n", encoding="utf-8")
+    (qd / "big.bin").write_bytes(b"x" * 4096)
+
+    zip_bytes = client.get(
+        f"/admin/quiz/{quiz_id}/export", headers=admin_token_header
+    ).content
+
+    monkeypatch.setattr("services.admin_quiz.MAX_QUIZ_IMPORT_MEMBER_BYTES", 512)
+    r = client.post(
+        "/admin/quiz/import",
+        files={"file": ("q.zip", zip_bytes, "application/zip")},
+        headers=admin_token_header,
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["skipped"] == ["big.bin"]
+    new_qd = quiz_dir_for(paths, body["id"])
+    assert (new_qd / "small.txt").read_text(encoding="utf-8") == "ok\n"
+    assert not (new_qd / "big.bin").exists()
+
+
+def test_import_cleans_up_dir_when_extraction_fails_fatally(
+    client: TestClient,
+    admin_token_header: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A fatal extraction error → 413, no dangling quiz directory in `list`."""
+    from fastapi import HTTPException
+    from main import app
+    from services import admin_quiz as svc
+    from services.admin_quiz import list_quizzes
+    from services.storage import get_storage
+
+    quiz_id = _create_quiz(client, admin_token_header)
+    paths = get_storage(app)
+    qd_orig = paths.quizzes_dir / quiz_id
+    (qd_orig / "blob.bin").write_bytes(b"x" * 16)
+
+    zip_bytes = client.get(
+        f"/admin/quiz/{quiz_id}/export", headers=admin_token_header
+    ).content
+
+    def _explode(*args: object, **kwargs: object) -> None:
+        raise HTTPException(
+            status_code=413,
+            detail="Rozpakowana zawartość archiwum przekracza dozwolony limit.",
+        )
+
+    monkeypatch.setattr(svc, "_extract_zip_member_limited", _explode)
+    before = {item.id for item in list_quizzes(app)}
+    r = client.post(
+        "/admin/quiz/import",
+        files={"file": ("q.zip", zip_bytes, "application/zip")},
+        headers=admin_token_header,
+    )
+    assert r.status_code == 413
+    after = {item.id for item in list_quizzes(app)}
+    assert after == before

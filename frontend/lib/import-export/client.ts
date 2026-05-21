@@ -27,7 +27,14 @@ export async function downloadExport(quizId: string): Promise<void> {
   URL.revokeObjectURL(objectUrl);
 }
 
-export async function uploadImport(file: File): Promise<{ id: string }> {
+export type ImportResult = {
+  id: string;
+  /** Archive members dropped because they exceeded the per-file size cap.
+   * The editor renders broken-media placeholders so the user can re-upload them. */
+  skipped: string[];
+};
+
+export async function uploadImport(file: File): Promise<ImportResult> {
   const url = joinApiUrl(BACKEND_BASE_URL, 'admin/quiz/import');
   const token = getStoredAdminToken();
   const fd = new FormData();
@@ -42,5 +49,6 @@ export async function uploadImport(file: File): Promise<{ id: string }> {
   if (!r.ok) {
     throw new Error(`Import nie powiódł się (${r.status})`);
   }
-  return (await r.json()) as { id: string };
+  const body = (await r.json()) as { id: string; skipped?: string[] };
+  return { id: body.id, skipped: body.skipped ?? [] };
 }

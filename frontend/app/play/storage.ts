@@ -27,7 +27,13 @@ export function loadPlayState(
   nickname: string,
 ): PlayState | null {
   const raw = s.getItem(storageKey(code, nickname));
-  return raw ? (JSON.parse(raw) as PlayState) : null;
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as PlayState;
+  } catch {
+    s.removeItem(storageKey(code, nickname));
+    return null;
+  }
 }
 
 export function clearPlayState(

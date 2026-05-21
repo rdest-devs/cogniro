@@ -1,14 +1,15 @@
 # Network Configuration Guide
 
-How to configure the four environment variables that control networking, CORS, and cookie behaviour.
+How to configure the environment variables that control networking, CORS, cookie behaviour, and the public host used for quiz media.
 
-## The four variables
+## Variables
 
 
 | Variable                        | File            | Purpose                                                                                                                                       |
 | ------------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `CORS_ORIGINS`                  | `backend/.env`  | Comma-separated list of browser origins allowed to call the API. Omit to use the default (`localhost:3000` + `127.0.0.1:3000`).               |
 | `FRONTEND_ORIGIN`               | `backend/.env`  | Origin used to build the `/play/?code=PIN` QR link when a quiz is activated. Must be reachable by participants.                               |
+| `MEDIA_ABSOLUTE_ORIGIN`         | `backend/.env`  | Optional override for the host prepended to `/media/{quiz_id}/…` URLs returned by `POST /play/{pin}/join`. Set when participants reach the API through a different host than the request `Host` header (e.g. backend reached via `localhost` in dev but media URLs must be loadable from a tunnel). No trailing slash; omit to use the request's own `{scheme}://{host}`. |
 | `ADMIN_REFRESH_COOKIE_SECURE`   | `backend/.env`  | Set `true` when the site is served over HTTPS. Marks the refresh cookie as `Secure`.                                                          |
 | `ADMIN_REFRESH_COOKIE_SAMESITE` | `backend/.env`  | Set `none` only when the frontend and backend are on **different domains**. `none` requires `Secure=true`.                                    |
 | `NEXT_PUBLIC_BACKEND_URL`       | `frontend/.env` | Where the browser sends API requests. Baked into the JS bundle at `next dev` / `next build` start — restart the dev server after changing it. |

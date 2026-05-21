@@ -50,6 +50,8 @@ async def play_join(pin: str, body: JoinBody, request: Request) -> KqfQuiz:
         )
     except sessions.NicknameTakenError:
         raise HTTPException(status_code=409, detail="nickname_taken") from None
+    except LookupError:
+        raise HTTPException(status_code=404, detail="pin_not_active") from None
 
     paths = get_storage(request.app)
     quiz = await run_in_threadpool(read_quiz_kqf, quiz_dir_for(paths, session.quiz_id))

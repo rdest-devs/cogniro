@@ -197,6 +197,22 @@ Multiple media directives may be used per question. Order determines render prio
 @hint: Think about the Cold War era.
 ```
 
+### Per-choice `@image` (singlechoice / multichoice)
+
+For image-based answer options, `@image:` may also appear **immediately after** a `- [x]` / `- [ ]` line — the directive then attaches to that choice instead of the question. Only `@image` is allowed at the choice level (no `@video`, `@audio`, `@hint`). Path resolution and asset-directory semantics are identical to question-level `@image`.
+
+```markdown
+## Q | singlechoice | 20s | 1000pts
+Which flag is Poland's?
+
+- [x] (option A)
+@image: ./media/asset_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+- [ ] (option B)
+@image: ./media/asset_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+```
+
+A choice may have text **or** image **or** both — the editor enforces that at least one is present.
+
 **Asset directory:** for paths under ``media/`` whose last segment has no file extension, the value is stored as the **folder path** (no ``/image.webp`` suffix in the parsed model). On disk that folder still contains ``image.webp`` and ``thumb.webp`` (admin export layout). Examples:
 
 ```
@@ -227,7 +243,8 @@ points       = /\d+pts/ ;
 question_text = { text_line } ;
 answers      = choice_list | slider_block ;
 choice_list  = { choice_item } ;
-choice_item  = "- [" , marker , "] " , text_line ;
+choice_item  = "- [" , marker , "] " , text_line , [ choice_image ] ;
+choice_image = "@image: " , directive_value , "\n" ;
 marker       = "x" | " " ;
 slider_block = "@slider:\n" , { "  " , slider_field , "\n" } ;
 slider_field = ( "correct" | "min" | "max" | "step" | "tolerance" ) , ": " , number

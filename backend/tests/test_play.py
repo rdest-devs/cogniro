@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 from fastapi.testclient import TestClient
 
 
@@ -63,6 +64,28 @@ def test_join_rewrites_relative_media_url(
     img = r.json()["questions"][0]["media"]["image"]
     assert img.startswith("http://")
     assert f"/media/{quiz_id}/dog.jpg" in img
+
+
+def test_join_returns_404_when_session_stopped_mid_call(
+    client: TestClient,
+    admin_token_header: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Race: PIN is active at lookup but session is stopped before register_participant."""
+    quiz_id = _create_quiz(client, admin_token_header)
+    pin = client.post(
+        f"/admin/quiz/{quiz_id}/activate", headers=admin_token_header
+    ).json()["pin"]
+
+    from services import sessions as sessions_service
+
+    def _raise_lookup(*, pin: str, nickname: str) -> None:
+        raise LookupError("pin_not_active")
+
+    monkeypatch.setattr(sessions_service, "register_participant", _raise_lookup)
+    r = client.post(f"/play/{pin}/join", json={"nickname": "Ala"})
+    assert r.status_code == 404
+    assert r.json()["detail"] == "pin_not_active"
 
 
 def test_duplicate_nickname_returns_409(

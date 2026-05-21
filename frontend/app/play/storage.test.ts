@@ -46,3 +46,10 @@ test('save/load/clear roundtrip', () => {
   clearPlayState(s, 'ABC123', 'Ala');
   assert.equal(loadPlayState(s, 'ABC123', 'Ala'), null);
 });
+
+test('loadPlayState returns null and clears entry on corrupt JSON', () => {
+  const s = fakeStorage();
+  s.setItem(storageKey('ABC123', 'Ala'), '{not valid json');
+  assert.equal(loadPlayState(s, 'ABC123', 'Ala'), null);
+  assert.equal(s.getItem(storageKey('ABC123', 'Ala')), null);
+});

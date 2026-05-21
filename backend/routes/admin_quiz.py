@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from core import settings
 from schemas.admin_quiz import (
     AdminQuizDetailResponse,
+    AdminQuizImportResponse,
     AdminQuizListItemResponse,
     AdminQuizSaveResponse,
     AdminQuizUpsertPayload,
@@ -177,10 +178,13 @@ async def admin_quiz_export(request: Request, quiz_id: str) -> Response:
     )
 
 
-@router.post("/quiz/import", response_model=AdminQuizSaveResponse)
+@router.post("/quiz/import", response_model=AdminQuizImportResponse)
 async def admin_quiz_import(
     request: Request, file: UploadFile = File(...)
-) -> AdminQuizSaveResponse:
+) -> AdminQuizImportResponse:
     raw = await _read_upload_capped(file, settings.MAX_QUIZ_IMPORT_ZIP_BYTES)
     result = await run_in_threadpool(import_quiz_zip, request.app, raw)
-    return AdminQuizSaveResponse(id=result["id"])
+    return AdminQuizImportResponse(
+        id=str(result["id"]),
+        skipped=list(result.get("skipped") or []),  # type: ignore[arg-type]
+    )

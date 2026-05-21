@@ -28,6 +28,15 @@ class AdminQuizSaveResponse(BaseModel):
     id: str = Field(min_length=1)
 
 
+class AdminQuizImportResponse(BaseModel):
+    """Import result. ``skipped`` lists archive members dropped because they
+    exceeded the per-file size cap; the editor renders broken-media placeholders
+    so the user can re-upload them."""
+
+    id: str = Field(min_length=1)
+    skipped: list[str] = Field(default_factory=list)
+
+
 class AdminQuizListItemResponse(BaseModel):
     id: str = Field(min_length=1)
     title: str = ""

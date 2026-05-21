@@ -313,6 +313,16 @@ def _read_zip_entry_bytes_limited(
     return bytes(buf)
 
 
+class _OversizeMember(Exception):
+    """Single zip member exceeded ``MAX_QUIZ_IMPORT_MEMBER_BYTES``.
+
+    Recoverable inside ``import_quiz_zip``: the file is dropped, recorded in
+    ``skipped`` and the editor surfaces a broken-media warning. The total-budget
+    cap is enforced separately and remains a hard 413 (otherwise a zip bomb
+    could stream gigabytes before we abort).
+    """
+
+
 def _extract_zip_member_limited(
     zf: zipfile.ZipFile,
     member: str,
@@ -329,10 +339,7 @@ def _extract_zip_member_limited(
             if not chunk:
                 break
             if written_member + len(chunk) > max_member:
-                raise HTTPException(
-                    status_code=413,
-                    detail="Jeden z plików w archiwum przekracza maksymalny rozmiar.",
-                )
+                raise _OversizeMember(member)
             if len(chunk) > budget[0]:
                 raise HTTPException(
                     status_code=413,
@@ -343,7 +350,15 @@ def _extract_zip_member_limited(
             dst.write(chunk)
 
 
-def import_quiz_zip(app: FastAPI, zip_bytes: bytes) -> dict[str, str]:
+def import_quiz_zip(app: FastAPI, zip_bytes: bytes) -> dict[str, object]:
+    """Import a quiz zip.
+
+    Returns ``{"id": <quiz_id>, "skipped": [<archive member names>]}``. Members
+    that exceed the per-file size cap are dropped and reported in ``skipped``
+    so the editor can show broken-media placeholders the user can replace;
+    other failures (oversized total, malformed zip/kqf, traversal in a name
+    we still chose to write) roll the quiz directory back and re-raise.
+    """
     paths = get_storage(app)
     try:
         with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
@@ -375,25 +390,34 @@ def import_quiz_zip(app: FastAPI, zip_bytes: bytes) -> dict[str, str]:
                 ) from exc
             quiz_id = generate_quiz_id()
             qd = quiz_dir_for(paths, quiz_id)
+            skipped: list[str] = []
             with QUIZ_WRITE_LOCK:
-                qd.mkdir(parents=True, exist_ok=True)
-                write_text_atomic(qd / "quiz.kqf", kqf_text)
-                for name in names:
-                    if not name or name.endswith("/") or name == "quiz.kqf":
-                        continue
-                    target = _safe_import_member_path(qd, name)
-                    if target is None:
-                        continue
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    _extract_zip_member_limited(
-                        zf,
-                        name,
-                        target,
-                        max_member=MAX_QUIZ_IMPORT_MEMBER_BYTES,
-                        budget=budget,
-                    )
-                read_meta_or_rebuild(qd, quiz_id)
-            return {"id": quiz_id}
+                try:
+                    qd.mkdir(parents=True, exist_ok=True)
+                    write_text_atomic(qd / "quiz.kqf", kqf_text)
+                    for name in names:
+                        if not name or name.endswith("/") or name == "quiz.kqf":
+                            continue
+                        target = _safe_import_member_path(qd, name)
+                        if target is None:
+                            continue
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        try:
+                            _extract_zip_member_limited(
+                                zf,
+                                name,
+                                target,
+                                max_member=MAX_QUIZ_IMPORT_MEMBER_BYTES,
+                                budget=budget,
+                            )
+                        except _OversizeMember:
+                            target.unlink(missing_ok=True)
+                            skipped.append(name)
+                    read_meta_or_rebuild(qd, quiz_id)
+                except BaseException:
+                    shutil.rmtree(qd, ignore_errors=True)
+                    raise
+            return {"id": quiz_id, "skipped": skipped}
     except zipfile.BadZipFile as exc:
         raise HTTPException(
             status_code=400, detail="Niepoprawne archiwum ZIP."

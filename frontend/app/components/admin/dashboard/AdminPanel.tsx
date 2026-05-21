@@ -86,7 +86,12 @@ export default function AdminPanel({
               }
               setImportBusy(true);
               try {
-                const { id } = await uploadImport(file);
+                const { id, skipped } = await uploadImport(file);
+                if (skipped.length > 0) {
+                  window.alert(
+                    `Quiz zaimportowany, ale pominięto ${skipped.length} plik(ów) przekraczających limit rozmiaru:\n\n${skipped.join('\n')}\n\nW edytorze pojawią się puste pola — wgraj brakujące zasoby ponownie.`,
+                  );
+                }
                 onImportedQuiz(id);
               } catch (err) {
                 window.alert(
