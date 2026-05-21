@@ -260,8 +260,8 @@ const adminQuizApiSliderSchema = z
     correct: z.coerce.number(),
     min: z.coerce.number(),
     max: z.coerce.number(),
-    step: z.coerce.number().optional(),
-    tolerance: z.coerce.number().optional(),
+    step: z.coerce.number(),
+    tolerance: z.coerce.number(),
     unit: optionalTrimmedString,
   })
   .passthrough();

@@ -122,8 +122,8 @@ export type AdminQuizApiQuestion =
       correct: number;
       min: number;
       max: number;
-      step?: number;
-      tolerance?: number;
+      step: number;
+      tolerance: number;
       unit?: string | null;
     };
 
@@ -201,8 +201,8 @@ export type AdminQuizUpsertQuestionPayload =
       correct: number;
       min: number;
       max: number;
-      step?: number;
-      tolerance?: number;
+      step: number;
+      tolerance: number;
       unit?: string | null;
     };
 

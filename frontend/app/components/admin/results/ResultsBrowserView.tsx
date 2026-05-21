@@ -2,7 +2,7 @@
 
 import { ArrowLeft, RefreshCcw, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import AdminLayout from '@/app/components/admin/layout/AdminLayout';
 import {
@@ -62,11 +62,21 @@ export function ResultsBrowserView({
   onLogout,
 }: Props) {
   const router = useRouter();
+  const isMountedRef = useRef(true);
   const [rows, setRows] = useState<ResultListRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const loadAll = useCallback(async () => {
+    if (!isMountedRef.current) {
+      return;
+    }
     setLoading(true);
     setErr(null);
     try {
@@ -84,12 +94,18 @@ export function ResultsBrowserView({
       flat.sort((a, b) =>
         b.session_started_at.localeCompare(a.session_started_at),
       );
-      setRows(flat);
+      if (isMountedRef.current) {
+        setRows(flat);
+      }
     } catch (e) {
-      setErr(String(e));
-      setRows([]);
+      if (isMountedRef.current) {
+        setErr(String(e));
+        setRows([]);
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   }, [quizFilter]);
 
@@ -199,7 +215,9 @@ export function ResultsBrowserView({
                                 await deleteResult(r.date, r.filename);
                                 await loadAll();
                               } catch (err) {
-                                setErr(String(err));
+                                if (isMountedRef.current) {
+                                  setErr(String(err));
+                                }
                               }
                             })();
                           }

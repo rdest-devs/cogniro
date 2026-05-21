@@ -102,8 +102,8 @@ function mapApiQuestionToForm(q: AdminQuizApiQuestion): QuizEditorQuestionForm {
         correct: q.correct,
         min: q.min,
         max: q.max,
-        step: q.step ?? 1,
-        tolerance: q.tolerance ?? 0,
+        step: q.step,
+        tolerance: q.tolerance,
         unit: q.unit ?? null,
       };
     default: {

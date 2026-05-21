@@ -61,26 +61,44 @@ export function RunningQuizView({
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     void (async () => {
       try {
-        setActivation(await activateQuiz(quizId));
+        const nextActivation = await activateQuiz(quizId);
+        if (!cancelled) {
+          setActivation(nextActivation);
+        }
       } catch (e) {
-        setErr(String(e));
+        if (!cancelled) {
+          setErr(String(e));
+        }
       }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [quizId]);
 
   useEffect(() => {
     if (!activation) {
       return;
     }
+    let cancelled = false;
     void (async () => {
       try {
-        setSnap(await getSessionSnapshot(quizId));
+        const nextSnapshot = await getSessionSnapshot(quizId);
+        if (!cancelled) {
+          setSnap(nextSnapshot);
+        }
       } catch {
-        setSnap(null);
+        if (!cancelled) {
+          setSnap(null);
+        }
       }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [activation, quizId]);
 
   if (err) {

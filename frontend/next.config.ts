@@ -1,14 +1,17 @@
 import type { NextConfig } from 'next';
 
 // Allow /_next/* HMR resources from the LAN IP when using pnpm dev on a local network.
-// Derived from NEXT_PUBLIC_BACKEND_URL — frontend and backend share the same IP.
+// Uses NEXT_PUBLIC_ALLOWED_DEV_ORIGIN first, then falls back to NEXT_PUBLIC_BACKEND_URL.
 function devOrigins(): string[] {
   const explicit = process.env.NEXT_PUBLIC_ALLOWED_DEV_ORIGIN;
   if (explicit) {
     try {
       return [new URL(explicit).hostname];
     } catch {
-      return [explicit];
+      console.warn(
+        '[next.config] Ignoring invalid NEXT_PUBLIC_ALLOWED_DEV_ORIGIN value; expected a URL.',
+      );
+      return [];
     }
   }
   const raw = process.env.NEXT_PUBLIC_BACKEND_URL;

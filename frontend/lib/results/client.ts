@@ -15,12 +15,14 @@ const filesSchema = z.array(
 );
 
 async function fetchJson(path: string, init?: RequestInit): Promise<unknown> {
+  const token = getStoredAdminToken();
+  const headers = new Headers(init?.headers);
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
   const r = await fetch(joinApiUrl(BACKEND_BASE_URL, path), {
     ...init,
-    headers: {
-      ...(init?.headers ?? {}),
-      Authorization: `Bearer ${getStoredAdminToken() ?? ''}`,
-    },
+    headers,
   });
   if (!r.ok) {
     throw new Error(`${r.status}`);

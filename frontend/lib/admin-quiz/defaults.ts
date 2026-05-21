@@ -9,6 +9,7 @@ export function createEmptyChoice(): QuizEditorChoiceForm {
   return {
     text: '',
     isCorrect: false,
+    image: null,
   };
 }
 

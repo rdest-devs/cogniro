@@ -1,7 +1,7 @@
 'use client';
 
 import { Plus, RefreshCcw, Upload } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import StatusBadge from '@/app/components/common/StatusBadge';
 import type { QuizCard } from '@/app/types';
@@ -46,7 +46,14 @@ export default function AdminPanel({
   const canCreateQuiz = Boolean(onCreateQuiz);
   const canOpenQuiz = Boolean(onOpenQuiz);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isMountedRef = useRef(true);
   const [importBusy, setImportBusy] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   return (
     <AdminLayout
@@ -87,6 +94,9 @@ export default function AdminPanel({
               setImportBusy(true);
               try {
                 const { id, skipped } = await uploadImport(file);
+                if (!isMountedRef.current) {
+                  return;
+                }
                 if (skipped.length > 0) {
                   window.alert(
                     `Quiz zaimportowany, ale pominięto ${skipped.length} plik(ów) przekraczających limit rozmiaru:\n\n${skipped.join('\n')}\n\nW edytorze pojawią się puste pola — wgraj brakujące zasoby ponownie.`,
@@ -94,13 +104,17 @@ export default function AdminPanel({
                 }
                 onImportedQuiz(id);
               } catch (err) {
-                window.alert(
-                  err instanceof Error
-                    ? err.message
-                    : 'Import nie powiódł się.',
-                );
+                if (isMountedRef.current) {
+                  window.alert(
+                    err instanceof Error
+                      ? err.message
+                      : 'Import nie powiódł się.',
+                  );
+                }
               } finally {
-                setImportBusy(false);
+                if (isMountedRef.current) {
+                  setImportBusy(false);
+                }
               }
             }}
           />

@@ -21,7 +21,17 @@ export async function joinPlay(
   if (!r.ok) {
     return { ok: false, status: r.status };
   }
-  return { ok: true, quiz: kqfQuizSchema.parse(await r.json()) };
+  let payload: unknown;
+  try {
+    payload = await r.json();
+  } catch {
+    return { ok: false, status: 502 };
+  }
+  const parsed = kqfQuizSchema.safeParse(payload);
+  if (!parsed.success) {
+    return { ok: false, status: 502 };
+  }
+  return { ok: true, quiz: parsed.data };
 }
 
 export async function submitPlay(
