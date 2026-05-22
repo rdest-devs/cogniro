@@ -48,15 +48,18 @@ def generate_pin(*, taken: set[str]) -> str:
 
 
 def is_quiz_running(quiz_id: str) -> bool:
-    return quiz_id in _SESSIONS_BY_QUIZ
+    with _LOCK:
+        return quiz_id in _SESSIONS_BY_QUIZ
 
 
 def lookup_by_quiz(quiz_id: str) -> QuizSession | None:
-    return _SESSIONS_BY_QUIZ.get(quiz_id)
+    with _LOCK:
+        return _SESSIONS_BY_QUIZ.get(quiz_id)
 
 
 def lookup_by_pin(pin: str) -> QuizSession | None:
-    return _SESSIONS_BY_PIN.get(pin)
+    with _LOCK:
+        return _SESSIONS_BY_PIN.get(pin)
 
 
 def start_session(*, quiz_id: str, quiz_title: str) -> QuizSession:
@@ -128,10 +131,11 @@ def record_submission(*, pin: str, nickname: str, score: int) -> Participant:
 
 
 def list_participants(quiz_id: str) -> list[Participant]:
-    session = _SESSIONS_BY_QUIZ.get(quiz_id)
-    if session is None:
-        return []
-    return list(session.participants.values())
+    with _LOCK:
+        session = _SESSIONS_BY_QUIZ.get(quiz_id)
+        if session is None:
+            return []
+        return list(session.participants.values())
 
 
 def stop_session(quiz_id: str) -> QuizSession | None:

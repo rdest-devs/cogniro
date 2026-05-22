@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import time
+from collections import deque
+
 import pytest
 from fastapi.testclient import TestClient
 
+from services import play_rate_limit as prl
 from tests.test_play import _create_quiz
 
 
@@ -79,3 +83,25 @@ def test_separate_ips_tracked_when_trust_forwarded(
         ).status_code
         == 200
     )
+
+
+def test_compact_stale_ips_removes_expired_keys() -> None:
+    now = time.monotonic()
+    cut = now - 60.0
+    with prl._lock:
+        prl._by_ip.clear()
+        prl._by_ip["stale"] = deque([now - 120.0])
+        prl._by_ip["fresh"] = deque([now])
+        prl._compact_stale_ips(cut)
+        assert "stale" not in prl._by_ip
+        assert "fresh" in prl._by_ip
+
+
+def test_max_tracked_ips_evicts_lru(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(prl, "_MAX_TRACKED_IPS", 2)
+    with prl._lock:
+        prl._by_ip.clear()
+        prl._deque_for_ip("first")
+        prl._deque_for_ip("second")
+        prl._deque_for_ip("third")
+        assert list(prl._by_ip.keys()) == ["second", "third"]

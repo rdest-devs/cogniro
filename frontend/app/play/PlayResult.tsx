@@ -55,23 +55,32 @@ export function PlayResult({
     }
     let cancelled = false;
     void (async () => {
-      const r = await submitPlay(code, nickname, score);
-      if (cancelled) {
-        return;
-      }
-      if (r.ok) {
-        acceptedRef.current();
-        return;
-      }
-      if (r.nicknameViolation) {
+      try {
+        const r = await submitPlay(code, nickname, score);
+        if (cancelled) {
+          return;
+        }
+        if (r.ok) {
+          acceptedRef.current();
+          return;
+        }
+        if (r.nicknameViolation) {
+          setSubmitNote(
+            'Twój pseudonim został odrzucony (naruszenie zasad). Wynik nie został zapisany na serwerze.',
+          );
+          return;
+        }
         setSubmitNote(
-          'Twój pseudonim został odrzucony (naruszenie zasad). Wynik nie został zapisany na serwerze.',
+          'Nie udało się zapisać wyniku na serwerze. Twój wynik powyżej jest liczony lokalnie.',
         );
-        return;
+      } catch {
+        if (cancelled) {
+          return;
+        }
+        setSubmitNote(
+          'Błąd sieci. Nie udało się zapisać wyniku na serwerze. Twój wynik powyżej jest liczony lokalnie.',
+        );
       }
-      setSubmitNote(
-        'Nie udało się zapisać wyniku na serwerze. Twój wynik powyżej jest liczony lokalnie.',
-      );
     })();
     return () => {
       cancelled = true;

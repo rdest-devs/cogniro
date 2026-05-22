@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import os
+from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 
 from schemas.kqf import KqfQuiz
 from services import sessions
@@ -16,13 +17,17 @@ from services.storage import get_storage, quiz_dir_for
 
 router = APIRouter(prefix="/play", tags=["play"])
 
+Nickname = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=128)
+]
+
 
 class JoinBody(BaseModel):
-    nickname: str = Field(min_length=1, max_length=40)
+    nickname: Nickname
 
 
 class SubmitBody(BaseModel):
-    nickname: str = Field(min_length=1, max_length=40)
+    nickname: Nickname
     score: int = Field(ge=0)
 
 

@@ -50,7 +50,7 @@ test('save/load/clear roundtrip', () => {
   const s = fakeStorage();
   const state = {
     quiz: validQuiz as never,
-    currentQuestionIndex: 1,
+    currentQuestionIndex: 0,
     answers: { Q1: true } as Record<string, unknown>,
     startedAt: 't',
     submitted: false,
@@ -73,6 +73,22 @@ test('loadPlayState returns null and clears entry when shape is wrong', () => {
   s.setItem(
     storageKey('ABC123', 'Ala'),
     JSON.stringify({ quiz: { front_matter: { title: 'T' }, questions: [] } }),
+  );
+  assert.equal(loadPlayState(s, 'ABC123', 'Ala'), null);
+  assert.equal(s.getItem(storageKey('ABC123', 'Ala')), null);
+});
+
+test('loadPlayState rejects out-of-bounds currentQuestionIndex', () => {
+  const s = fakeStorage();
+  s.setItem(
+    storageKey('ABC123', 'Ala'),
+    JSON.stringify({
+      quiz: validQuiz,
+      currentQuestionIndex: 1,
+      answers: {},
+      startedAt: 't',
+      submitted: false,
+    }),
   );
   assert.equal(loadPlayState(s, 'ABC123', 'Ala'), null);
   assert.equal(s.getItem(storageKey('ABC123', 'Ala')), null);

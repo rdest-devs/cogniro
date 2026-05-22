@@ -88,6 +88,32 @@ def test_join_returns_404_when_session_stopped_mid_call(
     assert r.json()["detail"] == "pin_not_active"
 
 
+def test_join_rejects_whitespace_only_nickname(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    quiz_id = _create_quiz(client, admin_token_header)
+    pin = client.post(
+        f"/admin/quiz/{quiz_id}/activate", headers=admin_token_header
+    ).json()["pin"]
+    r = client.post(f"/play/{pin}/join", json={"nickname": "   "})
+    assert r.status_code == 422
+
+
+def test_join_strips_nickname_whitespace(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    quiz_id = _create_quiz(client, admin_token_header)
+    pin = client.post(
+        f"/admin/quiz/{quiz_id}/activate", headers=admin_token_header
+    ).json()["pin"]
+    assert (
+        client.post(f"/play/{pin}/join", json={"nickname": "  Ala  "}).status_code
+        == 200
+    )
+    r = client.post(f"/play/{pin}/submit", json={"nickname": "Ala", "score": 1})
+    assert r.status_code == 200
+
+
 def test_duplicate_nickname_returns_409(
     client: TestClient, admin_token_header: dict[str, str]
 ) -> None:

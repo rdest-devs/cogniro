@@ -24,13 +24,22 @@ export function savePlayState(
 function isPlayStateShape(o: unknown): o is PlayState {
   if (!o || typeof o !== 'object') return false;
   const r = o as Record<string, unknown>;
+  const quizResult = kqfQuizSchema.safeParse(r.quiz);
+  if (!quizResult.success) return false;
+  const idx = r.currentQuestionIndex;
+  if (
+    typeof idx !== 'number' ||
+    !Number.isInteger(idx) ||
+    idx < 0 ||
+    idx >= quizResult.data.questions.length
+  ) {
+    return false;
+  }
   return (
-    typeof r.currentQuestionIndex === 'number' &&
     typeof r.startedAt === 'string' &&
     typeof r.submitted === 'boolean' &&
     r.answers !== null &&
-    typeof r.answers === 'object' &&
-    kqfQuizSchema.safeParse(r.quiz).success
+    typeof r.answers === 'object'
   );
 }
 

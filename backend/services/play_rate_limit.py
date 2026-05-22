@@ -4,19 +4,49 @@ from __future__ import annotations
 
 import threading
 import time
-from collections import defaultdict, deque
+from collections import OrderedDict, deque
 
 from fastapi import HTTPException, Request
 
 from core import settings
 
 _lock = threading.Lock()
-_by_ip: dict[str, deque[float]] = defaultdict(deque)
+_by_ip: OrderedDict[str, deque[float]] = OrderedDict()
+_last_compact_at = 0.0
+# Cap distinct IPs tracked in memory; evicts LRU keys under spoofing bursts.
+_MAX_TRACKED_IPS = 10_000
+# Full-map sweep interval (stale keys are also dropped on per-IP access).
+_COMPACT_INTERVAL_SEC = 60.0
 
 
 def reset_play_rate_limit_for_tests() -> None:
+    global _last_compact_at
     with _lock:
         _by_ip.clear()
+        _last_compact_at = 0.0
+
+
+def _compact_stale_ips(cut: float) -> None:
+    """Remove IPs whose window has no remaining timestamps."""
+    dead: list[str] = []
+    for ip, dq in _by_ip.items():
+        while dq and dq[0] < cut:
+            dq.popleft()
+        if not dq:
+            dead.append(ip)
+    for ip in dead:
+        del _by_ip[ip]
+
+
+def _deque_for_ip(ip: str) -> deque[float]:
+    if ip in _by_ip:
+        _by_ip.move_to_end(ip)
+        return _by_ip[ip]
+    while len(_by_ip) >= _MAX_TRACKED_IPS:
+        _by_ip.popitem(last=False)
+    dq: deque[float] = deque()
+    _by_ip[ip] = dq
+    return dq
 
 
 def client_ip_for_play(request: Request) -> str:
@@ -47,7 +77,11 @@ def enforce_play_rate_limit(request: Request) -> None:
     cut = now - window
 
     with _lock:
-        dq = _by_ip[ip]
+        global _last_compact_at
+        if now - _last_compact_at >= _COMPACT_INTERVAL_SEC:
+            _compact_stale_ips(cut)
+            _last_compact_at = now
+        dq = _deque_for_ip(ip)
         while dq and dq[0] < cut:
             dq.popleft()
         if len(dq) >= cap:

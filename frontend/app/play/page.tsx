@@ -90,45 +90,54 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
           joinError={joinError}
           onJoin={async (nickname) => {
             setJoinError(null);
-            const r = await joinPlay(stage.code, nickname);
-            if (!r.ok) {
-              if (r.status === 409) {
-                setJoinError('Ten pseudonim jest już zajęty.');
-              } else if (r.status === 404) {
-                setJoinError('Ten quiz nie jest już aktywny. Sprawdź kod.');
-              } else {
-                setJoinError('Nie udało się dołączyć. Spróbuj ponownie.');
+            try {
+              const r = await joinPlay(stage.code, nickname);
+              if (!r.ok) {
+                if (r.status === 409) {
+                  setJoinError('Ten pseudonim jest już zajęty.');
+                } else if (r.status === 404) {
+                  setJoinError('Ten quiz nie jest już aktywny. Sprawdź kod.');
+                } else if (r.status === 429) {
+                  setJoinError(
+                    'Zbyt wiele prób dołączenia. Odczekaj chwilę i spróbuj ponownie.',
+                  );
+                } else {
+                  setJoinError('Nie udało się dołączyć. Spróbuj ponownie.');
+                }
+                return;
               }
+              const persisted =
+                typeof window !== 'undefined'
+                  ? loadPlayState(window.sessionStorage, stage.code, nickname)
+                  : null;
+              let nextState: PlayState;
+              if (persisted && !persisted.submitted) {
+                nextState = { ...persisted, quiz: r.quiz };
+              } else {
+                nextState = {
+                  quiz: r.quiz,
+                  currentQuestionIndex: 0,
+                  answers: {},
+                  startedAt: new Date().toISOString(),
+                  submitted: false,
+                };
+              }
+              savePlayState(
+                window.sessionStorage,
+                stage.code,
+                nickname,
+                nextState,
+              );
+              setStage({
+                name: 'playing',
+                code: stage.code,
+                nickname,
+                state: nextState,
+              });
+            } catch {
+              setJoinError('Nie udało się dołączyć. Spróbuj ponownie.');
               return;
             }
-            const persisted =
-              typeof window !== 'undefined'
-                ? loadPlayState(window.sessionStorage, stage.code, nickname)
-                : null;
-            let nextState: PlayState;
-            if (persisted && !persisted.submitted) {
-              nextState = { ...persisted, quiz: r.quiz };
-            } else {
-              nextState = {
-                quiz: r.quiz,
-                currentQuestionIndex: 0,
-                answers: {},
-                startedAt: new Date().toISOString(),
-                submitted: false,
-              };
-            }
-            savePlayState(
-              window.sessionStorage,
-              stage.code,
-              nickname,
-              nextState,
-            );
-            setStage({
-              name: 'playing',
-              code: stage.code,
-              nickname,
-              state: nextState,
-            });
           }}
         />
       )}

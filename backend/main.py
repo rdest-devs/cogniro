@@ -45,15 +45,17 @@ async def lifespan(application: FastAPI):
     reload_admin_auth_config()
 
     async def _purge_loop() -> None:
+        retention = timedelta(days=RESULT_RETENTION_DAYS)
         try:
-            purge_results_older_than(
+            await asyncio.to_thread(
+                purge_results_older_than,
                 application.state.storage,
-                timedelta(days=RESULT_RETENTION_DAYS),
+                retention,
             )
         except Exception:
             logger.exception("initial results purge failed")
         try:
-            removed = purge_stale_editor_staging(application)
+            removed = await asyncio.to_thread(purge_stale_editor_staging, application)
             if removed:
                 logger.info(
                     "initial editor staging purge removed %d asset directories",
@@ -64,14 +66,17 @@ async def lifespan(application: FastAPI):
         while True:
             await asyncio.sleep(PURGE_INTERVAL_SECONDS)
             try:
-                purge_results_older_than(
+                await asyncio.to_thread(
+                    purge_results_older_than,
                     application.state.storage,
-                    timedelta(days=RESULT_RETENTION_DAYS),
+                    retention,
                 )
             except Exception:
                 logger.exception("results purge iteration failed")
             try:
-                removed = purge_stale_editor_staging(application)
+                removed = await asyncio.to_thread(
+                    purge_stale_editor_staging, application
+                )
                 if removed:
                     logger.info(
                         "editor staging purge removed %d asset directories",

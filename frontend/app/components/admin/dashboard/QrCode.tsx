@@ -7,6 +7,7 @@ type Props = { value: string; size?: number };
 export function QrCode({ value, size = 280 }: Props) {
   const [svg, setSvg] = useState<string | null>(null);
   useEffect(() => {
+    setSvg(null);
     let cancelled = false;
     void (async () => {
       const QRCode = (await import('qrcode')).default;

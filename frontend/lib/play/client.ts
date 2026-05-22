@@ -13,11 +13,16 @@ export async function joinPlay(
   pin: string,
   nickname: string,
 ): Promise<JoinResult> {
-  const r = await fetch(joinApiUrl(BACKEND_BASE_URL, `/play/${pin}/join`), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ nickname }),
-  });
+  let r: Response;
+  try {
+    r = await fetch(joinApiUrl(BACKEND_BASE_URL, `/play/${pin}/join`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nickname }),
+    });
+  } catch {
+    return { ok: false, status: 0 };
+  }
   if (!r.ok) {
     return { ok: false, status: r.status };
   }
@@ -39,11 +44,16 @@ export async function submitPlay(
   nickname: string,
   score: number,
 ): Promise<SubmitResult> {
-  const r = await fetch(joinApiUrl(BACKEND_BASE_URL, `/play/${pin}/submit`), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ nickname, score }),
-  });
+  let r: Response;
+  try {
+    r = await fetch(joinApiUrl(BACKEND_BASE_URL, `/play/${pin}/submit`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nickname, score }),
+    });
+  } catch {
+    return { ok: false, nicknameViolation: false };
+  }
   if (r.ok) {
     return { ok: true };
   }

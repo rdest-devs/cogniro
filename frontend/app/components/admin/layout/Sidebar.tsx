@@ -64,19 +64,6 @@ export default function Sidebar({
             </>
           );
 
-          if (item.id === 'quizy' && quizListHref) {
-            return (
-              <Link
-                key={item.id}
-                href={quizListHref}
-                aria-current={isActive ? 'page' : undefined}
-                className={rowClass}
-              >
-                {inner}
-              </Link>
-            );
-          }
-
           if (isDisabled) {
             return (
               <div
@@ -87,6 +74,19 @@ export default function Sidebar({
               >
                 {inner}
               </div>
+            );
+          }
+
+          if (item.id === 'quizy' && quizListHref) {
+            return (
+              <Link
+                key={item.id}
+                href={quizListHref}
+                aria-current={isActive ? 'page' : undefined}
+                className={rowClass}
+              >
+                {inner}
+              </Link>
             );
           }
 
