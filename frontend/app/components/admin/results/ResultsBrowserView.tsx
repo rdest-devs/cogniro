@@ -191,10 +191,14 @@ export function ResultsBrowserView({
                     className="cursor-pointer border-b border-[var(--border)] last:border-b-0 hover:bg-[var(--selected-bg)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
                     onClick={() => openDetail(r)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        openDetail(r);
+                      if (e.key !== 'Enter' && e.key !== ' ') {
+                        return;
                       }
+                      if (e.currentTarget !== e.target) {
+                        return;
+                      }
+                      e.preventDefault();
+                      openDetail(r);
                     }}
                   >
                     <td className="py-3 pr-4 text-[var(--text-dark)]">

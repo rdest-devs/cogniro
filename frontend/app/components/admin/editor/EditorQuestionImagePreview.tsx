@@ -24,13 +24,14 @@ export default function EditorQuestionImagePreview({
   imgClassName,
   errorMessage,
 }: EditorQuestionImagePreviewProps) {
-  const [loadError, setLoadError] = useState(false);
-  const [previewUrls, setPreviewUrls] = useState({ fullUrl, thumbUrl });
-
-  if (previewUrls.fullUrl !== fullUrl || previewUrls.thumbUrl !== thumbUrl) {
-    setPreviewUrls({ fullUrl, thumbUrl });
-    setLoadError(false);
-  }
+  const [errorUrls, setErrorUrls] = useState<{
+    fullUrl: string;
+    thumbUrl: string;
+  } | null>(null);
+  const loadError =
+    errorUrls !== null &&
+    errorUrls.fullUrl === fullUrl &&
+    errorUrls.thumbUrl === thumbUrl;
 
   if (loadError) {
     return <p className="text-xs text-[var(--text-muted)]">{errorMessage}</p>;
@@ -43,7 +44,7 @@ export default function EditorQuestionImagePreview({
           thumbFetchUrl={thumbUrl}
           fullFetchUrl={fullUrl}
           alt={alt}
-          onLoadError={() => setLoadError(true)}
+          onLoadError={() => setErrorUrls({ fullUrl, thumbUrl })}
           className={imgClassName}
         />
       ) : (
