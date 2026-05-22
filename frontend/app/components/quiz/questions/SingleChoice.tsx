@@ -58,7 +58,9 @@ export default function SingleChoice({
         aria-label={groupAriaLabel}
       >
         {normalizedAnswers.map((answer, i) => {
-          const hasImage = Boolean(answer.image);
+          const imageUrl = answer.image?.url?.trim();
+          const imageThumbUrl = answer.image?.thumbUrl?.trim();
+          const hasImage = Boolean(imageUrl || imageThumbUrl);
           const label = answer.text?.trim() || `Odpowiedź ${i + 1}`;
 
           if (!hasImage) {
@@ -88,12 +90,8 @@ export default function SingleChoice({
               )}
             >
               <ProgressiveQuizImage
-                thumbUrl={answer.image?.thumbUrl}
-                fullUrl={
-                  answer.image?.url?.trim() ||
-                  answer.image?.thumbUrl?.trim() ||
-                  ''
-                }
+                thumbUrl={imageThumbUrl}
+                fullUrl={imageUrl || imageThumbUrl || ''}
                 width={answer.image?.width}
                 height={answer.image?.height}
                 alt={answer.image?.alt || label}

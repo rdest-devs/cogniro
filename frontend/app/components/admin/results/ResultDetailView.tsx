@@ -42,8 +42,12 @@ export function ResultDetailView({
   const [payload, setPayload] = useState<unknown>(null);
   const [err, setErr] = useState<string | null>(null);
 
+  /* Clear stale archive UI before each date/file fetch. */
+  /* eslint-disable react-hooks/set-state-in-effect -- reset payload/err when inputs change */
   useEffect(() => {
     let cancelled = false;
+    setPayload(null);
+    setErr(null);
     void (async () => {
       try {
         const data = await readResult(date, file);
@@ -53,6 +57,7 @@ export function ResultDetailView({
         }
       } catch (e) {
         if (!cancelled) {
+          setPayload(null);
           setErr(String(e));
         }
       }
@@ -61,6 +66,7 @@ export function ResultDetailView({
       cancelled = true;
     };
   }, [date, file]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const parsed = useMemo((): ResultArchivePayload | null => {
     if (payload === null) {

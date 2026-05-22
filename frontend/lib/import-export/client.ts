@@ -36,6 +36,27 @@ export type ImportResult = {
   skipped: string[];
 };
 
+function parseImportResult(body: unknown): ImportResult {
+  if (body === null || typeof body !== 'object' || Array.isArray(body)) {
+    throw new Error('Import zwrócił nieprawidłową odpowiedź.');
+  }
+  const record = body as Record<string, unknown>;
+  const { id, skipped } = record;
+  if (typeof id !== 'string' || id.length === 0) {
+    throw new Error('Import zwrócił nieprawidłowy identyfikator quizu.');
+  }
+  if (skipped === undefined) {
+    return { id, skipped: [] };
+  }
+  if (
+    !Array.isArray(skipped) ||
+    !skipped.every((entry) => typeof entry === 'string')
+  ) {
+    throw new Error('Import zwrócił nieprawidłową listę pominiętych plików.');
+  }
+  return { id, skipped };
+}
+
 export async function uploadImport(file: File): Promise<ImportResult> {
   const url = joinApiUrl(BACKEND_BASE_URL, 'admin/quiz/import');
   const token = getStoredAdminToken();
@@ -51,6 +72,5 @@ export async function uploadImport(file: File): Promise<ImportResult> {
   if (!r.ok) {
     throw new Error(`Import nie powiódł się (${r.status})`);
   }
-  const body = (await r.json()) as { id: string; skipped?: string[] };
-  return { id: body.id, skipped: body.skipped ?? [] };
+  return parseImportResult(await r.json());
 }

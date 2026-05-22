@@ -13,7 +13,7 @@ KQF is a plain-text, Markdown-compatible format for authoring interactive quiz c
 
 A `.kqf` file has two sections:
 
-```
+```text
 [FRONT MATTER]   ← YAML block between --- delimiters
 [QUESTIONS]      ← One or more question blocks separated by ---
 ```
@@ -61,7 +61,7 @@ Questions are separated by `---` (horizontal rules). Each block has:
 
 ## 3. Question Header Syntax
 
-```
+```text
 ## {ID} | {type} | {time} | {points}
 ```
 
@@ -73,7 +73,7 @@ Questions are separated by `---` (horizontal rules). Each block has:
 | `points` | integer + `pts`     | ❌       | `1000pts`; **if omitted (or 0), score weight is 1** |
 
 **Parseable regex:**
-```
+```regex
 ^## (?P<id>[^\|]+)\s*\|\s*(?P<type>[^\|]+)\s*(?:\|\s*(?P<time>\d+s))?\s*(?:\|\s*(?P<points>\d+pts))?$
 ```
 
@@ -177,7 +177,7 @@ In what year did the Berlin Wall fall?
 
 Optional, placed after answer content. Each directive is a single line:
 
-```
+```text
 @{key}: {value}
 ```
 
@@ -191,7 +191,7 @@ Optional, placed after answer content. Each directive is a single line:
 Multiple media directives may be used per question. Order determines render priority.
 
 **Examples:**
-```
+```text
 @image: https://cdn.example.com/map.jpg
 @audio: ./sounds/intro.mp3
 @hint: Think about the Cold War era.
@@ -215,7 +215,7 @@ A choice may have text **or** image **or** both — the editor enforces that at 
 
 **Asset directory:** for paths under ``media/`` whose last segment has no file extension, the value is stored as the **folder path** (no ``/image.webp`` suffix in the parsed model). On disk that folder still contains ``image.webp`` and ``thumb.webp`` (admin export layout). Examples:
 
-```
+```text
 @image: ./media/asset_cc0b501288944523b06ae7d26cf078ab
 @image: ./media/asset_cc0b501288944523b06ae7d26cf078ab/
 ```

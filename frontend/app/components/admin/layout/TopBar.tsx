@@ -3,7 +3,7 @@
 import { ChevronDown, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import ExportedImage from 'next-image-export-optimizer';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 interface TopBarProps {
   userName?: string;
@@ -22,6 +22,7 @@ export default function TopBar({
 }: TopBarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const accountMenuId = useId();
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -55,6 +56,9 @@ export default function TopBar({
         <button
           type="button"
           onClick={() => setMenuOpen((prev) => !prev)}
+          aria-haspopup="true"
+          aria-expanded={menuOpen}
+          aria-controls={accountMenuId}
           className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-black/5"
         >
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--primary-blue)]">
@@ -72,9 +76,14 @@ export default function TopBar({
         </button>
 
         {menuOpen && (
-          <div className="absolute top-full right-0 z-50 mt-1 w-48 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card-bg)] shadow-lg">
+          <div
+            id={accountMenuId}
+            role="menu"
+            className="absolute top-full right-0 z-50 mt-1 w-48 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card-bg)] shadow-lg"
+          >
             <button
               type="button"
+              role="menuitem"
               onClick={() => {
                 setMenuOpen(false);
                 onLogout?.();

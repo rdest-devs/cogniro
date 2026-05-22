@@ -25,6 +25,12 @@ export default function EditorQuestionImagePreview({
   errorMessage,
 }: EditorQuestionImagePreviewProps) {
   const [loadError, setLoadError] = useState(false);
+  const [previewUrls, setPreviewUrls] = useState({ fullUrl, thumbUrl });
+
+  if (previewUrls.fullUrl !== fullUrl || previewUrls.thumbUrl !== thumbUrl) {
+    setPreviewUrls({ fullUrl, thumbUrl });
+    setLoadError(false);
+  }
 
   if (loadError) {
     return <p className="text-xs text-[var(--text-muted)]">{errorMessage}</p>;
