@@ -46,11 +46,17 @@ async def results_read_file(request: Request, date: str, filename: str) -> dict:
 
 @router.delete("/{date}/{filename}", status_code=204)
 async def results_delete_file(request: Request, date: str, filename: str) -> None:
-    await run_in_threadpool(
-        delete_result_file, get_storage(request.app), date, filename
-    )
+    try:
+        await run_in_threadpool(
+            delete_result_file, get_storage(request.app), date, filename
+        )
+    except FileNotFoundError:
+        raise HTTPException(status_code=404) from None
 
 
 @router.delete("/{date}", status_code=204)
 async def results_delete_day(request: Request, date: str) -> None:
-    await run_in_threadpool(delete_result_day, get_storage(request.app), date)
+    try:
+        await run_in_threadpool(delete_result_day, get_storage(request.app), date)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404) from None

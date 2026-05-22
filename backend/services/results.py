@@ -81,6 +81,8 @@ def list_result_dates(paths: StoragePaths) -> list[str]:
 
 
 def list_results_in_day(paths: StoragePaths, date: str) -> list[ResultFileMetadata]:
+    if not _DATE_RE.match(date):
+        return []
     day_dir = paths.results_dir / date
     if not day_dir.is_dir():
         return []

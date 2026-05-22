@@ -79,3 +79,27 @@ def test_delete_file_and_day(
         ).status_code
         == 204
     )
+
+
+def test_invalid_date_returns_404(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    bad_date = "not-a-date"
+    assert (
+        client.get(
+            f"/admin/results/{bad_date}/x.json", headers=admin_token_header
+        ).status_code
+        == 404
+    )
+    assert (
+        client.delete(
+            f"/admin/results/{bad_date}/x.json", headers=admin_token_header
+        ).status_code
+        == 404
+    )
+    assert (
+        client.delete(
+            f"/admin/results/{bad_date}", headers=admin_token_header
+        ).status_code
+        == 404
+    )

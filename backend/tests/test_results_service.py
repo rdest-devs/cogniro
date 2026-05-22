@@ -68,6 +68,26 @@ def test_list_dates_and_files() -> None:
     assert files[0].quiz_id == "quiz_a"
 
 
+def test_list_results_in_day_rejects_invalid_date() -> None:
+    paths = initialize_storage()
+    write_result_file(
+        paths,
+        quiz_id="quiz_a",
+        quiz_title="x",
+        session_started_at=dt.datetime(2026, 5, 17, tzinfo=dt.timezone.utc),
+        session_stopped_at=dt.datetime(2026, 5, 17, 10, 0, 0, tzinfo=dt.timezone.utc),
+        entries=_entries(),
+        max_score=10,
+    )
+    leak = paths.results_dir.parent / "leak.json"
+    leak.write_text(json.dumps({"quiz_id": "leak", "scores": []}), encoding="utf-8")
+    try:
+        assert list_results_in_day(paths, "..") == []
+        assert list_results_in_day(paths, "not-a-date") == []
+    finally:
+        leak.unlink(missing_ok=True)
+
+
 def test_read_and_delete_file_and_day() -> None:
     paths = initialize_storage()
     name = write_result_file(
