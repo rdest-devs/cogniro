@@ -116,3 +116,10 @@ class KqfQuiz(BaseModel):
     questions: list[KqfQuestion] = Field(min_length=1)
 
     model_config = ConfigDict(extra="ignore")
+
+    @model_validator(mode="after")
+    def _validate_unique_question_ids(self) -> "KqfQuiz":
+        ids = [q.id for q in self.questions]
+        if len(ids) != len(set(ids)):
+            raise ValueError("question ids must be unique")
+        return self

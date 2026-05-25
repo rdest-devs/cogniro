@@ -111,7 +111,11 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
                   ? loadPlayState(window.sessionStorage, stage.code, nickname)
                   : null;
               let nextState: PlayState;
-              if (persisted && !persisted.submitted) {
+              if (
+                persisted &&
+                !persisted.submitted &&
+                persisted.currentQuestionIndex < r.quiz.questions.length
+              ) {
                 nextState = { ...persisted, quiz: r.quiz };
               } else {
                 nextState = {

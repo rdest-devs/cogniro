@@ -153,6 +153,13 @@ class AdminQuizUpsertPayload(BaseModel):
             raise ValueError("Tytuł quizu nie może być pusty.")
         return self
 
+    @model_validator(mode="after")
+    def _validate_unique_question_ids(self) -> AdminQuizUpsertPayload:
+        explicit_ids = [q.id.strip() for q in self.questions if q.id and q.id.strip()]
+        if len(explicit_ids) != len(set(explicit_ids)):
+            raise ValueError("Pytania muszą mieć unikalne identyfikatory.")
+        return self
+
 
 # ---------- Read-side detail response ----------
 

@@ -12,7 +12,11 @@ from pydantic import BaseModel, Field, StringConstraints
 from schemas.kqf import KqfQuiz
 from services import sessions
 from services.play_rate_limit import enforce_play_rate_limit
-from services.quiz_files import kqf_with_absolute_media, read_quiz_kqf
+from services.quiz_files import (
+    kqf_with_absolute_media,
+    max_points_from_quiz_dir,
+    read_quiz_kqf,
+)
 from services.storage import get_storage, quiz_dir_for
 
 router = APIRouter(prefix="/play", tags=["play"])
@@ -70,14 +74,24 @@ async def play_submit(pin: str, body: SubmitBody, request: Request) -> dict:
     On nickname violation (unknown nickname or blocked), responds with **400** and
     JSON body ``{"detail": {"error": "nickname_violation", "detail_pl": "..."}}``
     (FastAPI ``HTTPException`` wraps the dict under ``detail``).
+
+    The client-supplied score is clamped to the quiz's max points server-side so
+    a tampered client cannot inflate results.
     """
     enforce_play_rate_limit(request)
+    session = sessions.lookup_by_pin(pin)
+    if session is None:
+        raise HTTPException(status_code=404, detail="pin_not_active")
+    paths = get_storage(request.app)
+    qd = quiz_dir_for(paths, session.quiz_id)
+    max_score = await run_in_threadpool(max_points_from_quiz_dir, qd)
+    score = min(body.score, max_score) if max_score > 0 else body.score
     try:
         await run_in_threadpool(
             sessions.record_submission,
             pin=pin,
             nickname=body.nickname,
-            score=body.score,
+            score=score,
         )
     except LookupError:
         raise HTTPException(status_code=404, detail="pin_not_active") from None

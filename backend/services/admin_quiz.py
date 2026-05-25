@@ -198,6 +198,7 @@ def get_session_snapshot(app: FastAPI, quiz_id: str) -> dict:
     paths = get_storage(app)
     qd = quiz_dir_for(paths, quiz_id)
     max_score = max_points_from_quiz_dir(qd)
+    participants = sessions.list_participants(quiz_id)
     return {
         "pin": session.pin,
         "started_at": session.started_at.isoformat().replace("+00:00", "Z"),
@@ -210,7 +211,7 @@ def get_session_snapshot(app: FastAPI, quiz_id: str) -> dict:
                 "has_submitted": p.submitted_at is not None,
                 "score": p.score,
             }
-            for p in session.participants.values()
+            for p in participants
         ],
     }
 
