@@ -3,7 +3,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, RefreshCcw, Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
+import {
+  FormProvider,
+  type Resolver,
+  useFieldArray,
+  useForm,
+} from 'react-hook-form';
 
 import type { QuizEditorFormValues } from '@/app/types';
 import {
@@ -25,9 +30,12 @@ import QuizSettingsForm from './QuizSettingsForm';
 interface QuizEditorProps {
   mode: 'create' | 'edit';
   quizId?: string | null;
+  /** Admin panel base URL (e.g. `/admin/`) — “My quizzes” link and sidebar. */
+  logoHref?: string;
+  menuActiveItem?: string;
+  onMenuNavigate?: (menuItemId: string) => void;
   onSaved?: (quizId: string) => void;
   onCancel?: () => void;
-  onCreateQuiz?: () => void;
   onLogout?: () => void;
   onSessionInvalid?: () => void;
 }
@@ -55,9 +63,11 @@ function toUiErrorMessage(error: unknown): string {
 export default function QuizEditor({
   mode,
   quizId,
+  logoHref = '/admin/',
+  menuActiveItem = '',
+  onMenuNavigate,
   onSaved,
   onCancel,
-  onCreateQuiz,
   onLogout,
   onSessionInvalid,
 }: QuizEditorProps) {
@@ -67,10 +77,14 @@ export default function QuizEditor({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  /** Raw tags field text — cannot be derived from `tags[]` (e.g. trailing comma is lost). */
+  const [tagsRaw, setTagsRaw] = useState('');
 
   const formMethods = useForm<QuizEditorFormValues>({
     defaultValues: createDefaultQuizFormValues(),
-    resolver: zodResolver(quizEditorFormSchema),
+    resolver: zodResolver(
+      quizEditorFormSchema,
+    ) as Resolver<QuizEditorFormValues>,
     mode: 'onChange',
   });
 
@@ -110,6 +124,7 @@ export default function QuizEditor({
         }
 
         reset(toQuizEditorFormValues(apiQuiz));
+        setTagsRaw(toQuizEditorFormValues(apiQuiz).tags.join(', '));
         setExpandedIndex(0);
       } catch (error) {
         if (!isMounted) {
@@ -140,6 +155,7 @@ export default function QuizEditor({
       setIsLoading(false);
     } else {
       reset(createDefaultQuizFormValues());
+      setTagsRaw('');
       setExpandedIndex(0);
       setLoadError(null);
       setSaveError(null);
@@ -153,15 +169,14 @@ export default function QuizEditor({
   }, [mode, quizId, reset, onSessionInvalid]);
 
   const watchedTitle = watch('title');
-  const watchedTimeLimit = watch('timeLimit');
-  const watchedShuffle = watch('shuffleQuestions');
-  const watchedShowAnswers = watch('showAnswersAfter');
-  const watchedShowLeaderboard = watch('showLeaderboardAfter');
+  const watchedDescription = watch('description') ?? '';
+  const watchedAuthor = watch('author') ?? '';
+  const watchedShowAnswerReview = watch('showAnswerReview');
   const isMissingQuizId = mode === 'edit' && !quizId;
   const hasBlockingLoadError =
     mode === 'edit' && (isMissingQuizId || Boolean(loadError));
 
-  const onSubmit = handleSubmit(async (values) => {
+  const onSubmit = handleSubmit(async (values: QuizEditorFormValues) => {
     if (hasBlockingLoadError) {
       setSaveError(
         loadError ??
@@ -191,10 +206,13 @@ export default function QuizEditor({
 
         response = await updateAdminQuiz(editQuizId, payload);
         const refreshed = await getAdminQuiz(editQuizId);
-        reset(toQuizEditorFormValues(refreshed));
+        const nextValues = toQuizEditorFormValues(refreshed);
+        reset(nextValues);
+        setTagsRaw(nextValues.tags.join(', '));
       } else {
         response = await createAdminQuiz(payload);
         reset(values);
+        setTagsRaw((values.tags ?? []).join(', '));
       }
 
       const resolvedQuizId = response.id ?? quizId;
@@ -236,7 +254,12 @@ export default function QuizEditor({
   };
 
   return (
-    <AdminLayout onCreateQuiz={onCreateQuiz} onLogout={onLogout}>
+    <AdminLayout
+      activeItem={menuActiveItem}
+      logoHref={logoHref}
+      onMenuNavigate={onMenuNavigate}
+      onLogout={onLogout}
+    >
       <FormProvider {...formMethods}>
         <form onSubmit={onSubmit} className="flex min-h-0 w-full flex-1">
           <div className="flex min-h-0 flex-1 flex-col gap-5">
@@ -317,36 +340,40 @@ export default function QuizEditor({
                   shouldValidate: true,
                 })
               }
-              timeLimit={watchedTimeLimit}
-              onTimeLimitChange={(value) =>
-                setValue('timeLimit', value, {
+              description={watchedDescription}
+              onDescriptionChange={(value) =>
+                setValue('description', value || null, {
                   shouldDirty: true,
                   shouldValidate: true,
                 })
               }
-              shuffleQuestions={watchedShuffle}
-              onShuffleQuestionsToggle={() =>
-                setValue('shuffleQuestions', !watchedShuffle, {
+              author={watchedAuthor}
+              onAuthorChange={(value) =>
+                setValue('author', value || null, {
                   shouldDirty: true,
                   shouldValidate: true,
                 })
               }
-              showAnswersAfter={watchedShowAnswers}
-              onShowAnswersAfterToggle={() =>
-                setValue('showAnswersAfter', !watchedShowAnswers, {
+              tagsText={tagsRaw}
+              onTagsTextChange={(value) => {
+                setTagsRaw(value);
+                const tags = value
+                  .split(',')
+                  .map((t) => t.trim())
+                  .filter(Boolean);
+                setValue('tags', tags, {
                   shouldDirty: true,
                   shouldValidate: true,
-                })
-              }
-              showLeaderboardAfter={watchedShowLeaderboard}
-              onShowLeaderboardAfterToggle={() =>
-                setValue('showLeaderboardAfter', !watchedShowLeaderboard, {
+                });
+              }}
+              showAnswerReview={watchedShowAnswerReview}
+              onShowAnswerReviewChange={(value) =>
+                setValue('showAnswerReview', value, {
                   shouldDirty: true,
                   shouldValidate: true,
                 })
               }
               titleError={errors.title?.message}
-              timeLimitError={errors.timeLimit?.message}
             />
 
             <section className="flex flex-col gap-3">
@@ -363,6 +390,7 @@ export default function QuizEditor({
                   <QuestionListItem
                     key={field.id}
                     index={index}
+                    editorQuizId={quizId ?? null}
                     isExpanded={expandedIndex === index}
                     onToggle={() =>
                       setExpandedIndex((prevIndex) =>

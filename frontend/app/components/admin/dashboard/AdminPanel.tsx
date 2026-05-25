@@ -1,9 +1,11 @@
 'use client';
 
-import { Plus, RefreshCcw } from 'lucide-react';
+import { Plus, RefreshCcw, Upload } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 import StatusBadge from '@/app/components/common/StatusBadge';
 import type { QuizCard } from '@/app/types';
+import { uploadImport } from '@/lib/import-export/client';
 
 import AdminLayout from '../layout/AdminLayout';
 import { statusColors } from '../shared/constants';
@@ -12,10 +14,14 @@ interface AdminPanelProps {
   quizzes: QuizCard[];
   isLoading?: boolean;
   error?: string | null;
+  logoHref?: string;
+  menuActiveItem?: string;
+  onMenuNavigate?: (menuItemId: string) => void;
   onCreateQuiz?: () => void;
   onOpenQuiz?: (quizId: string) => void;
   onRefresh?: () => void;
   onLogout?: () => void;
+  onImportedQuiz?: (quizId: string) => void;
 }
 
 function pluralizeQuiz(n: number): string {
@@ -28,16 +34,34 @@ export default function AdminPanel({
   quizzes,
   isLoading = false,
   error,
+  logoHref = '/admin/',
+  menuActiveItem = 'quizy',
+  onMenuNavigate,
   onCreateQuiz,
   onOpenQuiz,
   onRefresh,
   onLogout,
+  onImportedQuiz,
 }: AdminPanelProps) {
   const canCreateQuiz = Boolean(onCreateQuiz);
   const canOpenQuiz = Boolean(onOpenQuiz);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const isMountedRef = useRef(true);
+  const [importBusy, setImportBusy] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   return (
-    <AdminLayout onCreateQuiz={onCreateQuiz} onLogout={onLogout}>
+    <AdminLayout
+      activeItem={menuActiveItem}
+      logoHref={logoHref}
+      onMenuNavigate={onMenuNavigate}
+      onLogout={onLogout}
+    >
       <header className="flex items-center justify-between">
         <h1 className="text-[28px] font-bold text-[var(--text-dark)]">
           Moje Quizy
@@ -56,6 +80,54 @@ export default function AdminPanel({
               Odśwież
             </button>
           )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".zip,application/zip"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              e.target.value = '';
+              if (!file || !onImportedQuiz) {
+                return;
+              }
+              setImportBusy(true);
+              try {
+                const { id, skipped } = await uploadImport(file);
+                if (!isMountedRef.current) {
+                  return;
+                }
+                if (skipped.length > 0) {
+                  window.alert(
+                    `Quiz zaimportowany, ale pominięto ${skipped.length} plik(ów) przekraczających limit rozmiaru:\n\n${skipped.join('\n')}\n\nW edytorze pojawią się puste pola — wgraj brakujące zasoby ponownie.`,
+                  );
+                }
+                onImportedQuiz(id);
+              } catch (err) {
+                if (isMountedRef.current) {
+                  window.alert(
+                    err instanceof Error
+                      ? err.message
+                      : 'Import nie powiódł się.',
+                  );
+                }
+              } finally {
+                if (isMountedRef.current) {
+                  setImportBusy(false);
+                }
+              }
+            }}
+          />
+          <button
+            type="button"
+            disabled={!onImportedQuiz || importBusy}
+            aria-disabled={!onImportedQuiz || importBusy}
+            onClick={() => fileInputRef.current?.click()}
+            className="flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--border)] px-3 py-2 text-xs font-semibold text-[var(--text-dark)] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Upload size={14} />
+            Importuj (.zip)
+          </button>
           <button
             type="button"
             onClick={onCreateQuiz}
@@ -99,17 +171,17 @@ export default function AdminPanel({
                 {quiz.title}
               </h3>
               <p className="text-[13px] text-[var(--text-muted)]">
-                {quiz.questionsCount !== undefined
-                  ? `${quiz.questionsCount} pytań · `
+                {quiz.questionCount} pytań
+                {quiz.lastActivatedAt
+                  ? ` · ostatnio ${quiz.lastActivatedAt}`
                   : ''}
-                {quiz.responsesCount} odpowiedzi
               </p>
               <footer className="flex items-center justify-between">
                 <span className="text-xs text-[var(--text-muted)]">
                   Utworzony: {quiz.createdAt}
                 </span>
                 <span className="text-xs font-semibold text-[var(--primary-blue)]">
-                  Szczegóły
+                  Edytuj
                 </span>
               </footer>
             </button>

@@ -1,9 +1,7 @@
+// DEPRECATED — remove with /legacy when /play is verified.
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-
-import { BACKEND_BASE_URL, joinApiUrl } from '@/lib/backend-url';
-import { resolveMediaUrl } from '@/lib/media-url';
 
 import {
   AttemptReview,
@@ -14,8 +12,11 @@ import {
   RangeSlider,
   SingleChoice,
   SliderQuestion,
-} from '../components/quiz';
-import type { QuizChoiceAnswer, QuizImage, ReviewQuestion } from '../types';
+} from '@/app/components/quiz';
+import { PlayExperienceLayout } from '@/app/play/PlayExperienceLayout';
+import type { QuizChoiceAnswer, QuizImage, ReviewQuestion } from '@/app/types';
+import { BACKEND_BASE_URL, joinApiUrl } from '@/lib/backend-url';
+import { resolveMediaUrl } from '@/lib/media-url';
 
 const quizStartData = {
   title: 'Quiz Informatyczny',
@@ -292,7 +293,7 @@ export default function QuizDemoPage() {
 
     try {
       const response = await fetch(
-        joinApiUrl(BACKEND_BASE_URL, 'quiz/results'),
+        joinApiUrl(BACKEND_BASE_URL, 'legacy/quiz-demo/results'),
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -352,26 +353,30 @@ export default function QuizDemoPage() {
 
   if (isSubmitting) {
     return (
-      <div className="flex h-dvh items-center justify-center bg-[var(--page-bg)] px-6">
-        <p className="text-base font-semibold text-[var(--text-dark)]">
-          Przeliczanie wyniku...
-        </p>
-      </div>
+      <PlayExperienceLayout>
+        <div className="flex flex-1 items-center justify-center px-6">
+          <p className="text-base font-semibold text-[var(--text-dark)]">
+            Przeliczanie wyniku...
+          </p>
+        </div>
+      </PlayExperienceLayout>
     );
   }
 
   if (view === 'start') {
     return (
-      <div className="flex h-dvh items-center justify-center bg-[var(--page-bg)]">
-        <QuizStart
-          {...quizStartData}
-          onStart={() => {
-            setQuestionIndex(0);
-            initialPreloadDoneRef.current = false;
-            setView('question');
-          }}
-        />
-      </div>
+      <PlayExperienceLayout>
+        <div className="flex flex-1 flex-col items-center justify-center">
+          <QuizStart
+            {...quizStartData}
+            onStart={() => {
+              setQuestionIndex(0);
+              initialPreloadDoneRef.current = false;
+              setView('question');
+            }}
+          />
+        </div>
+      </PlayExperienceLayout>
     );
   }
 
@@ -469,23 +474,27 @@ export default function QuizDemoPage() {
 
     if (!questionView) {
       return (
-        <div className="flex h-dvh items-center justify-center bg-[var(--page-bg)] px-6">
-          <p className="text-base font-semibold text-[var(--text-dark)]">
-            Nieobsługiwany typ pytania.
-          </p>
-        </div>
+        <PlayExperienceLayout>
+          <div className="flex flex-1 items-center justify-center px-6">
+            <p className="text-base font-semibold text-[var(--text-dark)]">
+              Nieobsługiwany typ pytania.
+            </p>
+          </div>
+        </PlayExperienceLayout>
       );
     }
 
     return (
-      <div className="relative flex h-dvh justify-center overflow-hidden bg-[var(--page-bg)]">
-        {questionView}
-        {submitError && (
-          <p className="absolute right-3 bottom-3 left-3 rounded-xl border border-[var(--wrong-fg)] bg-[var(--wrong-bg)] px-3 py-2 text-center text-sm font-medium text-[var(--wrong-fg)]">
-            {submitError}
-          </p>
-        )}
-      </div>
+      <PlayExperienceLayout>
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+          {questionView}
+          {submitError && (
+            <p className="absolute right-3 bottom-3 left-3 rounded-xl border border-[var(--wrong-fg)] bg-[var(--wrong-bg)] px-3 py-2 text-center text-sm font-medium text-[var(--wrong-fg)]">
+              {submitError}
+            </p>
+          )}
+        </div>
+      </PlayExperienceLayout>
     );
   }
 
@@ -495,39 +504,47 @@ export default function QuizDemoPage() {
     ).length;
 
     return (
-      <div className="flex h-dvh justify-center overflow-hidden bg-[var(--page-bg)]">
-        <AttemptReview
-          correctCount={correctCount}
-          wrongCount={result.reviewQuestions.length - correctCount}
-          scorePercent={result.scorePercent}
-          questions={result.reviewQuestions}
-          onBack={() => setView('results')}
-        />
-      </div>
+      <PlayExperienceLayout>
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <AttemptReview
+            correctCount={correctCount}
+            wrongCount={result.reviewQuestions.length - correctCount}
+            scorePercent={result.scorePercent}
+            scorePoints={result.scorePoints}
+            scoreTotal={result.scoreMaxPoints}
+            questions={result.reviewQuestions}
+            onBack={() => setView('results')}
+          />
+        </div>
+      </PlayExperienceLayout>
     );
   }
 
   if (view === 'results' && result) {
     return (
-      <div className="flex h-dvh justify-center overflow-hidden bg-[var(--page-bg)]">
-        <QuizResults
-          scorePercent={result.scorePercent}
-          scorePoints={result.scorePoints}
-          scoreTotal={result.scoreMaxPoints}
-          message={result.message}
-          showAnswerReview={result.showAnswerReview}
-          onReview={() => setView('review')}
-          onRetry={resetQuiz}
-        />
-      </div>
+      <PlayExperienceLayout>
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <QuizResults
+            scorePercent={result.scorePercent}
+            scorePoints={result.scorePoints}
+            scoreTotal={result.scoreMaxPoints}
+            message={result.message}
+            showAnswerReview={result.showAnswerReview}
+            onReview={() => setView('review')}
+            onRetry={resetQuiz}
+          />
+        </div>
+      </PlayExperienceLayout>
     );
   }
 
   return (
-    <div className="flex h-dvh items-center justify-center bg-[var(--page-bg)]">
-      <p className="text-base font-semibold text-[var(--text-dark)]">
-        Wystąpił błąd podczas ładowania quizu.
-      </p>
-    </div>
+    <PlayExperienceLayout>
+      <div className="flex flex-1 items-center justify-center px-6">
+        <p className="text-base font-semibold text-[var(--text-dark)]">
+          Wystąpił błąd podczas ładowania quizu.
+        </p>
+      </div>
+    </PlayExperienceLayout>
   );
 }

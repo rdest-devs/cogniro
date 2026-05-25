@@ -16,7 +16,7 @@ export default function ScoreCircle({
           {percent}%
         </span>
         <span className="text-sm font-medium text-[var(--text-muted)]">
-          {correct} / {total}
+          {correct} / {total} pkt
         </span>
       </div>
     </div>

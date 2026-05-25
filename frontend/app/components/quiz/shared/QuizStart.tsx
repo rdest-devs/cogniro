@@ -7,19 +7,24 @@ interface QuizStartProps {
   title: string;
   description: string;
   logoUrl: string;
+  /** Session PIN shown once in the card (e.g. after opening a link with a code). */
+  sessionCode?: string;
   onStart?: (name: string) => void;
+  disabled?: boolean;
 }
 
 export default function QuizStart({
   title,
   description,
   logoUrl,
+  sessionCode,
   onStart,
+  disabled = false,
 }: QuizStartProps) {
   const [name, setName] = useState('');
 
   return (
-    <div className="flex min-h-full w-full max-w-[390px] flex-col bg-[var(--page-bg)]">
+    <div className="flex min-h-full w-full flex-col bg-[var(--page-bg)]">
       <div className="flex flex-1 flex-col items-center justify-center gap-8 px-6 pb-10">
         {/* Logo */}
         <ExportedImage
@@ -38,6 +43,16 @@ export default function QuizStart({
           <p className="text-center text-sm leading-[1.5] text-[var(--text-muted)]">
             {description}
           </p>
+          {sessionCode ? (
+            <div className="flex flex-col gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--page-bg)] px-4 py-3">
+              <span className="text-center text-xs font-medium tracking-wide text-[var(--text-muted)] uppercase">
+                Kod sesji
+              </span>
+              <span className="text-center font-mono text-2xl font-bold tracking-[0.2em] text-[var(--text-dark)]">
+                {sessionCode}
+              </span>
+            </div>
+          ) : null}
         </div>
 
         {/* Name Input */}
@@ -46,12 +61,12 @@ export default function QuizStart({
             htmlFor="quiz-name"
             className="text-sm font-medium text-[var(--text-dark)]"
           >
-            Twoje imię
+            {sessionCode ? 'Pseudonim' : 'Twoje imię'}
           </label>
           <input
             id="quiz-name"
             type="text"
-            placeholder="Wpisz swoje imię..."
+            placeholder={sessionCode ? 'Wpisz pseudonim…' : 'Wpisz swoje imię…'}
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] px-4 text-sm text-[var(--text-dark)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--primary-blue)]"
@@ -60,11 +75,12 @@ export default function QuizStart({
 
         {/* Start Button */}
         <button
+          type="button"
           onClick={() => name.trim() && onStart?.(name.trim())}
-          disabled={!name.trim()}
+          disabled={disabled || !name.trim()}
           className="w-full cursor-pointer rounded-2xl bg-[var(--orange)] px-6 py-4 text-center text-base font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Rozpocznij przygodę
+          {sessionCode ? 'Dołącz do quizu' : 'Rozpocznij przygodę'}
         </button>
       </div>
     </div>

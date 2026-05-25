@@ -29,12 +29,9 @@ export default function QuizResults({
   onReview,
 }: QuizResultsProps) {
   return (
-    <div className="flex h-full w-full max-w-[390px] flex-col bg-[var(--page-bg)]">
+    <div className="flex h-full w-full flex-col bg-[var(--page-bg)]">
       <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 pt-4 pb-8">
         <section className="flex flex-col items-center gap-4">
-          <span className="text-sm font-medium text-[var(--text-muted)]">
-            Twój wynik
-          </span>
           <ScoreCircle
             percent={scorePercent}
             correct={scorePoints}
@@ -46,7 +43,7 @@ export default function QuizResults({
           <div className="w-full max-w-[280px] rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] px-4 py-3">
             <div className="flex items-center justify-between text-sm">
               <span className="font-medium text-[var(--text-muted)]">
-                Punkty
+                Zdobyte / maks.
               </span>
               <span className="font-semibold text-[var(--text-dark)]">
                 {scorePoints} / {scoreTotal}
@@ -83,18 +80,22 @@ export default function QuizResults({
         )}
 
         <nav className="flex flex-col items-center gap-3">
-          <button
-            onClick={onRetry}
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-[var(--primary-blue)] bg-[var(--page-bg)] px-6 py-3.5 transition-opacity hover:opacity-90"
-          >
-            <RotateCcw size={18} className="text-[var(--primary-blue)]" />
-            <span className="text-[15px] font-semibold text-[var(--primary-blue)]">
-              Spróbuj ponownie
-            </span>
-          </button>
-
-          {showAnswerReview && (
+          {onRetry ? (
             <button
+              type="button"
+              onClick={onRetry}
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-[var(--primary-blue)] bg-[var(--page-bg)] px-6 py-3.5 transition-opacity hover:opacity-90"
+            >
+              <RotateCcw size={18} className="text-[var(--primary-blue)]" />
+              <span className="text-[15px] font-semibold text-[var(--primary-blue)]">
+                Spróbuj ponownie
+              </span>
+            </button>
+          ) : null}
+
+          {showAnswerReview && onReview ? (
+            <button
+              type="button"
               onClick={onReview}
               className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-[1.5px] border-[var(--border)] bg-[var(--card-bg)] px-6 py-3.5 transition-opacity hover:opacity-90"
             >
@@ -103,7 +104,7 @@ export default function QuizResults({
                 Przejrzyj odpowiedzi
               </span>
             </button>
-          )}
+          ) : null}
 
           <a
             href="https://www.informatyka.agh.edu.pl"

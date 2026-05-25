@@ -1,7 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { ResultDetailView } from '@/app/components/admin/results/ResultDetailView';
+import { ResultsBrowserView } from '@/app/components/admin/results/ResultsBrowserView';
+import { ResultsDayView } from '@/app/components/admin/results/ResultsDayView';
+import { adminPanelDemo, quizDetailDemo } from '@/app/legacy/data/demo';
 import {
   AdminQuizApiError,
   getAllAdminQuizzes,
@@ -9,7 +14,7 @@ import {
 } from '@/lib/admin-quiz';
 
 import { AdminPanel, QuizDetail, QuizEditor } from '../components/admin';
-import { adminPanelDemo, quizDetailDemo } from '../data/demo';
+import { RunningQuizView } from '../components/admin/dashboard/RunningQuizView';
 import type {
   AdminQuizApiListItem,
   QuizCard,
@@ -17,8 +22,18 @@ import type {
   ResultRow,
 } from '../types';
 
-type AdminScreen = 'panel' | 'detail' | 'editor';
+type AdminView =
+  | 'panel'
+  | 'detail'
+  | 'details'
+  | 'editor'
+  | 'running'
+  | 'results';
 type EditorMode = 'create' | 'edit';
+
+const demoQuizIds = new Set(
+  [...adminPanelDemo.quizzes, ...quizDetailDemo.quizzes].map((q) => q.id),
+);
 
 function formatDate(dateInput: string): string {
   const parsedDate = new Date(dateInput);
@@ -38,22 +53,26 @@ function mapApiQuizToCard(quiz: AdminQuizApiListItem): QuizCard {
   return {
     id: quiz.id,
     title: quiz.title,
-    responsesCount: quiz.participants_count,
+    questionCount: quiz.question_count,
+    lastActivatedAt: quiz.last_activated_at
+      ? formatDate(quiz.last_activated_at)
+      : null,
     createdAt: formatDate(quiz.created_at),
     status: mapApiQuizStatusToLabel(quiz.status) as QuizCard['status'],
   };
 }
 
 function mapApiQuizToInfo(quiz: AdminQuizApiListItem): QuizInfo {
-  const quizInfo: QuizInfo = {
+  return {
     id: quiz.id,
     title: quiz.title,
     status: mapApiQuizStatusToLabel(quiz.status) as QuizInfo['status'],
     date: formatDate(quiz.created_at),
-    participants: quiz.participants_count,
+    questionCount: quiz.question_count,
+    lastActivatedAt: quiz.last_activated_at
+      ? formatDate(quiz.last_activated_at)
+      : null,
   };
-
-  return quizInfo;
 }
 
 function toUiErrorMessage(error: unknown): string {
@@ -73,45 +92,118 @@ export default function AdminDashboard({
   onLogout,
   onSessionInvalid,
 }: AdminDashboardProps) {
-  const [screen, setScreen] = useState<AdminScreen>('panel');
-  const [editorMode, setEditorMode] = useState<EditorMode>('create');
-  const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
+  const router = useRouter();
+  const pathname = usePathname() || '/admin/';
+  const searchParams = useSearchParams();
+
+  const adminBase = pathname.endsWith('/') ? pathname : `${pathname}/`;
+
+  const quizIdFromUrl = searchParams.get('quiz');
+  const wantsNew = searchParams.get('new') === '1';
+  const wantsEdit = searchParams.get('edit') === '1';
+  const viewParam = searchParams.get('view');
+  const resultsDate = searchParams.get('date');
+  const resultsFile = searchParams.get('file');
+  const quizFilter = searchParams.get('quizFilter');
+
+  const adminView: AdminView = useMemo(() => {
+    if (viewParam === 'results') {
+      return 'results';
+    }
+    if (viewParam === 'running' && quizIdFromUrl) {
+      return 'running';
+    }
+    if (viewParam === 'details') {
+      return 'details';
+    }
+    if (wantsNew) {
+      return 'editor';
+    }
+    if (quizIdFromUrl && wantsEdit) {
+      return 'editor';
+    }
+    if (quizIdFromUrl) {
+      return 'detail';
+    }
+    return 'panel';
+  }, [viewParam, wantsNew, quizIdFromUrl, wantsEdit]);
+
+  const editorMode: EditorMode = wantsNew ? 'create' : 'edit';
 
   const [adminQuizzes, setAdminQuizzes] = useState<AdminQuizApiListItem[]>([]);
-  const [adminLoading, setAdminLoading] = useState(false);
+  /** Starts true so `?quiz=` is not rejected before the first API fetch. */
+  const [adminLoading, setAdminLoading] = useState(true);
   const [adminError, setAdminError] = useState<string | null>(null);
 
-  const loadAdminQuizzes = useCallback(async () => {
-    setAdminLoading(true);
-    setAdminError(null);
-
-    try {
-      const quizzes = await getAllAdminQuizzes();
-      setAdminQuizzes(quizzes);
-      setSelectedQuizId((previousId) =>
-        previousId && quizzes.some((quiz) => quiz.id === previousId)
-          ? previousId
-          : (quizzes[0]?.id ?? null),
-      );
-    } catch (error) {
-      if (
-        error instanceof AdminQuizApiError &&
-        (error.status === 401 || error.status === 403)
-      ) {
-        onSessionInvalid();
-        return;
+  const loadAdminQuizzes = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      const silent = opts?.silent ?? false;
+      if (!silent) {
+        setAdminLoading(true);
       }
-      setAdminError(toUiErrorMessage(error));
-      setAdminQuizzes([]);
-      setSelectedQuizId(null);
-    } finally {
-      setAdminLoading(false);
-    }
-  }, [onSessionInvalid]);
+      setAdminError(null);
+
+      try {
+        const quizzes = await getAllAdminQuizzes();
+        setAdminQuizzes(quizzes);
+      } catch (error) {
+        if (
+          error instanceof AdminQuizApiError &&
+          (error.status === 401 || error.status === 403)
+        ) {
+          onSessionInvalid();
+          return;
+        }
+        setAdminError(toUiErrorMessage(error));
+        setAdminQuizzes([]);
+      } finally {
+        if (!silent) {
+          setAdminLoading(false);
+        }
+      }
+    },
+    [onSessionInvalid],
+  );
+
+  const adminListHydratedRef = useRef(false);
+  useEffect(() => {
+    const silent = adminListHydratedRef.current;
+    adminListHydratedRef.current = true;
+    void loadAdminQuizzes(silent ? { silent: true } : undefined);
+  }, [adminView, quizIdFromUrl, loadAdminQuizzes]);
 
   useEffect(() => {
-    void loadAdminQuizzes();
-  }, [loadAdminQuizzes]);
+    if (adminLoading || wantsNew || !quizIdFromUrl) {
+      return;
+    }
+    if (viewParam === 'results') {
+      return;
+    }
+
+    if (adminError) {
+      if (!demoQuizIds.has(quizIdFromUrl)) {
+        router.replace(adminBase);
+      }
+      return;
+    }
+
+    const known =
+      adminQuizzes.length > 0 &&
+      adminQuizzes.some((quiz) => quiz.id === quizIdFromUrl);
+
+    if (adminQuizzes.length === 0 || !known) {
+      router.replace(adminBase);
+    }
+  }, [
+    adminLoading,
+    wantsNew,
+    quizIdFromUrl,
+    adminError,
+    adminQuizzes,
+    router,
+    adminBase,
+    viewParam,
+  ]);
 
   const adminCards = useMemo(
     () =>
@@ -125,13 +217,21 @@ export default function AdminDashboard({
     [adminError, adminQuizzes],
   );
 
-  const resolvedSelectedQuizId = useMemo(
-    () => selectedQuizId ?? adminInfos[0]?.id ?? null,
-    [selectedQuizId, adminInfos],
-  );
+  const resolvedSelectedQuizId = useMemo(() => {
+    if (
+      adminView === 'detail' ||
+      adminView === 'details' ||
+      (adminView === 'editor' && wantsEdit)
+    ) {
+      if (quizIdFromUrl) {
+        return quizIdFromUrl;
+      }
+    }
+    return adminInfos[0]?.id ?? null;
+  }, [adminView, wantsEdit, quizIdFromUrl, adminInfos]);
 
   const resultsForSelectedQuiz = useMemo(() => {
-    if (!resolvedSelectedQuizId) {
+    if (!resolvedSelectedQuizId || !adminError) {
       return [];
     }
 
@@ -141,72 +241,215 @@ export default function AdminDashboard({
     >;
 
     return resultsByQuizId[resolvedSelectedQuizId] ?? [];
-  }, [resolvedSelectedQuizId]);
+  }, [resolvedSelectedQuizId, adminError]);
+
+  const goDetail = useCallback(
+    (quizId: string) => {
+      const qs = new URLSearchParams({ quiz: quizId });
+      router.push(`${adminBase}?${qs.toString()}`);
+    },
+    [router, adminBase],
+  );
+
+  const goEditorNew = useCallback(() => {
+    router.push(`${adminBase}?new=1`);
+  }, [router, adminBase]);
+
+  const goEditorEdit = useCallback(
+    (quizId: string) => {
+      const qs = new URLSearchParams({ quiz: quizId, edit: '1' });
+      router.push(`${adminBase}?${qs.toString()}`);
+    },
+    [router, adminBase],
+  );
 
   const handleCreateQuiz = useCallback(() => {
-    setEditorMode('create');
-    setSelectedQuizId(null);
-    setScreen('editor');
-  }, []);
+    goEditorNew();
+  }, [goEditorNew]);
 
-  const handleOpenQuizDetail = useCallback((quizId: string) => {
-    setSelectedQuizId(quizId);
-    setScreen('detail');
-  }, []);
-
-  const handleEditQuiz = useCallback((quizId: string) => {
-    setEditorMode('edit');
-    setSelectedQuizId(quizId);
-    setScreen('editor');
-  }, []);
+  const handleEditQuiz = useCallback(
+    (quizId: string) => {
+      goEditorEdit(quizId);
+    },
+    [goEditorEdit],
+  );
 
   const handleQuizSaved = useCallback(
     (quizId: string) => {
-      setSelectedQuizId(quizId);
-      setEditorMode('edit');
-      setScreen('detail');
+      const qs = new URLSearchParams({ quiz: quizId });
+      router.push(`${adminBase}?${qs.toString()}`);
       void loadAdminQuizzes();
     },
-    [loadAdminQuizzes],
+    [loadAdminQuizzes, router, adminBase],
+  );
+
+  const handleEditorCancel = useCallback(() => {
+    if (wantsNew) {
+      router.push(adminBase);
+      return;
+    }
+    if (quizIdFromUrl) {
+      const qs = new URLSearchParams({ quiz: quizIdFromUrl });
+      router.push(`${adminBase}?${qs.toString()}`);
+      return;
+    }
+    router.push(adminBase);
+  }, [wantsNew, quizIdFromUrl, router, adminBase]);
+
+  const resultsQs = useCallback(
+    (extra: Record<string, string>) => {
+      const p = new URLSearchParams({ view: 'results', ...extra });
+      if (quizFilter) {
+        p.set('quizFilter', quizFilter);
+      }
+      return p.toString();
+    },
+    [quizFilter],
+  );
+
+  const menuActiveItem = useMemo(() => {
+    if (adminView === 'results') {
+      return 'statystyki';
+    }
+    if (adminView === 'panel') {
+      return 'quizy';
+    }
+    if (adminView === 'detail' || adminView === 'details') {
+      return 'details';
+    }
+    return '';
+  }, [adminView]);
+
+  const handleMenuNavigate = useCallback(
+    (itemId: string) => {
+      if (itemId === 'statystyki') {
+        router.push(`${adminBase}?view=results`);
+        return;
+      }
+      if (itemId === 'details') {
+        router.push(`${adminBase}?view=details`);
+        return;
+      }
+      if (itemId === 'quizy') {
+        router.push(adminBase);
+      }
+    },
+    [router, adminBase],
   );
 
   return (
-    <div className="h-screen w-full bg-[var(--page-bg)]">
-      {screen === 'panel' && (
-        <AdminPanel
-          quizzes={adminCards}
-          isLoading={adminLoading}
-          error={adminError}
-          onRefresh={loadAdminQuizzes}
-          onCreateQuiz={handleCreateQuiz}
-          onOpenQuiz={handleOpenQuizDetail}
-          onLogout={onLogout}
-        />
-      )}
+    <div className="flex h-screen min-h-0 w-full flex-col overflow-hidden bg-[var(--page-bg)]">
+      <div className="flex min-h-0 flex-1 flex-col">
+        {adminView === 'panel' && (
+          <AdminPanel
+            quizzes={adminCards}
+            isLoading={adminLoading}
+            error={adminError}
+            logoHref={adminBase}
+            menuActiveItem={menuActiveItem}
+            onMenuNavigate={handleMenuNavigate}
+            onRefresh={loadAdminQuizzes}
+            onCreateQuiz={handleCreateQuiz}
+            onOpenQuiz={handleEditQuiz}
+            onLogout={onLogout}
+            onImportedQuiz={(quizId) => {
+              void loadAdminQuizzes();
+              goDetail(quizId);
+            }}
+          />
+        )}
 
-      {screen === 'detail' && (
-        <QuizDetail
-          quizzes={adminInfos}
-          selectedQuizId={resolvedSelectedQuizId}
-          resultsForQuiz={resultsForSelectedQuiz}
-          onCreateQuiz={handleCreateQuiz}
-          onSelectQuiz={setSelectedQuizId}
-          onEditQuiz={handleEditQuiz}
-          onLogout={onLogout}
-        />
-      )}
+        {(adminView === 'detail' || adminView === 'details') && (
+          <QuizDetail
+            quizzes={adminInfos}
+            selectedQuizId={resolvedSelectedQuizId}
+            legacyDemoResultsEnabled={Boolean(adminError)}
+            resultsForQuiz={resultsForSelectedQuiz}
+            adminBase={adminBase}
+            menuActiveItem={menuActiveItem}
+            onMenuNavigate={handleMenuNavigate}
+            onSelectQuiz={goEditorEdit}
+            onEditQuiz={handleEditQuiz}
+            onLogout={onLogout}
+            onQuizDeleted={loadAdminQuizzes}
+          />
+        )}
 
-      {screen === 'editor' && (
-        <QuizEditor
-          mode={editorMode}
-          quizId={editorMode === 'edit' ? resolvedSelectedQuizId : null}
-          onSaved={handleQuizSaved}
-          onCancel={() => setScreen(editorMode === 'edit' ? 'detail' : 'panel')}
-          onCreateQuiz={handleCreateQuiz}
-          onLogout={onLogout}
-          onSessionInvalid={onSessionInvalid}
-        />
-      )}
+        {adminView === 'running' && quizIdFromUrl && (
+          <RunningQuizView
+            quizId={quizIdFromUrl}
+            logoHref={adminBase}
+            menuActiveItem={menuActiveItem}
+            onMenuNavigate={handleMenuNavigate}
+            onStopped={(date, file) => {
+              const p = new URLSearchParams({
+                view: 'results',
+                date,
+                file,
+              });
+              router.replace(`${adminBase}?${p.toString()}`);
+            }}
+            onBack={() => {
+              const p = new URLSearchParams({ quiz: quizIdFromUrl });
+              router.push(`${adminBase}?${p.toString()}`);
+            }}
+            onLogout={onLogout}
+          />
+        )}
+
+        {adminView === 'results' &&
+          (resultsDate && resultsFile ? (
+            <ResultDetailView
+              adminBase={adminBase}
+              date={resultsDate}
+              file={resultsFile}
+              quizFilter={quizFilter}
+              menuActiveItem={menuActiveItem}
+              onMenuNavigate={handleMenuNavigate}
+              onBack={() => {
+                router.push(`${adminBase}?${resultsQs({ date: resultsDate })}`);
+              }}
+              onLogout={onLogout}
+            />
+          ) : resultsDate ? (
+            <ResultsDayView
+              adminBase={adminBase}
+              date={resultsDate}
+              quizFilter={quizFilter}
+              menuActiveItem={menuActiveItem}
+              onMenuNavigate={handleMenuNavigate}
+              onBack={() => {
+                router.push(`${adminBase}?${resultsQs({})}`);
+              }}
+              onLogout={onLogout}
+            />
+          ) : (
+            <ResultsBrowserView
+              adminBase={adminBase}
+              quizFilter={quizFilter}
+              menuActiveItem={menuActiveItem}
+              onMenuNavigate={handleMenuNavigate}
+              onBack={() => {
+                router.push(adminBase);
+              }}
+              onLogout={onLogout}
+            />
+          ))}
+
+        {adminView === 'editor' && (
+          <QuizEditor
+            mode={editorMode}
+            quizId={editorMode === 'edit' ? quizIdFromUrl : null}
+            logoHref={adminBase}
+            menuActiveItem={menuActiveItem}
+            onMenuNavigate={handleMenuNavigate}
+            onSaved={handleQuizSaved}
+            onCancel={handleEditorCancel}
+            onLogout={onLogout}
+            onSessionInvalid={onSessionInvalid}
+          />
+        )}
+      </div>
     </div>
   );
 }

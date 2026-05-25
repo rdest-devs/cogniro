@@ -20,7 +20,8 @@ RUN uv sync --frozen --no-dev
 FROM python:3.14-slim AS runner
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1 \
-    PATH="/app/.venv/bin:$PATH"
+    PATH="/app/.venv/bin:$PATH" \
+    COGNIRO_DATA_DIR=/var/lib/cogniro
 RUN adduser --system --group --no-create-home app
 RUN mkdir -p /var/lib/cogniro && chown -R app:app /var/lib/cogniro
 COPY --from=prod-deps --chown=app:app /app/.venv ./.venv

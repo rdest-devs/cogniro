@@ -8,18 +8,21 @@ export type {
 } from './admin';
 export type {
   AdminAssetUploadResponse,
+  AdminQuizApiChoice,
   AdminQuizApiDetails,
   AdminQuizApiListItem,
   AdminQuizApiQuestion,
   AdminQuizSaveResponse,
   AdminQuizUpsertPayload,
+  AdminQuizUpsertQuestionPayload,
+  KqfQuestionType,
   QuizChoiceAnswer,
-  QuizEditorAnswerForm,
+  QuizEditorChoiceForm,
   QuizEditorFormValues,
   QuizEditorQuestionForm,
   QuizImage,
-  QuizQuestionType,
 } from './admin-editor';
+export { kqfQuestionTypeValues } from './admin-editor';
 export type {
   ImageAnswerOption,
   RankingEntry,

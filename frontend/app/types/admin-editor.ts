@@ -1,97 +1,218 @@
-import type { z } from 'zod';
+/** Asset metadata returned by POST /admin/assets (matches backend QuizImage). */
+export interface QuizImage {
+  assetId: string;
+  url: string;
+  thumbUrl: string;
+  width: number;
+  height: number;
+  alt: string;
+}
 
-import type { quizImageSchema } from '@/lib/admin-quiz/schemas';
-
-export const questionTypeValues = ['single_choice', 'multiple_choice'] as const;
-
-export type QuizQuestionType = (typeof questionTypeValues)[number];
-
-export type QuizImage = z.infer<typeof quizImageSchema>;
-
+/** Player-facing choice (demo / review UI); not the admin editor payload shape. */
 export interface QuizChoiceAnswer {
   text?: string;
   image?: QuizImage;
 }
 
-export interface QuizEditorAnswerForm {
-  id?: string;
+export const kqfQuestionTypeValues = [
+  'singlechoice',
+  'multichoice',
+  'truefalse',
+  'slider',
+] as const;
+
+export type KqfQuestionType = (typeof kqfQuestionTypeValues)[number];
+
+export interface QuizEditorChoiceForm {
   text: string;
   isCorrect: boolean;
-  image?: QuizImage;
+  image?: string | null;
 }
 
-export interface QuizEditorQuestionForm {
+interface QuizEditorQuestionFormBase {
   id?: string;
   text: string;
-  type: QuizQuestionType;
-  image?: QuizImage;
-  answers: QuizEditorAnswerForm[];
+  timeS?: number | null;
+  /** Question point weight; missing or 0 in KQF / API is treated as 1. */
+  points: number;
+  /** KQF @image: URL or relative path from upload */
+  image?: string | null;
+  hint?: string | null;
 }
+
+export type QuizEditorQuestionForm =
+  | (QuizEditorQuestionFormBase & {
+      type: 'singlechoice';
+      choices: QuizEditorChoiceForm[];
+    })
+  | (QuizEditorQuestionFormBase & {
+      type: 'multichoice';
+      choices: QuizEditorChoiceForm[];
+    })
+  | (QuizEditorQuestionFormBase & {
+      type: 'truefalse';
+      correct: boolean;
+    })
+  | (QuizEditorQuestionFormBase & {
+      type: 'slider';
+      correct: number;
+      min: number;
+      max: number;
+      step: number;
+      tolerance: number;
+      unit?: string | null;
+    });
 
 export interface QuizEditorFormValues {
   title: string;
-  timeLimit: number | null;
-  shuffleQuestions: boolean;
-  showAnswersAfter: boolean;
-  showLeaderboardAfter: boolean;
+  description?: string | null;
+  author?: string | null;
+  tags: string[];
+  /** After the quiz: whether the player may open the answer review screen. */
+  showAnswerReview: boolean;
   questions: QuizEditorQuestionForm[];
 }
 
-export interface AdminQuizApiAnswer {
-  id?: string | number;
-  text?: string;
-  content?: string;
-  is_correct?: boolean;
-  isCorrect?: boolean;
-  image?: QuizImage;
+/** API choice shape (read / write) — mirrors backend snake_case. */
+export interface AdminQuizApiChoice {
+  text: string;
+  is_correct: boolean;
+  image?: string | null;
 }
 
-export interface AdminQuizApiQuestion {
-  id?: string | number;
-  text?: string;
-  content?: string;
-  type?: string;
-  image?: QuizImage;
-  answers: AdminQuizApiAnswer[];
-}
+export type AdminQuizApiQuestion =
+  | {
+      id?: string;
+      type: 'singlechoice';
+      text: string;
+      time_s?: number | null;
+      points?: number | null;
+      image?: string | null;
+      hint?: string | null;
+      choices: AdminQuizApiChoice[];
+    }
+  | {
+      id?: string;
+      type: 'multichoice';
+      text: string;
+      time_s?: number | null;
+      points?: number | null;
+      image?: string | null;
+      hint?: string | null;
+      choices: AdminQuizApiChoice[];
+    }
+  | {
+      id?: string;
+      type: 'truefalse';
+      text: string;
+      time_s?: number | null;
+      points?: number | null;
+      image?: string | null;
+      hint?: string | null;
+      correct: boolean;
+    }
+  | {
+      id?: string;
+      type: 'slider';
+      text: string;
+      time_s?: number | null;
+      points?: number | null;
+      image?: string | null;
+      hint?: string | null;
+      correct: number;
+      min: number;
+      max: number;
+      step: number;
+      tolerance: number;
+      unit?: string | null;
+    };
 
 export interface AdminQuizApiDetails {
-  id?: string;
+  id: string;
   title: string;
-  status?: string;
-  time_limit: number | null;
-  shuffle_questions: boolean;
-  show_answers_after: boolean;
-  show_leaderboard_after: boolean;
+  description?: string | null;
+  author?: string | null;
+  tags?: string[];
+  /** Defaults to true; stored in KQF front matter. */
+  show_answer_review?: boolean;
+  status?: 'idle' | 'running';
+  created_at: string;
+  updated_at?: string;
+  last_activated_at?: string | null;
   questions: AdminQuizApiQuestion[];
 }
 
 export interface AdminQuizApiListItem {
   id: string;
   title: string;
-  status: string;
+  status: 'idle' | 'running';
   created_at: string;
-  participants_count: number;
+  last_activated_at?: string | null;
+  question_count: number;
 }
+
+export type AdminQuizUpsertQuestionPayload =
+  | {
+      id?: string;
+      type: 'singlechoice';
+      text: string;
+      time_s?: number | null;
+      points: number;
+      image?: string | null;
+      hint?: string | null;
+      choices: Array<{
+        text: string;
+        is_correct: boolean;
+        image?: string | null;
+      }>;
+    }
+  | {
+      id?: string;
+      type: 'multichoice';
+      text: string;
+      time_s?: number | null;
+      points: number;
+      image?: string | null;
+      hint?: string | null;
+      choices: Array<{
+        text: string;
+        is_correct: boolean;
+        image?: string | null;
+      }>;
+    }
+  | {
+      id?: string;
+      type: 'truefalse';
+      text: string;
+      time_s?: number | null;
+      points: number;
+      image?: string | null;
+      hint?: string | null;
+      correct: boolean;
+    }
+  | {
+      id?: string;
+      type: 'slider';
+      text: string;
+      time_s?: number | null;
+      points: number;
+      image?: string | null;
+      hint?: string | null;
+      correct: number;
+      min: number;
+      max: number;
+      step: number;
+      tolerance: number;
+      unit?: string | null;
+    };
 
 export interface AdminQuizUpsertPayload {
   title: string;
-  time_limit: number | null;
-  shuffle_questions: boolean;
-  show_answers_after: boolean;
-  show_leaderboard_after: boolean;
-  questions: Array<{
-    id?: string;
-    text: string;
-    image?: QuizImage;
-    type: QuizQuestionType;
-    answers: Array<{
-      id?: string;
-      text: string;
-      is_correct: boolean;
-      image?: QuizImage;
-    }>;
-  }>;
+  description?: string | null;
+  author?: string | null;
+  tags: string[];
+  show_answer_review?: boolean;
+  questions: AdminQuizUpsertQuestionPayload[];
 }
 
 export interface AdminQuizSaveResponse {

@@ -5,9 +5,9 @@ import { useMemo, useState } from 'react';
 import SubmitButton from '@/app/components/common/SubmitButton';
 import type { QuizChoiceAnswer, QuizImage } from '@/app/types';
 import { cn } from '@/lib/cn';
-import { resolveMediaUrl } from '@/lib/media-url';
 
 import CheckboxAnswer from '../shared/CheckboxAnswer';
+import ProgressiveQuizImage from '../shared/ProgressiveQuizImage';
 import QuestionCard from '../shared/QuestionCard';
 import QuizLayout from '../shared/QuizLayout';
 
@@ -70,7 +70,9 @@ export default function MultipleChoice({
         aria-label={groupAriaLabel}
       >
         {normalizedAnswers.map((answer, i) => {
-          const hasImage = Boolean(answer.image);
+          const imageUrl = answer.image?.url?.trim();
+          const imageThumbUrl = answer.image?.thumbUrl?.trim();
+          const hasImage = Boolean(imageUrl || imageThumbUrl);
           const label = answer.text?.trim() || `Odpowiedź ${i + 1}`;
 
           if (!hasImage) {
@@ -99,14 +101,13 @@ export default function MultipleChoice({
                   : 'border-[var(--border)] bg-[var(--card-bg)]',
               )}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={resolveMediaUrl(answer.image?.thumbUrl ?? '')}
+              <ProgressiveQuizImage
+                thumbUrl={imageThumbUrl}
+                fullUrl={imageUrl || imageThumbUrl || ''}
                 width={answer.image?.width}
                 height={answer.image?.height}
                 alt={answer.image?.alt || label}
                 loading="lazy"
-                decoding="async"
                 className="w-full rounded-xl bg-white object-contain"
               />
               {answer.text?.trim() && (

@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 MAX_IMAGE_PIXELS = 20_000_000
 UPLOAD_CHUNK_SIZE = 64 * 1024
 ALLOWED_UPLOAD_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
-DEFAULT_DATA_DIR = "/var/lib/cogniro"
+
+# `backend/` (directory containing `core/`, `services/`, …): default root for
+# `storage/` and `uploads/` when `COGNIRO_DATA_DIR` is unset.
+_BACKEND_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_DATA_DIR = str(_BACKEND_ROOT)
 DEFAULT_MEDIA_PUBLIC_PREFIX = "/media/quiz-assets"
-QUIZZES_FILENAME = "quizzes.json"
 
 
 def normalize_media_public_prefix(prefix: str | None) -> str:
@@ -18,6 +22,44 @@ def normalize_media_public_prefix(prefix: str | None) -> str:
 
 
 MEDIA_PUBLIC_PREFIX = normalize_media_public_prefix(os.getenv("MEDIA_PUBLIC_PREFIX"))
+
+
+def _env_int(key: str, default: int, min_value: int | None = None) -> int:
+    raw = os.getenv(key)
+    if raw is None:
+        value = default
+    else:
+        try:
+            value = int(raw)
+        except ValueError:
+            value = default
+    if min_value is not None and value < min_value:
+        return min_value
+    return value
+
+
+RESULT_RETENTION_DAYS = _env_int("RESULT_RETENTION_DAYS", 30, min_value=1)
+PURGE_INTERVAL_SECONDS = _env_int("PURGE_INTERVAL_SECONDS", 3600, min_value=60)
+
+# --- Admin quiz ZIP import (POST /admin/quiz/import) ---
+# Upload body hard limit (defense against huge multipart bodies).
+MAX_QUIZ_IMPORT_ZIP_BYTES = _env_int(
+    "MAX_QUIZ_IMPORT_ZIP_BYTES", 100 * 1024 * 1024, min_value=1024
+)
+# Max size of quiz.kqf when read from the archive (text; keep generous).
+MAX_QUIZ_IMPORT_KQF_BYTES = _env_int(
+    "MAX_QUIZ_IMPORT_KQF_BYTES", 2 * 1024 * 1024, min_value=1024
+)
+# Per extracted media member (uncompressed bytes written to disk).
+MAX_QUIZ_IMPORT_MEMBER_BYTES = _env_int(
+    "MAX_QUIZ_IMPORT_MEMBER_BYTES", 100 * 1024 * 1024, min_value=1024
+)
+# Total uncompressed bytes extracted in one import (KQF + all media).
+MAX_QUIZ_IMPORT_UNCOMPRESSED_TOTAL_BYTES = _env_int(
+    "MAX_QUIZ_IMPORT_UNCOMPRESSED_TOTAL_BYTES",
+    300 * 1024 * 1024,
+    min_value=1024,
+)
 
 
 def env_bool(key: str, default: bool) -> bool:
@@ -31,3 +73,13 @@ def env_bool(key: str, default: bool) -> bool:
     if value in {"0", "false", "no", "off"}:
         return False
     return default
+
+
+PLAY_RATE_LIMIT_TRUST_X_FORWARDED_FOR = env_bool(
+    "PLAY_RATE_LIMIT_TRUST_X_FORWARDED_FOR", False
+)
+PLAY_RATE_LIMIT_ENABLED = env_bool("PLAY_RATE_LIMIT_ENABLED", True)
+PLAY_RATE_LIMIT_WINDOW_SEC = _env_int("PLAY_RATE_LIMIT_WINDOW_SEC", 60, min_value=1)
+PLAY_RATE_LIMIT_MAX_REQUESTS = _env_int(
+    "PLAY_RATE_LIMIT_MAX_REQUESTS", 120, min_value=1
+)

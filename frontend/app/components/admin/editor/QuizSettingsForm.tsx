@@ -1,35 +1,31 @@
 'use client';
 
-import { cn } from '@/lib/cn';
-
 interface QuizSettingsFormProps {
   title: string;
   onTitleChange: (value: string) => void;
-  timeLimit: number | null;
-  onTimeLimitChange: (value: number | null) => void;
-  shuffleQuestions: boolean;
-  onShuffleQuestionsToggle: () => void;
-  showAnswersAfter: boolean;
-  onShowAnswersAfterToggle: () => void;
-  showLeaderboardAfter: boolean;
-  onShowLeaderboardAfterToggle: () => void;
   titleError?: string;
-  timeLimitError?: string;
+  description: string;
+  onDescriptionChange: (value: string) => void;
+  author: string;
+  onAuthorChange: (value: string) => void;
+  tagsText: string;
+  onTagsTextChange: (value: string) => void;
+  showAnswerReview: boolean;
+  onShowAnswerReviewChange: (value: boolean) => void;
 }
 
 export default function QuizSettingsForm({
   title,
   onTitleChange,
-  timeLimit,
-  onTimeLimitChange,
-  shuffleQuestions,
-  onShuffleQuestionsToggle,
-  showAnswersAfter,
-  onShowAnswersAfterToggle,
-  showLeaderboardAfter,
-  onShowLeaderboardAfterToggle,
   titleError,
-  timeLimitError,
+  description,
+  onDescriptionChange,
+  author,
+  onAuthorChange,
+  tagsText,
+  onTagsTextChange,
+  showAnswerReview,
+  onShowAnswerReviewChange,
 }: QuizSettingsFormProps) {
   return (
     <section className="flex flex-col gap-4 rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] p-5">
@@ -37,129 +33,72 @@ export default function QuizSettingsForm({
         Ustawienia quizu
       </h2>
 
-      <div className="flex gap-4">
-        <label className="flex flex-1 flex-col gap-1">
-          <span className="text-[13px] font-medium text-[var(--text-muted)]">
-            Tytuł quizu
-          </span>
-          <input
-            value={title}
-            onChange={(event) => onTitleChange(event.target.value)}
-            className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm text-[var(--text-dark)] outline-none focus:border-[var(--primary-blue)]"
-          />
-          {titleError && (
-            <span className="text-xs text-[var(--wrong-fg)]">{titleError}</span>
-          )}
-        </label>
+      <label className="flex flex-col gap-1">
+        <span className="text-[13px] font-medium text-[var(--text-muted)]">
+          Tytuł quizu
+        </span>
+        <input
+          value={title}
+          onChange={(event) => onTitleChange(event.target.value)}
+          className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm text-[var(--text-dark)] outline-none focus:border-[var(--primary-blue)]"
+        />
+        {titleError && (
+          <span className="text-xs text-[var(--wrong-fg)]">{titleError}</span>
+        )}
+      </label>
 
-        <label className="flex w-28 flex-col gap-1">
-          <span className="text-[13px] font-medium text-[var(--text-muted)]">
-            Limit (min)
-          </span>
-          <input
-            type="number"
-            min={1}
-            value={timeLimit ?? ''}
-            onChange={(event) => {
-              const rawValue = event.target.value;
-              const parsed = Number(rawValue);
+      <label className="flex flex-col gap-1">
+        <span className="text-[13px] font-medium text-[var(--text-muted)]">
+          Opis (opcjonalnie)
+        </span>
+        <textarea
+          value={description}
+          onChange={(event) => onDescriptionChange(event.target.value)}
+          rows={3}
+          className="resize-y rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm text-[var(--text-dark)] outline-none focus:border-[var(--primary-blue)]"
+        />
+      </label>
 
-              onTimeLimitChange(
-                rawValue === '' || !Number.isFinite(parsed) || parsed <= 0
-                  ? null
-                  : parsed,
-              );
-            }}
-            placeholder="bez limitu"
-            className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm text-[var(--text-dark)] outline-none focus:border-[var(--primary-blue)]"
-          />
-          {timeLimitError && (
-            <span className="text-xs text-[var(--wrong-fg)]">
-              {timeLimitError}
-            </span>
-          )}
-        </label>
-      </div>
+      <label className="flex flex-col gap-1">
+        <span className="text-[13px] font-medium text-[var(--text-muted)]">
+          Autor (opcjonalnie)
+        </span>
+        <input
+          value={author}
+          onChange={(event) => onAuthorChange(event.target.value)}
+          className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm text-[var(--text-dark)] outline-none focus:border-[var(--primary-blue)]"
+        />
+      </label>
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            role="switch"
-            aria-checked={shuffleQuestions}
-            aria-label="Wymieszaj pytania"
-            onClick={onShuffleQuestionsToggle}
-            className={cn(
-              'flex h-5 w-9 cursor-pointer items-center rounded-full p-0.5 transition-colors',
-              shuffleQuestions
-                ? 'bg-[var(--primary-blue)]'
-                : 'bg-[var(--border)]',
-            )}
-          >
-            <span
-              className={cn(
-                'h-4 w-4 rounded-full bg-white transition-transform',
-                shuffleQuestions && 'translate-x-4',
-              )}
-            />
-          </button>
-          <span aria-hidden="true" className="text-sm text-[var(--text-dark)]">
-            Wymieszaj pytania
-          </span>
-        </div>
+      <label className="flex flex-col gap-1">
+        <span className="text-[13px] font-medium text-[var(--text-muted)]">
+          Tagi (po przecinku, opcjonalnie)
+        </span>
+        <input
+          value={tagsText}
+          onChange={(event) => onTagsTextChange(event.target.value)}
+          placeholder="np. informatyka, egzamin"
+          className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm text-[var(--text-dark)] outline-none focus:border-[var(--primary-blue)]"
+        />
+      </label>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            role="switch"
-            aria-checked={showAnswersAfter}
-            aria-label="Pokaż odpowiedzi po quizie"
-            onClick={onShowAnswersAfterToggle}
-            className={cn(
-              'flex h-5 w-9 cursor-pointer items-center rounded-full p-0.5 transition-colors',
-              showAnswersAfter
-                ? 'bg-[var(--primary-blue)]'
-                : 'bg-[var(--border)]',
-            )}
-          >
-            <span
-              className={cn(
-                'h-4 w-4 rounded-full bg-white transition-transform',
-                showAnswersAfter && 'translate-x-4',
-              )}
-            />
-          </button>
-          <span aria-hidden="true" className="text-sm text-[var(--text-dark)]">
-            Pokaż odpowiedzi po quizie
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[var(--border)] bg-white px-3 py-3">
+        <input
+          type="checkbox"
+          className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--primary-blue)]"
+          checked={showAnswerReview}
+          onChange={(e) => onShowAnswerReviewChange(e.target.checked)}
+        />
+        <span className="text-sm leading-snug text-[var(--text-dark)]">
+          <span className="font-semibold">
+            Pokaż przegląd odpowiedzi po quizie
           </span>
-        </div>
-
-        <div className="flex items-center gap-2 lg:col-span-2">
-          <button
-            type="button"
-            role="switch"
-            aria-checked={showLeaderboardAfter}
-            aria-label="Pokaż ranking po quizie"
-            onClick={onShowLeaderboardAfterToggle}
-            className={cn(
-              'flex h-5 w-9 cursor-pointer items-center rounded-full p-0.5 transition-colors',
-              showLeaderboardAfter
-                ? 'bg-[var(--primary-blue)]'
-                : 'bg-[var(--border)]',
-            )}
-          >
-            <span
-              className={cn(
-                'h-4 w-4 rounded-full bg-white transition-transform',
-                showLeaderboardAfter && 'translate-x-4',
-              )}
-            />
-          </button>
-          <span aria-hidden="true" className="text-sm text-[var(--text-dark)]">
-            Pokaż ranking po quizie
+          <span className="mt-0.5 block text-[13px] font-normal text-[var(--text-muted)]">
+            Wyłączenie ukryje uczestnikom przycisk „Przejrzyj odpowiedzi” na
+            ekranie wyniku.
           </span>
-        </div>
-      </div>
+        </span>
+      </label>
     </section>
   );
 }

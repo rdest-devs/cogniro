@@ -8,6 +8,7 @@ dependencies = [
     "bcrypt>=5.0.0",
     "fastapi>=0.135.3",
     "pillow>=12.2.0",
+    "python-frontmatter>=1.1.0",
     "python-multipart>=0.0.27",
     "pydantic>=2.12.5",
     "pyjwt>=2.12.1",

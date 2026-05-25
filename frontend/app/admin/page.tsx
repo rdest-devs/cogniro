@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 
 import {
   clearStoredAdminToken,
@@ -57,9 +57,17 @@ export default function AdminPage() {
   }
 
   return (
-    <AdminDashboard
-      onLogout={handleLogout}
-      onSessionInvalid={handleSessionInvalid}
-    />
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center bg-[var(--page-bg)]">
+          <p className="text-sm text-[var(--text-muted)]">Ładowanie…</p>
+        </div>
+      }
+    >
+      <AdminDashboard
+        onLogout={handleLogout}
+        onSessionInvalid={handleSessionInvalid}
+      />
+    </Suspense>
   );
 }

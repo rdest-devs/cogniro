@@ -1,4 +1,4 @@
-/** Same backend origin as quiz-demo and admin quiz API; inlined at build time via NEXT_PUBLIC_. */
+/** Backend API origin (`NEXT_PUBLIC_BACKEND_URL` or localhost default). */
 export function resolveBackendBaseUrl(): string {
   return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 }

@@ -1,3 +1,5 @@
+// DEPRECATED — remove with /legacy when /play is verified.
+
 import type {
   ImageAnswerOption,
   Question,
@@ -115,6 +117,8 @@ export const attemptReviewDemo = {
   correctCount: 1,
   wrongCount: 1,
   scorePercent: 50,
+  scorePoints: 5,
+  scoreTotal: 10,
   questions: [
     {
       number: 1,
@@ -150,32 +154,32 @@ export const adminPanelDemo = {
     {
       id: '1',
       title: 'Quiz z Informatyki',
-      questionsCount: 10,
-      responsesCount: 48,
+      questionCount: 10,
+      lastActivatedAt: '12 maj 2026',
       createdAt: '12 mar 2026',
       status: 'Aktywny',
     },
     {
       id: '2',
       title: 'Algorytmy i Struktury Danych',
-      questionsCount: 15,
-      responsesCount: 32,
+      questionCount: 15,
+      lastActivatedAt: '6 maj 2026',
       createdAt: '6 mar 2026',
       status: 'Aktywny',
     },
     {
       id: '3',
       title: 'Bazy Danych SQL',
-      questionsCount: 8,
-      responsesCount: 0,
+      questionCount: 8,
+      lastActivatedAt: null,
       createdAt: '15 mar 2026',
       status: 'Stare',
     },
     {
       id: '4',
       title: 'Sieci Komputerowe',
-      questionsCount: 12,
-      responsesCount: 65,
+      questionCount: 12,
+      lastActivatedAt: '1 maj 2026',
       createdAt: '1 mar 2026',
       status: 'Zakończony',
     },
@@ -189,7 +193,8 @@ export const quizDetailDemo = {
       title: 'Quiz z Informatyki',
       status: 'Aktywny',
       date: '12 mar 2026',
-      participants: 48,
+      questionCount: 10,
+      lastActivatedAt: '12 maj 2026',
       avgScore: 76,
     },
     {
@@ -197,7 +202,8 @@ export const quizDetailDemo = {
       title: 'Algorytmy i Struktury Danych',
       status: 'Stare',
       date: '6 mar 2026',
-      participants: 32,
+      questionCount: 15,
+      lastActivatedAt: '6 maj 2026',
       avgScore: 82,
     },
   ] satisfies QuizInfo[],

@@ -13,6 +13,18 @@ FastAPI backend for the Cogniro project.
 uv sync
 ```
 
+## Running
+
+```bash
+uv run uvicorn main:app --reload
+```
+
+To accept connections from other devices on the LAN (e.g. phone scanning a QR code):
+
+```bash
+uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
 ## Linting & formatting
 
 ```bash

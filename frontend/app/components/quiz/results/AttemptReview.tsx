@@ -10,6 +10,9 @@ interface AttemptReviewProps {
   correctCount: number;
   wrongCount: number;
   scorePercent: number;
+  /** When set, shown next to the percent (e.g. “12 / 20 pts”). */
+  scorePoints?: number;
+  scoreTotal?: number;
   questions: ReviewQuestion[];
   onBack?: () => void;
 }
@@ -18,11 +21,18 @@ export default function AttemptReview({
   correctCount,
   wrongCount,
   scorePercent,
+  scorePoints,
+  scoreTotal,
   questions,
   onBack,
 }: AttemptReviewProps) {
+  const showPoints =
+    scorePoints !== undefined &&
+    scoreTotal !== undefined &&
+    Number.isFinite(scorePoints) &&
+    Number.isFinite(scoreTotal);
   return (
-    <div className="flex h-full w-full max-w-[390px] flex-col overflow-hidden bg-[var(--page-bg)]">
+    <div className="flex h-full w-full flex-col overflow-hidden bg-[var(--page-bg)]">
       <header className="flex w-full items-center justify-between px-6 pt-4">
         <button
           type="button"
@@ -56,8 +66,15 @@ export default function AttemptReview({
             {wrongCount} błędne
           </span>
         </span>
-        <span className="text-xl font-extrabold text-[var(--orange)]">
-          {scorePercent}%
+        <span className="flex flex-col items-end gap-0.5">
+          <span className="text-xl font-extrabold text-[var(--orange)]">
+            {scorePercent}%
+          </span>
+          {showPoints && (
+            <span className="text-[11px] font-semibold text-[var(--text-muted)] tabular-nums">
+              {scorePoints} / {scoreTotal} pkt
+            </span>
+          )}
         </span>
       </div>
 

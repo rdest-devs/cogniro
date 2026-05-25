@@ -1,3 +1,4 @@
+# DEPRECATED — remove after the new /play flow is verified end-to-end.
 from __future__ import annotations
 
 from fastapi import HTTPException

@@ -4,23 +4,30 @@ import TopBar from './TopBar';
 interface AdminLayoutProps {
   activeItem?: string;
   children: React.ReactNode;
-  onCreateQuiz?: () => void;
+  logoHref?: string;
+  /** Sidebar item navigation handler (e.g. Statistics). */
+  onMenuNavigate?: (menuItemId: string) => void;
   onLogout?: () => void;
 }
 
 export default function AdminLayout({
   activeItem = 'quizy',
   children,
-  onCreateQuiz,
+  logoHref = '/admin/',
+  onMenuNavigate,
   onLogout,
 }: AdminLayoutProps) {
   return (
-    <div className="flex h-full w-full overflow-hidden bg-[var(--page-bg)]">
-      <Sidebar activeItem={activeItem} />
+    <div className="flex h-full min-h-0 w-full overflow-hidden bg-[var(--page-bg)]">
+      <Sidebar
+        activeItem={activeItem}
+        quizListHref={logoHref}
+        onNavigate={onMenuNavigate}
+      />
 
-      <div className="flex min-h-0 flex-1 flex-col">
-        <TopBar onCreateQuiz={onCreateQuiz} onLogout={onLogout} />
-        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-8">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <TopBar logoHref={logoHref} onLogout={onLogout} />
+        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-8">
           {children}
         </main>
       </div>

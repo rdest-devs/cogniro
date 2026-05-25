@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { cn } from '@/lib/cn';
 
 import { menuItems } from '../shared/constants';
@@ -7,14 +9,17 @@ import { menuItems } from '../shared/constants';
 interface SidebarProps {
   activeItem?: string;
   onNavigate?: (item: string) => void;
+  /** “My quizzes” list URL (defaults with logo, e.g. `/admin/`). */
+  quizListHref?: string;
 }
 
 export default function Sidebar({
   activeItem = 'quizy',
   onNavigate,
+  quizListHref = '/admin/',
 }: SidebarProps) {
   return (
-    <aside className="flex h-full w-[260px] flex-col bg-[var(--sidebar-bg)]">
+    <aside className="flex h-full min-h-0 w-[260px] shrink-0 flex-col overflow-y-auto overscroll-contain bg-[var(--sidebar-bg)]">
       <div className="h-px w-full bg-white/10" />
       <nav className="flex flex-1 flex-col gap-0.5 p-4 px-2">
         <div className="px-4 pt-1 pb-2">
@@ -25,22 +30,23 @@ export default function Sidebar({
         {menuItems.map((item) => {
           const isActive = activeItem === item.id;
           const Icon = item.icon;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onNavigate?.(item.id)}
-              aria-current={isActive ? 'page' : undefined}
-              className={cn(
-                'flex w-full cursor-pointer items-center gap-3 rounded-xl py-3 pr-5 pl-6 transition-colors',
-                isActive
-                  ? 'border-l-4 border-l-[var(--orange)] bg-[var(--sidebar-active)]'
-                  : 'border-l-4 border-l-transparent',
-              )}
-            >
+          const isDisabled = Boolean(item.disabled);
+          const rowClass = cn(
+            'flex w-full items-center gap-3 rounded-xl py-3 pr-5 pl-6 text-left no-underline ring-offset-2 ring-offset-[var(--sidebar-bg)] transition-colors outline-none',
+            isDisabled
+              ? 'cursor-not-allowed border-l-4 border-l-transparent opacity-45'
+              : 'cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--orange)]',
+            isActive && !isDisabled
+              ? 'border-l-4 border-l-[var(--orange)] bg-[var(--sidebar-active)]'
+              : 'border-l-4 border-l-transparent',
+          );
+
+          const inner = (
+            <>
               <Icon
                 size={20}
                 className={cn(
-                  isActive
+                  isActive && !isDisabled
                     ? 'text-[var(--orange)]'
                     : 'text-[var(--sidebar-text-muted)]',
                 )}
@@ -48,13 +54,51 @@ export default function Sidebar({
               <span
                 className={cn(
                   'text-sm',
-                  isActive
+                  isActive && !isDisabled
                     ? 'font-semibold text-white'
                     : 'font-medium text-[var(--sidebar-text)]',
                 )}
               >
                 {item.label}
               </span>
+            </>
+          );
+
+          if (isDisabled) {
+            return (
+              <div
+                key={item.id}
+                aria-disabled="true"
+                className={rowClass}
+                title="Niedostępne"
+              >
+                {inner}
+              </div>
+            );
+          }
+
+          if (item.id === 'quizy' && quizListHref) {
+            return (
+              <Link
+                key={item.id}
+                href={quizListHref}
+                aria-current={isActive ? 'page' : undefined}
+                className={rowClass}
+              >
+                {inner}
+              </Link>
+            );
+          }
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onNavigate?.(item.id)}
+              aria-current={isActive ? 'page' : undefined}
+              className={rowClass}
+            >
+              {inner}
             </button>
           );
         })}
