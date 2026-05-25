@@ -119,7 +119,9 @@ class KqfQuiz(BaseModel):
 
     @model_validator(mode="after")
     def _validate_unique_question_ids(self) -> "KqfQuiz":
-        ids = [q.id for q in self.questions]
+        ids = [q.id.strip() for q in self.questions]
+        if any(not qid for qid in ids):
+            raise ValueError("question ids must not be blank")
         if len(ids) != len(set(ids)):
             raise ValueError("question ids must be unique")
         return self
