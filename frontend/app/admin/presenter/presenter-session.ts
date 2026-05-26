@@ -5,6 +5,10 @@ export type PresenterSession = {
   playHref: string;
 };
 
+function isParticipantPlayPath(pathname: string): boolean {
+  return pathname.endsWith('/play/');
+}
+
 function normalizePresenterPin(rawPin: string | null): string | null {
   if (rawPin == null) {
     return null;
@@ -32,11 +36,17 @@ function normalizePresenterPlayHref(
     if (url.protocol !== 'http:' && url.protocol !== 'https:') {
       return null;
     }
+    if (!isParticipantPlayPath(url.pathname)) {
+      return null;
+    }
     const code = normalizePresenterPin(url.searchParams.get('code'));
     return code === pin ? url.toString() : null;
   } catch {
     try {
       const url = new URL(trimmed, 'https://presenter.invalid');
+      if (!isParticipantPlayPath(url.pathname)) {
+        return null;
+      }
       const code = normalizePresenterPin(url.searchParams.get('code'));
       if (code !== pin) {
         return null;

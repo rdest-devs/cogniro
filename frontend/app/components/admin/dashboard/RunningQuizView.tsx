@@ -39,6 +39,33 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+function drawWrappedCenteredText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  centerX: number,
+  startY: number,
+  maxWidth: number,
+  lineHeight: number,
+): void {
+  let currentLine = '';
+  let lineY = startY;
+
+  for (const char of text) {
+    const nextLine = currentLine + char;
+    if (currentLine && ctx.measureText(nextLine).width > maxWidth) {
+      ctx.fillText(currentLine, centerX, lineY);
+      currentLine = char;
+      lineY += lineHeight;
+      continue;
+    }
+    currentLine = nextLine;
+  }
+
+  if (currentLine) {
+    ctx.fillText(currentLine, centerX, lineY);
+  }
+}
+
 function formatScoreVsMax(score: number | null, maxScore: number): string {
   if (maxScore <= 0) {
     return score == null ? '—' : String(score);
@@ -110,6 +137,7 @@ export function RunningQuizView({
       );
       return;
     }
+    popup.opener = null;
     popup.focus();
   };
 
@@ -163,8 +191,8 @@ export function RunningQuizView({
       ctx.font = '136px "Courier New", monospace';
       ctx.fillText(activation.pin, 650, 1270);
 
-      ctx.font = '48px Arial, sans-serif';
-      ctx.fillText(activation.join_url, 650, 1400);
+      ctx.font = '42px Arial, sans-serif';
+      drawWrappedCenteredText(ctx, activation.join_url, 650, 1400, 1100, 56);
 
       const url = canvas.toDataURL('image/png');
       const anchor = document.createElement('a');

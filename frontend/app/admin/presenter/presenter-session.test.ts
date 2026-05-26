@@ -51,6 +51,19 @@ test('resolvePresenterSession rejects an invalid participant URL and falls back 
   });
 });
 
+test('resolvePresenterSession rejects participant URLs outside the play route and falls back to pin-only href', () => {
+  assert.deepEqual(
+    resolvePresenterSession(
+      'ab2cd3',
+      'https://quiz.example.edu/other/?code=AB2CD3',
+    ),
+    {
+      pin: 'AB2CD3',
+      playHref: '/play/?code=AB2CD3',
+    },
+  );
+});
+
 test('resolvePresenterSession preserves deployment sub-path from a full participant URL', () => {
   assert.deepEqual(
     resolvePresenterSession(
