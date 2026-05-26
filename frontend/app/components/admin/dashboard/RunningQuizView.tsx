@@ -1,6 +1,13 @@
 'use client';
 
-import { ArrowLeft, Ban, CircleStop, RefreshCcw } from 'lucide-react';
+import {
+  ArrowLeft,
+  Ban,
+  CircleStop,
+  Download,
+  ExternalLink,
+  RefreshCcw,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { QrCode } from '@/app/components/admin/dashboard/QrCode';
@@ -22,6 +29,15 @@ import {
 } from '@/lib/sessions/client';
 
 type Snapshot = Awaited<ReturnType<typeof getSessionSnapshot>>;
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`Image load failed: ${src}`));
+    image.src = src;
+  });
+}
 
 function formatScoreVsMax(score: number | null, maxScore: number): string {
   if (maxScore <= 0) {
@@ -59,6 +75,108 @@ export function RunningQuizView({
   } | null>(null);
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [err, setErr] = useState<string | null>(null);
+
+  const buildPresenterUrl = () => {
+    if (!activation) {
+      return null;
+    }
+    const basePath = window.location.pathname.endsWith('/')
+      ? window.location.pathname
+      : `${window.location.pathname}/`;
+    const presenterUrl = new URL(
+      `${basePath}presenter/`,
+      window.location.origin,
+    );
+    presenterUrl.search = new URLSearchParams({
+      href: activation.join_url,
+      pin: activation.pin,
+    }).toString();
+    return presenterUrl.toString();
+  };
+
+  const openPresenterWindow = () => {
+    const presenterUrl = buildPresenterUrl();
+    if (!presenterUrl) {
+      return;
+    }
+    const popup = window.open(
+      presenterUrl,
+      'quiz-presenter-view',
+      'width=960,height=900',
+    );
+    if (!popup) {
+      window.alert(
+        'Nie udało się otworzyć nowego okna. Sprawdź, czy przeglądarka nie blokuje popupów.',
+      );
+      return;
+    }
+    popup.focus();
+  };
+
+  const downloadPrintableQrBoard = async () => {
+    if (!activation) {
+      return;
+    }
+
+    try {
+      const QRCode = (await import('qrcode')).default;
+      const qrDataUrl = await QRCode.toDataURL(activation.join_url, {
+        width: 1200,
+        margin: 1,
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 1300;
+      canvas.height = 1800;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        throw new Error('Canvas context unavailable');
+      }
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      try {
+        const logo = await loadImage('/images/wi-new-logo.png');
+        const logoMaxWidth = 740;
+        const logoMaxHeight = 210;
+        const logoScale = Math.min(
+          logoMaxWidth / logo.width,
+          logoMaxHeight / logo.height,
+        );
+        const logoWidth = logo.width * logoScale;
+        const logoHeight = logo.height * logoScale;
+        const logoX = (canvas.width - logoWidth) / 2;
+        const logoY = 90 + (logoMaxHeight - logoHeight) / 2;
+        ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight);
+      } catch {
+        ctx.fillStyle = '#1f2937';
+        ctx.textAlign = 'center';
+        ctx.font = '56px Arial, sans-serif';
+        ctx.fillText('Wydział Informatyki', 650, 210);
+      }
+
+      const qrImage = await loadImage(qrDataUrl);
+      ctx.drawImage(qrImage, 250, 360, 800, 800);
+
+      ctx.fillStyle = '#111827';
+      ctx.textAlign = 'center';
+      ctx.font = '136px "Courier New", monospace';
+      ctx.fillText(activation.pin, 650, 1270);
+
+      ctx.font = '48px Arial, sans-serif';
+      ctx.fillText(activation.join_url, 650, 1400);
+
+      const url = canvas.toDataURL('image/png');
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `quiz-qr-${activation.pin}.png`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    } catch {
+      window.alert('Nie udało się przygotować pliku do pobrania.');
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -165,6 +283,24 @@ export function RunningQuizView({
             <div className="text-sm text-[var(--text-dark)]">
               Aktywny od:{' '}
               {new Date(activation.started_at).toLocaleTimeString('pl-PL')}
+            </div>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                type="button"
+                className={adminToolbarButtonClass}
+                onClick={openPresenterWindow}
+              >
+                <ExternalLink size={14} aria-hidden />
+                Otwórz ekran uczestników
+              </button>
+              <button
+                type="button"
+                className={adminToolbarButtonClass}
+                onClick={() => void downloadPrintableQrBoard()}
+              >
+                <Download size={14} aria-hidden />
+                Pobierz planszę QR
+              </button>
             </div>
           </div>
         </div>
