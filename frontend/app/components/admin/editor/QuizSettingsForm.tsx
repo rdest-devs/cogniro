@@ -126,9 +126,11 @@ export default function QuizSettingsForm({
             const raw = e.target.value;
             if (raw === '') {
               onQuizTimeLimitChange(null);
-            } else {
+            } else if (/^\d+$/.test(raw)) {
               const n = parseInt(raw, 10);
-              onQuizTimeLimitChange(Number.isFinite(n) && n > 0 ? n : null);
+              onQuizTimeLimitChange(n > 0 ? n : null);
+            } else {
+              onQuizTimeLimitChange(null);
             }
           }}
           className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm text-[var(--text-dark)] outline-none focus:border-[var(--primary-blue)]"

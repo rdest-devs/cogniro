@@ -101,6 +101,7 @@ function ActiveQuestion({
     if (!timeS) return;
     startTimeRef.current = Date.now();
     let active = true;
+    let expiryTimeout: ReturnType<typeof setTimeout> | null = null;
     const interval = setInterval(() => {
       const elapsed = (Date.now() - startTimeRef.current) / 1000;
       const rem = Math.max(0, timeS - elapsed);
@@ -108,12 +109,13 @@ function ActiveQuestion({
       if (rem <= 0 && active) {
         active = false;
         clearInterval(interval);
-        setTimeout(() => onAdvanceRef.current(undefined), 0);
+        expiryTimeout = setTimeout(() => onAdvanceRef.current(undefined), 0);
       }
     }, 500);
     return () => {
       active = false;
       clearInterval(interval);
+      if (expiryTimeout !== null) clearTimeout(expiryTimeout);
     };
   }, [q.id, q.time_s]);
 

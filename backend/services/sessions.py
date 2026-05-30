@@ -163,12 +163,15 @@ def get_or_create_session_shuffle(pin: str, question_ids: list[str]) -> list[str
 
     # Slow path: first join, or quiz was edited (ID set changed).
     with _LOCK:
+        session = _SESSIONS_BY_PIN.get(pin)
+        if session is None:
+            raise LookupError("pin_not_active")
         stored = session.shuffled_question_ids
         if stored is None or set(stored) != current_ids:
             ids = list(question_ids)
             random.shuffle(ids)
             session.shuffled_question_ids = ids
-        return list(session.shuffled_question_ids)  # type: ignore[arg-type]
+        return list(session.shuffled_question_ids)
 
 
 def stop_session(quiz_id: str) -> QuizSession | None:
