@@ -90,7 +90,10 @@ async def play_join(pin: str, body: JoinBody, request: Request) -> KqfQuiz:
 
     fm = quiz.front_matter
     if fm.shuffle_questions and fm.shuffle_mode == "session":
-        quiz = await run_in_threadpool(_apply_session_shuffle, quiz, pin)
+        try:
+            quiz = await run_in_threadpool(_apply_session_shuffle, quiz, pin)
+        except LookupError:
+            raise HTTPException(status_code=404, detail="pin_not_active") from None
 
     return kqf_with_absolute_media(quiz, session.quiz_id, _origin_from(request))
 

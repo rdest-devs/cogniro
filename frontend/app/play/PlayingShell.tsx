@@ -119,9 +119,7 @@ function ActiveQuestion({
 
   const timeDisplay = remaining === null ? '--:--' : formatTime(remaining);
   const progressPercent =
-    q.time_s && remaining !== null
-      ? (remaining / q.time_s) * 100
-      : ((questionNumber - 1) / total) * 100;
+    q.time_s && remaining !== null ? (remaining / q.time_s) * 100 : 100;
   const qImage = questionImage(q.media);
 
   let questionEl: React.ReactNode = null;

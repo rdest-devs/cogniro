@@ -143,28 +143,32 @@ def list_participants(quiz_id: str) -> list[Participant]:
 def get_or_create_session_shuffle(pin: str, question_ids: list[str]) -> list[str]:
     """Return the canonical shuffled question order for a session.
 
-    On the first join the order is created and stored under the lock; all
-    subsequent joins take the fast (lock-free) path because
-    ``shuffled_question_ids`` is written exactly once and never cleared.
+    Fast path (lock-free): shuffle exists and question IDs match current quiz.
+    Slow path (locked): first join, or admin edited the quiz while a session was
+    live — regenerates the shuffle so new/removed questions don't land at 999.
     Must be called via run_in_threadpool.
     """
-    # Fast path: shuffle already created — no lock needed.
-    # CPython dict lookup and attribute read are GIL-atomic; the field is
-    # written once (below) and never set back to None, so this is safe.
     session = _SESSIONS_BY_PIN.get(pin)
     if session is None:
         raise LookupError("pin_not_active")
-    if session.shuffled_question_ids is not None:
-        return list(session.shuffled_question_ids)
 
-    # Slow path: first join — create the shuffle under the lock.
+    current_ids = set(question_ids)
+
+    # Fast path: shuffle is fresh — no lock needed.
+    # Attribute read and list construction are GIL-atomic; the field is only
+    # ever replaced (never mutated in-place), so the snapshot is consistent.
+    stored = session.shuffled_question_ids
+    if stored is not None and set(stored) == current_ids:
+        return list(stored)
+
+    # Slow path: first join, or quiz was edited (ID set changed).
     with _LOCK:
-        # Re-check: another thread may have raced us here.
-        if session.shuffled_question_ids is None:
+        stored = session.shuffled_question_ids
+        if stored is None or set(stored) != current_ids:
             ids = list(question_ids)
             random.shuffle(ids)
             session.shuffled_question_ids = ids
-        return list(session.shuffled_question_ids)
+        return list(session.shuffled_question_ids)  # type: ignore[arg-type]
 
 
 def stop_session(quiz_id: str) -> QuizSession | None:
