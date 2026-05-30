@@ -1,11 +1,13 @@
 interface ProgressBarProps {
   percent: number;
   animated?: boolean;
+  fillClassName?: string;
 }
 
 export default function ProgressBar({
   percent,
   animated = true,
+  fillClassName = 'bg-[var(--orange)]',
 }: ProgressBarProps) {
   const clamped = Math.max(0, Math.min(100, percent));
   return (
@@ -13,8 +15,8 @@ export default function ProgressBar({
       <div
         className={
           animated
-            ? 'h-full bg-[var(--orange)] transition-[width] duration-300 ease-linear'
-            : 'h-full bg-[var(--orange)]'
+            ? `h-full ${fillClassName} transition-[width] duration-300 ease-linear`
+            : `h-full ${fillClassName}`
         }
         style={{ width: `${clamped}%` }}
       />

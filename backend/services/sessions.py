@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import random
 import secrets
 import threading
 from dataclasses import dataclass, field
@@ -137,6 +138,33 @@ def list_participants(quiz_id: str) -> list[Participant]:
         if session is None:
             return []
         return list(session.participants.values())
+
+
+def get_or_create_session_shuffle(pin: str, question_ids: list[str]) -> list[str]:
+    """Return the canonical shuffled question order for a session.
+
+    On the first join the order is created and stored under the lock; all
+    subsequent joins take the fast (lock-free) path because
+    ``shuffled_question_ids`` is written exactly once and never cleared.
+    Must be called via run_in_threadpool.
+    """
+    # Fast path: shuffle already created — no lock needed.
+    # CPython dict lookup and attribute read are GIL-atomic; the field is
+    # written once (below) and never set back to None, so this is safe.
+    session = _SESSIONS_BY_PIN.get(pin)
+    if session is None:
+        raise LookupError("pin_not_active")
+    if session.shuffled_question_ids is not None:
+        return list(session.shuffled_question_ids)
+
+    # Slow path: first join — create the shuffle under the lock.
+    with _LOCK:
+        # Re-check: another thread may have raced us here.
+        if session.shuffled_question_ids is None:
+            ids = list(question_ids)
+            random.shuffle(ids)
+            session.shuffled_question_ids = ids
+        return list(session.shuffled_question_ids)
 
 
 def stop_session(quiz_id: str) -> QuizSession | None:

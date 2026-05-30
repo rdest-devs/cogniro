@@ -239,12 +239,12 @@ export const quizEditorFormSchema = z.object({
   tags: z.array(z.string().trim().min(1)),
   showAnswerReview: z.boolean().default(true),
   quizTimeLimit: z
-    .union([z.number().int().positive(), z.nan()])
+    .number()
+    .int()
+    .positive()
     .nullable()
     .optional()
-    .transform((v) =>
-      v === undefined || v === null || Number.isNaN(v) ? null : v,
-    )
+    .transform((v) => v ?? null)
     .default(null),
   shuffleQuestions: z.boolean().default(false),
   shuffleMode: z.enum(['per_player', 'session']).default('per_player'),

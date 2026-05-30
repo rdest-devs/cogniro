@@ -89,37 +89,39 @@ function ActiveQuestion({
   // Initialized once per mount (component remounts via key={q.id} in parent)
   const [remaining, setRemaining] = useState<number | null>(q.time_s ?? null);
   const onAdvanceRef = useRef(onAdvance);
+  // 0 until effect sets it; only read inside the interval callback
+  const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
     onAdvanceRef.current = onAdvance;
   });
 
   useEffect(() => {
-    if (!q.time_s) return;
+    const timeS = q.time_s;
+    if (!timeS) return;
+    startTimeRef.current = Date.now();
     let active = true;
     const interval = setInterval(() => {
-      setRemaining((prev) => {
-        if (prev === null) return null;
-        const next = prev - 1;
-        if (next <= 0 && active) {
-          active = false;
-          setTimeout(() => onAdvanceRef.current(undefined), 0);
-          return 0;
-        }
-        return Math.max(0, next);
-      });
-    }, 1000);
+      const elapsed = (Date.now() - startTimeRef.current) / 1000;
+      const rem = Math.max(0, timeS - elapsed);
+      setRemaining(rem);
+      if (rem <= 0 && active) {
+        active = false;
+        clearInterval(interval);
+        setTimeout(() => onAdvanceRef.current(undefined), 0);
+      }
+    }, 500);
     return () => {
       active = false;
       clearInterval(interval);
     };
-  }, [q.time_s]);
+  }, [q.id, q.time_s]);
 
   const timeDisplay = remaining === null ? '--:--' : formatTime(remaining);
   const progressPercent =
     q.time_s && remaining !== null
       ? (remaining / q.time_s) * 100
-      : ((questionNumber - 1) / total) * 100 + 100 / total;
+      : ((questionNumber - 1) / total) * 100;
   const qImage = questionImage(q.media);
 
   let questionEl: React.ReactNode = null;

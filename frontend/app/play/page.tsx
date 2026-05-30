@@ -3,6 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
 
+import ProgressBar from '@/app/components/common/ProgressBar';
 import { EnterCode } from '@/app/play/EnterCode';
 import { EnterNickname } from '@/app/play/EnterNickname';
 import { PlayExperienceLayout } from '@/app/play/PlayExperienceLayout';
@@ -38,7 +39,7 @@ function useGlobalQuizTimer(
   startedAt: string | undefined,
   onExpire: () => void,
 ): number | null {
-  const [remaining, setRemaining] = useState<number | null>(timeLimit ?? null);
+  const [remaining, setRemaining] = useState<number | null>(null);
   const onExpireRef = useRef(onExpire);
 
   useEffect(() => {
@@ -86,6 +87,23 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
   const [joinError, setJoinError] = useState<string | null>(null);
   /** Ustawiane w `onPlayAgain` — kolejne zakończenie nie wywołuje `submitPlay`. */
   const skipSubmitAfterLocalReplayRef = useRef(false);
+  /** Guards against double-finish when global timer and per-question timer race. */
+  const finishedRef = useRef(false);
+
+  const finishQuiz = (playState: Extract<Stage, { name: 'playing' }>) => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    const score = calculateScore(playState.state.quiz, playState.state.answers);
+    setStage({
+      name: 'result',
+      code: playState.code,
+      nickname: playState.nickname,
+      quiz: playState.state.quiz,
+      score,
+      answers: playState.state.answers as AnswerMap,
+      skipServerSubmit: skipSubmitAfterLocalReplayRef.current,
+    });
+  };
 
   const timeLimit =
     stage.name === 'playing' ? stage.state.quiz.front_matter.time_limit : null;
@@ -94,16 +112,7 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
     stage.name === 'playing' ? stage.state.startedAt : undefined,
     () => {
       if (stage.name !== 'playing') return;
-      const score = calculateScore(stage.state.quiz, stage.state.answers);
-      setStage({
-        name: 'result',
-        code: stage.code,
-        nickname: stage.nickname,
-        quiz: stage.state.quiz,
-        score,
-        answers: stage.state.answers as AnswerMap,
-        skipServerSubmit: skipSubmitAfterLocalReplayRef.current,
-      });
+      finishQuiz(stage);
     },
   );
   const progressPct =
@@ -124,9 +133,15 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
           onPlayAgain={() => {
             const { code, nickname, quiz } = stage;
             skipSubmitAfterLocalReplayRef.current = true;
+            finishedRef.current = false;
             clearPlayState(window.sessionStorage, code, nickname);
+            const fm = quiz.front_matter;
+            const replayQuiz =
+              fm.shuffle_questions && fm.shuffle_mode === 'per_player'
+                ? { ...quiz, questions: shuffleArray(quiz.questions) }
+                : quiz;
             const nextState: PlayState = {
-              quiz,
+              quiz: replayQuiz,
               currentQuestionIndex: 0,
               answers: {},
               startedAt: new Date().toISOString(),
@@ -180,12 +195,8 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
               }
 
               const fm = r.quiz.front_matter;
-              if (fm.shuffle_questions && fm.shuffle_mode === 'per_player') {
-                r.quiz = {
-                  ...r.quiz,
-                  questions: shuffleArray(r.quiz.questions),
-                };
-              }
+              const isPerPlayerShuffle =
+                fm.shuffle_questions && fm.shuffle_mode === 'per_player';
 
               const persisted =
                 typeof window !== 'undefined'
@@ -197,8 +208,20 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
                 !persisted.submitted &&
                 persisted.currentQuestionIndex < r.quiz.questions.length
               ) {
-                nextState = { ...persisted, quiz: r.quiz };
+                // Restore: keep persisted.quiz to preserve the original shuffle order.
+                // Re-shuffling here would make currentQuestionIndex point to the wrong question.
+                nextState = {
+                  ...persisted,
+                  quiz: isPerPlayerShuffle ? persisted.quiz : r.quiz,
+                };
               } else {
+                // Fresh session: apply per-player shuffle now and store it.
+                if (isPerPlayerShuffle) {
+                  r.quiz = {
+                    ...r.quiz,
+                    questions: shuffleArray(r.quiz.questions),
+                  };
+                }
                 nextState = {
                   quiz: r.quiz,
                   currentQuestionIndex: 0,
@@ -229,12 +252,10 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
       {stage.name === 'playing' && (
         <div className="flex min-h-0 flex-1 flex-col">
           {progressPct !== null && (
-            <div className="h-1.5 w-full bg-[var(--border)]">
-              <div
-                className="h-full bg-[var(--primary-blue)] transition-[width] duration-200 ease-linear"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
+            <ProgressBar
+              percent={progressPct}
+              fillClassName="bg-[var(--primary-blue)]"
+            />
           )}
           <PlayingShell
             state={stage.state}
@@ -248,16 +269,7 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
               setStage({ ...stage, state: s });
             }}
             onFinish={(final) => {
-              const score = calculateScore(final.quiz, final.answers);
-              setStage({
-                name: 'result',
-                code: stage.code,
-                nickname: stage.nickname,
-                quiz: final.quiz,
-                score,
-                answers: final.answers,
-                skipServerSubmit: skipSubmitAfterLocalReplayRef.current,
-              });
+              finishQuiz({ ...stage, state: final });
             }}
           />
         </div>
