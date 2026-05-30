@@ -11,11 +11,13 @@ from pydantic import BaseModel, Field, StringConstraints
 
 from schemas.kqf import KqfQuestion, KqfQuiz
 from services import sessions
+from services.admin_quiz import check_availability
 from services.play_rate_limit import enforce_play_rate_limit
 from services.profanity import is_nickname_allowed
 from services.quiz_files import (
     kqf_with_absolute_media,
     max_points_from_quiz_dir,
+    read_meta_or_rebuild,
     read_quiz_kqf,
 )
 from services.storage import get_storage, quiz_dir_for
@@ -66,6 +68,20 @@ async def play_join(pin: str, body: JoinBody, request: Request) -> KqfQuiz:
     session = sessions.lookup_by_pin(pin)
     if session is None:
         raise HTTPException(status_code=404, detail="pin_not_active")
+    paths = get_storage(request.app)
+    meta = await run_in_threadpool(
+        read_meta_or_rebuild, quiz_dir_for(paths, session.quiz_id), session.quiz_id
+    )
+    available, reason = check_availability(meta)
+    if not available:
+        if reason == "not_yet":
+            raise HTTPException(
+                status_code=423,
+                detail={"code": "not_yet", "opens_at": meta.schedule_start},
+            )
+        if reason == "expired":
+            raise HTTPException(status_code=410, detail="expired")
+        raise HTTPException(status_code=403, detail="manually_closed")
     if not is_nickname_allowed(body.nickname):
         raise HTTPException(
             status_code=400,
@@ -85,7 +101,6 @@ async def play_join(pin: str, body: JoinBody, request: Request) -> KqfQuiz:
     except LookupError:
         raise HTTPException(status_code=404, detail="pin_not_active") from None
 
-    paths = get_storage(request.app)
     quiz = await run_in_threadpool(read_quiz_kqf, quiz_dir_for(paths, session.quiz_id))
 
     fm = quiz.front_matter

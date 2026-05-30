@@ -17,9 +17,11 @@ from core.settings import (
     UPLOAD_CHUNK_SIZE,
 )
 from schemas.admin_quiz import (
+    ActivateRequest,
     AdminQuizDetailResponse,
     AdminQuizListItemResponse,
     AdminQuizUpsertPayload,
+    AvailabilityPatchRequest,
 )
 from services.admin_quiz_adapters import (
     kqf_to_admin_detail_payload,
@@ -32,7 +34,9 @@ from services.quiz_files import (
     read_meta_or_rebuild,
     read_quiz_kqf,
     remove_obsolete_quiz_media_files,
+    update_availability,
     update_last_activated_at,
+    write_meta_json_atomic,
     write_quiz_dir,
     write_text_atomic,
 )
@@ -54,6 +58,23 @@ def _now_iso() -> str:
         .isoformat()
         .replace("+00:00", "Z")
     )
+
+
+def check_availability(meta: QuizMeta) -> tuple[bool, str | None]:
+    if meta.manual_status == "closed":
+        return False, "manually_closed"
+    now = datetime.now(timezone.utc)
+    if meta.schedule_end:
+        end = datetime.fromisoformat(meta.schedule_end)
+        if now > end:
+            return False, "expired"
+    if meta.manual_status == "open":
+        return True, None
+    if meta.schedule_start:
+        start = datetime.fromisoformat(meta.schedule_start)
+        if now < start:
+            return False, "not_yet"
+    return True, None
 
 
 def list_quizzes(app: FastAPI) -> list[AdminQuizListItemResponse]:
@@ -102,6 +123,9 @@ def get_quiz(app: FastAPI, quiz_id: str) -> AdminQuizDetailResponse:
         created_at=meta.created_at,
         updated_at=meta.updated_at,
         last_activated_at=meta.last_activated_at,
+        schedule_start=meta.schedule_start,
+        schedule_end=meta.schedule_end,
+        manual_status=meta.manual_status,
     )
 
 
@@ -135,6 +159,9 @@ def update_quiz(
             created_at=meta.created_at,
             updated_at=_now_iso(),
             last_activated_at=meta.last_activated_at,
+            schedule_start=meta.schedule_start,
+            schedule_end=meta.schedule_end,
+            manual_status=meta.manual_status,
         )
         remove_obsolete_quiz_media_files(qd, previous=existing, current=quiz)
     return {"id": quiz_id}
@@ -153,15 +180,20 @@ def delete_quiz(app: FastAPI, quiz_id: str) -> None:
         shutil.rmtree(qd)
 
 
-def _activation_payload(session: sessions.QuizSession) -> dict[str, str]:
+def _activation_payload(session: sessions.QuizSession, meta: QuizMeta) -> dict:
     return {
         "pin": session.pin,
         "join_url": _build_join_url(session.pin),
         "started_at": session.started_at.isoformat().replace("+00:00", "Z"),
+        "schedule_start": meta.schedule_start,
+        "schedule_end": meta.schedule_end,
+        "manual_status": meta.manual_status,
     }
 
 
-def activate_quiz(app: FastAPI, quiz_id: str) -> dict[str, str]:
+def activate_quiz(
+    app: FastAPI, quiz_id: str, body: ActivateRequest | None = None
+) -> dict:
     paths = get_storage(app)
     qd = quiz_dir_for(paths, quiz_id)
     if not qd.is_dir():
@@ -171,7 +203,7 @@ def activate_quiz(app: FastAPI, quiz_id: str) -> dict[str, str]:
     if existing is not None:
         # Idempotent: admin UI / React Strict Mode may POST activate more than once
         # while the same in-memory session is already running.
-        return _activation_payload(existing)
+        return _activation_payload(existing, meta)
     try:
         session = sessions.start_session(quiz_id=quiz_id, quiz_title=meta.title)
     except ValueError:
@@ -181,9 +213,27 @@ def activate_quiz(app: FastAPI, quiz_id: str) -> dict[str, str]:
             raise HTTPException(
                 status_code=409, detail="Quiz jest już aktywny."
             ) from None
-        return _activation_payload(raced)
-    update_last_activated_at(qd, _now_iso())
-    return _activation_payload(session)
+        return _activation_payload(raced, meta)
+    now_ts = _now_iso()
+    if body is not None:
+        new_meta = QuizMeta(
+            id=meta.id,
+            title=meta.title,
+            title_slug=meta.title_slug,
+            created_at=meta.created_at,
+            updated_at=meta.updated_at,
+            question_count=meta.question_count,
+            last_activated_at=now_ts,
+            schedule_start=body.schedule_start,
+            schedule_end=body.schedule_end,
+            manual_status=body.manual_status,
+        )
+        write_meta_json_atomic(qd / "meta.json", new_meta)
+        meta = new_meta
+    else:
+        update_last_activated_at(qd, now_ts)
+        meta = read_meta_or_rebuild(qd, quiz_id)
+    return _activation_payload(session, meta)
 
 
 def _build_join_url(pin: str) -> str:
@@ -256,7 +306,41 @@ def stop_quiz(app: FastAPI, quiz_id: str) -> dict[str, str]:
         entries=entries,
         max_score=max_score,
     )
+    meta = read_meta_or_rebuild(qd, quiz_id)
+    if meta.manual_status is not None:
+        update_availability(
+            qd,
+            schedule_start=meta.schedule_start,
+            schedule_end=meta.schedule_end,
+            manual_status=None,
+        )
     return {"date": stopped_at.strftime("%Y-%m-%d"), "filename": filename}
+
+
+def patch_availability(
+    app: FastAPI, quiz_id: str, body: AvailabilityPatchRequest
+) -> None:
+    paths = get_storage(app)
+    qd = quiz_dir_for(paths, quiz_id)
+    if not qd.is_dir():
+        raise HTTPException(status_code=404, detail="Nie znaleziono quizu.")
+    meta = read_meta_or_rebuild(qd, quiz_id)
+    fields = body.model_fields_set
+    new_schedule_start = (
+        body.schedule_start if "schedule_start" in fields else meta.schedule_start
+    )
+    new_schedule_end = (
+        body.schedule_end if "schedule_end" in fields else meta.schedule_end
+    )
+    new_manual_status = (
+        body.manual_status if "manual_status" in fields else meta.manual_status
+    )
+    update_availability(
+        qd,
+        schedule_start=new_schedule_start,
+        schedule_end=new_schedule_end,
+        manual_status=new_manual_status,
+    )
 
 
 def _safe_import_member_path(quiz_dir: Path, member: str) -> Path | None:

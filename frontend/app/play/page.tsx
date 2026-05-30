@@ -184,6 +184,24 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
                   setJoinError('Ten pseudonim jest już zajęty.');
                 } else if (r.status === 404) {
                   setJoinError('Ten quiz nie jest już aktywny. Sprawdź kod.');
+                } else if (r.status === 423 && r.detail === 'not_yet') {
+                  const opensAt = r.opensAt
+                    ? new Intl.DateTimeFormat(undefined, {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        day: '2-digit',
+                        month: '2-digit',
+                      }).format(new Date(r.opensAt))
+                    : null;
+                  setJoinError(
+                    opensAt
+                      ? `Quiz jeszcze nie jest dostępny. Otworzy się o ${opensAt}.`
+                      : 'Quiz jeszcze nie jest dostępny.',
+                  );
+                } else if (r.status === 410) {
+                  setJoinError('Quiz został zamknięty.');
+                } else if (r.status === 403) {
+                  setJoinError('Quiz jest chwilowo niedostępny.');
                 } else if (r.status === 429) {
                   setJoinError(
                     'Zbyt wiele prób dołączenia. Odczekaj chwilę i spróbuj ponownie.',

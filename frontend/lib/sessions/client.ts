@@ -7,6 +7,9 @@ const activateSchema = z.object({
   pin: z.string(),
   join_url: z.string(),
   started_at: z.string(),
+  schedule_start: z.string().nullable().optional(),
+  schedule_end: z.string().nullable().optional(),
+  manual_status: z.enum(['open', 'closed']).nullable().optional(),
 });
 
 const sessionParticipantSchema = z.object({
@@ -55,12 +58,35 @@ async function adminFetch(path: string, init?: RequestInit): Promise<unknown> {
   return JSON.parse(text) as unknown;
 }
 
-export async function activateQuiz(quizId: string) {
+export interface ActivateBody {
+  schedule_start?: string | null;
+  schedule_end?: string | null;
+  manual_status?: 'open' | 'closed' | null;
+}
+
+export async function activateQuiz(quizId: string, body?: ActivateBody) {
   return activateSchema.parse(
     await adminFetch(`admin/quiz/${encodeURIComponent(quizId)}/activate`, {
       method: 'POST',
+      body: body !== undefined ? JSON.stringify(body) : undefined,
     }),
   );
+}
+
+export interface AvailabilityPatch {
+  schedule_start?: string | null;
+  schedule_end?: string | null;
+  manual_status?: 'open' | 'closed' | null;
+}
+
+export async function patchAvailability(
+  quizId: string,
+  patch: AvailabilityPatch,
+): Promise<void> {
+  await adminFetch(`admin/quiz/${encodeURIComponent(quizId)}/availability`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  });
 }
 
 export async function stopQuiz(quizId: string) {

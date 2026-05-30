@@ -3,7 +3,7 @@ import { type KqfQuiz, kqfQuizSchema } from '@/lib/kqf';
 
 export type JoinResult =
   | { ok: true; quiz: KqfQuiz }
-  | { ok: false; status: number; profanity?: boolean };
+  | { ok: false; status: number; detail?: string; opensAt?: string };
 
 export type SubmitResult =
   | { ok: true }
@@ -24,23 +24,30 @@ export async function joinPlay(
     return { ok: false, status: 0 };
   }
   if (!r.ok) {
-    if (r.status === 400) {
-      try {
-        const body = (await r.json()) as {
-          detail?: { error?: string } | string;
-        };
-        const d = body?.detail;
-        if (
-          typeof d === 'object' &&
-          d !== null &&
-          'error' in d &&
-          d.error === 'nickname_profanity'
-        ) {
-          return { ok: false, status: 400, profanity: true };
+    try {
+      const body = (await r.json()) as unknown;
+      if (body && typeof body === 'object') {
+        const detail = (body as Record<string, unknown>).detail;
+        if (detail && typeof detail === 'object') {
+          const d = detail as Record<string, unknown>;
+          return {
+            ok: false,
+            status: r.status,
+            detail:
+              typeof d.code === 'string'
+                ? d.code
+                : typeof d.error === 'string'
+                  ? d.error
+                  : undefined,
+            opensAt: typeof d.opens_at === 'string' ? d.opens_at : undefined,
+          };
         }
-      } catch {
-        /* fallthrough */
+        if (typeof detail === 'string') {
+          return { ok: false, status: r.status, detail };
+        }
       }
+    } catch {
+      /* fallthrough */
     }
     return { ok: false, status: r.status };
   }

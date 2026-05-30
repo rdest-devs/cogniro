@@ -6,10 +6,13 @@ import {
   CircleStop,
   Download,
   ExternalLink,
+  Lock,
+  LockOpen,
   RefreshCcw,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
+import { ActivateModal } from '@/app/components/admin/dashboard/ActivateModal';
 import { QrCode } from '@/app/components/admin/dashboard/QrCode';
 import AdminLayout from '@/app/components/admin/layout/AdminLayout';
 import {
@@ -25,13 +28,17 @@ import { SortableTh } from '@/app/components/common/SortableTh';
 import { useSortableColumns } from '@/hooks/useSortableColumns';
 import { formatAdminDate } from '@/lib/admin-date-time';
 import {
+  type ActivateBody,
   activateQuiz,
   blockNickname,
   getSessionSnapshot,
+  patchAvailability,
   stopQuiz,
 } from '@/lib/sessions/client';
 
 type Snapshot = Awaited<ReturnType<typeof getSessionSnapshot>>;
+type Activation = Awaited<ReturnType<typeof activateQuiz>>;
+type Phase = 'modal' | 'loading' | 'running' | 'error';
 type SortKey = 'nickname' | 'status' | 'score';
 
 const SORT_COLUMNS = [
@@ -111,11 +118,8 @@ export function RunningQuizView({
   onBack,
   onLogout,
 }: Props) {
-  const [activation, setActivation] = useState<{
-    pin: string;
-    join_url: string;
-    started_at: string;
-  } | null>(null);
+  const [phase, setPhase] = useState<Phase>('modal');
+  const [activation, setActivation] = useState<Activation | null>(null);
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const sort = useSortableColumns<SortKey>({ initialKey: 'score' });
@@ -238,27 +242,20 @@ export function RunningQuizView({
     }
   };
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const nextActivation = await activateQuiz(quizId);
-        if (!cancelled) {
-          setActivation(nextActivation);
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setErr(String(e));
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [quizId]);
+  const handleModalConfirm = async (body: ActivateBody) => {
+    setPhase('loading');
+    try {
+      const nextActivation = await activateQuiz(quizId, body);
+      setActivation(nextActivation);
+      setPhase('running');
+    } catch (e) {
+      setErr(String(e));
+      setPhase('error');
+    }
+  };
 
   useEffect(() => {
-    if (!activation) {
+    if (phase !== 'running') {
       return;
     }
     let cancelled = false;
@@ -277,9 +274,25 @@ export function RunningQuizView({
     return () => {
       cancelled = true;
     };
-  }, [activation, quizId]);
+  }, [phase, quizId]);
 
-  if (err) {
+  if (phase === 'modal') {
+    return (
+      <AdminLayout
+        activeItem={menuActiveItem}
+        logoHref={logoHref}
+        onMenuNavigate={onMenuNavigate}
+        onLogout={onLogout}
+      >
+        <ActivateModal
+          onConfirm={(body) => void handleModalConfirm(body)}
+          onCancel={onBack}
+        />
+      </AdminLayout>
+    );
+  }
+
+  if (phase === 'error' || err) {
     return (
       <AdminLayout
         activeItem={menuActiveItem}
@@ -300,7 +313,7 @@ export function RunningQuizView({
     );
   }
 
-  if (!activation) {
+  if (phase === 'loading' || !activation) {
     return (
       <AdminLayout
         activeItem={menuActiveItem}
@@ -382,6 +395,37 @@ export function RunningQuizView({
             </div>
           </div>
         </div>
+        {activation.schedule_end && (
+          <div className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--card-bg)] px-4 py-2 text-sm text-[var(--text-muted)]">
+            <span>
+              Dostępny do:{' '}
+              <strong className="text-[var(--text-dark)]">
+                {new Date(activation.schedule_end).toLocaleString('pl-PL', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  day: '2-digit',
+                  month: '2-digit',
+                })}
+              </strong>
+            </span>
+            <button
+              type="button"
+              className="text-xs text-[var(--primary-blue)] hover:underline"
+              onClick={async () => {
+                try {
+                  await patchAvailability(quizId, { schedule_end: null });
+                  setActivation((prev) =>
+                    prev ? { ...prev, schedule_end: null } : prev,
+                  );
+                } catch (e) {
+                  setErr(String(e));
+                }
+              }}
+            >
+              Anuluj limit
+            </button>
+          </div>
+        )}
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
@@ -397,6 +441,43 @@ export function RunningQuizView({
             <RefreshCcw size={14} aria-hidden />
             Odśwież
           </button>
+          {activation.manual_status !== 'closed' ? (
+            <button
+              type="button"
+              className={adminToolbarButtonClass}
+              onClick={async () => {
+                try {
+                  await patchAvailability(quizId, { manual_status: 'closed' });
+                  setActivation((prev) =>
+                    prev ? { ...prev, manual_status: 'closed' } : prev,
+                  );
+                } catch (e) {
+                  setErr(String(e));
+                }
+              }}
+            >
+              <Lock size={14} aria-hidden />
+              Zamknij dostęp
+            </button>
+          ) : (
+            <button
+              type="button"
+              className={adminToolbarButtonClass}
+              onClick={async () => {
+                try {
+                  await patchAvailability(quizId, { manual_status: 'open' });
+                  setActivation((prev) =>
+                    prev ? { ...prev, manual_status: 'open' } : prev,
+                  );
+                } catch (e) {
+                  setErr(String(e));
+                }
+              }}
+            >
+              <LockOpen size={14} aria-hidden />
+              Otwórz dostęp
+            </button>
+          )}
           <button
             type="button"
             className={adminDangerOutlineButtonClass}

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -203,6 +203,28 @@ class AdminQuizDetailResponse(BaseModel):
     created_at: str
     updated_at: str
     last_activated_at: str | None = None
+    schedule_start: str | None = None
+    schedule_end: str | None = None
+    manual_status: Optional[Literal["open", "closed"]] = None
     questions: list[AdminQuizQuestionPayload] = Field(min_length=1)
+
+    model_config = ConfigDict(extra="ignore")
+
+
+# ---------- Availability ----------
+
+
+class AvailabilityPatchRequest(BaseModel):
+    schedule_start: str | None = None
+    schedule_end: str | None = None
+    manual_status: Optional[Literal["open", "closed"]] = None
+
+    model_config = ConfigDict(extra="ignore")
+
+
+class ActivateRequest(BaseModel):
+    schedule_start: str | None = None
+    schedule_end: str | None = None
+    manual_status: Optional[Literal["open", "closed"]] = None
 
     model_config = ConfigDict(extra="ignore")
