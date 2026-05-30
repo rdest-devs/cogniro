@@ -17,7 +17,11 @@ import {
   savePlayState,
 } from '@/app/play/storage';
 import type { KqfQuiz } from '@/lib/kqf';
-import { joinPlay } from '@/lib/play/client';
+import {
+  type AvailabilityResult,
+  checkPlayAvailability,
+  joinPlay,
+} from '@/lib/play/client';
 
 type Stage =
   | { name: 'enter-code' }
@@ -85,7 +89,10 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
       : { name: 'enter-code' },
   );
   const [joinError, setJoinError] = useState<string | null>(null);
-  /** Ustawiane w `onPlayAgain` - kolejne zakończenie nie wywołuje `submitPlay`. */
+  const [availability, setAvailability] = useState<AvailabilityResult | null>(
+    null,
+  );
+  /** Ustawiane w `onPlayAgain` — kolejne zakończenie nie wywołuje `submitPlay`. */
   const skipSubmitAfterLocalReplayRef = useRef(false);
   /** Guards against double-finish when global timer and per-question timer race. */
   const finishedRef = useRef(false);
@@ -119,6 +126,19 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
     timeLimit && globalRemaining !== null
       ? Math.max(0, Math.min(100, (globalRemaining / timeLimit) * 100))
       : null;
+
+  const enterNicknameCode = stage.name === 'enter-nickname' ? stage.code : null;
+
+  useEffect(() => {
+    if (!enterNicknameCode) return;
+    let cancelled = false;
+    void checkPlayAvailability(enterNicknameCode).then((result) => {
+      if (!cancelled) setAvailability(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [enterNicknameCode]);
 
   if (stage.name === 'result') {
     return (
@@ -171,6 +191,7 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
         <EnterNickname
           code={stage.code}
           joinError={joinError}
+          availability={availability}
           onJoin={async (nickname) => {
             setJoinError(null);
             try {

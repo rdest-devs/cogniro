@@ -63,9 +63,8 @@ def _origin_from(request: Request) -> str:
     return f"{request.url.scheme}://{request.url.netloc}"
 
 
-@router.post("/{pin}/join", response_model=KqfQuiz)
-async def play_join(pin: str, body: JoinBody, request: Request) -> KqfQuiz:
-    enforce_play_rate_limit(request)
+async def _resolve_pin_availability(pin: str, request: Request) -> sessions.QuizSession:
+    """Raise HTTPException if pin inactive or quiz unavailable. Return live session."""
     session = sessions.lookup_by_pin(pin)
     if session is None:
         raise HTTPException(status_code=404, detail="pin_not_active")
@@ -86,6 +85,21 @@ async def play_join(pin: str, body: JoinBody, request: Request) -> KqfQuiz:
         if reason == "expired":
             raise HTTPException(status_code=410, detail="expired")
         raise HTTPException(status_code=403, detail="manually_closed")
+    return session
+
+
+@router.get("/{pin}/check")
+async def play_check(pin: str, request: Request) -> dict[str, str]:
+    """Check PIN availability without registering a participant."""
+    enforce_play_rate_limit(request)
+    await _resolve_pin_availability(pin, request)
+    return {"status": "available"}
+
+
+@router.post("/{pin}/join", response_model=KqfQuiz)
+async def play_join(pin: str, body: JoinBody, request: Request) -> KqfQuiz:
+    enforce_play_rate_limit(request)
+    session = await _resolve_pin_availability(pin, request)
     if not is_nickname_allowed(body.nickname):
         raise HTTPException(
             status_code=400,
@@ -105,6 +119,7 @@ async def play_join(pin: str, body: JoinBody, request: Request) -> KqfQuiz:
     except LookupError:
         raise HTTPException(status_code=404, detail="pin_not_active") from None
 
+    paths = get_storage(request.app)
     quiz = await run_in_threadpool(read_quiz_kqf, quiz_dir_for(paths, session.quiz_id))
 
     fm = quiz.front_matter
