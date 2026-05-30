@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import logging
 import os
 import shutil
 import zipfile
@@ -48,6 +49,8 @@ from services.storage import (
     get_storage,
     quiz_dir_for,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _now_iso() -> str:
@@ -190,6 +193,24 @@ def _activation_payload(session: sessions.QuizSession, meta: QuizMeta) -> dict:
     }
 
 
+def _resolve_availability(
+    meta: QuizMeta, body: ActivateRequest | None
+) -> tuple[str | None, str | None, str | None]:
+    """Return (schedule_start, schedule_end, manual_status) merging body into meta.
+
+    Only fields explicitly present in body.model_fields_set override meta values,
+    so an empty-body ActivateRequest({}) is a no-op rather than a wipe.
+    """
+    if body is None:
+        return meta.schedule_start, meta.schedule_end, meta.manual_status
+    fields = body.model_fields_set
+    return (
+        body.schedule_start if "schedule_start" in fields else meta.schedule_start,
+        body.schedule_end if "schedule_end" in fields else meta.schedule_end,
+        body.manual_status if "manual_status" in fields else meta.manual_status,
+    )
+
+
 def activate_quiz(
     app: FastAPI, quiz_id: str, body: ActivateRequest | None = None
 ) -> dict:
@@ -200,9 +221,27 @@ def activate_quiz(
     meta = read_meta_or_rebuild(qd, quiz_id)
     existing = sessions.lookup_by_quiz(quiz_id)
     if existing is not None:
-        # Idempotent: admin UI / React Strict Mode may POST activate more than once
-        # while the same in-memory session is already running.
-        return _activation_payload(existing, meta)
+        if not body or not body.model_fields_set:
+            # Idempotent read: no fields sent, nothing to change.
+            return _activation_payload(existing, meta)
+        # Session already live but caller provided explicit schedule fields — apply them.
+        with QUIZ_WRITE_LOCK:
+            meta = read_meta_or_rebuild(qd, quiz_id)
+            s_start, s_end, m_status = _resolve_availability(meta, body)
+            updated = QuizMeta(
+                id=meta.id,
+                title=meta.title,
+                title_slug=meta.title_slug,
+                created_at=meta.created_at,
+                updated_at=meta.updated_at,
+                question_count=meta.question_count,
+                last_activated_at=meta.last_activated_at,
+                schedule_start=s_start,
+                schedule_end=s_end,
+                manual_status=m_status,
+            )
+            write_meta_json_atomic(qd / "meta.json", updated)
+        return _activation_payload(existing, updated)
     try:
         session = sessions.start_session(quiz_id=quiz_id, quiz_title=meta.title)
     except ValueError:
@@ -216,6 +255,7 @@ def activate_quiz(
     now_ts = _now_iso()
     with QUIZ_WRITE_LOCK:
         meta = read_meta_or_rebuild(qd, quiz_id)
+        s_start, s_end, m_status = _resolve_availability(meta, body)
         new_meta = QuizMeta(
             id=meta.id,
             title=meta.title,
@@ -224,13 +264,9 @@ def activate_quiz(
             updated_at=meta.updated_at,
             question_count=meta.question_count,
             last_activated_at=now_ts,
-            schedule_start=body.schedule_start
-            if body is not None
-            else meta.schedule_start,
-            schedule_end=body.schedule_end if body is not None else meta.schedule_end,
-            manual_status=body.manual_status
-            if body is not None
-            else meta.manual_status,
+            schedule_start=s_start,
+            schedule_end=s_end,
+            manual_status=m_status,
         )
         write_meta_json_atomic(qd / "meta.json", new_meta)
     return _activation_payload(session, new_meta)
@@ -306,9 +342,31 @@ def stop_quiz(app: FastAPI, quiz_id: str) -> dict[str, str]:
         entries=entries,
         max_score=max_score,
     )
-    with QUIZ_WRITE_LOCK:
-        update_availability(
-            qd, schedule_start=None, schedule_end=None, manual_status=None
+    # Best-effort: clear only manual_status (session-scoped override).
+    # schedule_start/schedule_end are configuration and survive across sessions.
+    # Errors here are non-fatal — session is stopped and results are already written.
+    try:
+        with QUIZ_WRITE_LOCK:
+            meta = read_meta_or_rebuild(qd, quiz_id)
+            if meta.manual_status is not None:
+                write_meta_json_atomic(
+                    qd / "meta.json",
+                    QuizMeta(
+                        id=meta.id,
+                        title=meta.title,
+                        title_slug=meta.title_slug,
+                        created_at=meta.created_at,
+                        updated_at=meta.updated_at,
+                        question_count=meta.question_count,
+                        last_activated_at=meta.last_activated_at,
+                        schedule_start=meta.schedule_start,
+                        schedule_end=meta.schedule_end,
+                        manual_status=None,
+                    ),
+                )
+    except OSError as exc:
+        logger.warning(
+            "Could not clear manual_status for quiz %s after stop: %s", quiz_id, exc
         )
     return {"date": stopped_at.strftime("%Y-%m-%d"), "filename": filename}
 
