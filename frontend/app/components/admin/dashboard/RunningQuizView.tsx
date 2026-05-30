@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-import { ActivateModal } from '@/app/components/admin/dashboard/ActivateModal';
 import { QrCode } from '@/app/components/admin/dashboard/QrCode';
 import AdminLayout from '@/app/components/admin/layout/AdminLayout';
 import {
@@ -28,7 +27,6 @@ import { SortableTh } from '@/app/components/common/SortableTh';
 import { useSortableColumns } from '@/hooks/useSortableColumns';
 import { formatAdminDate } from '@/lib/admin-date-time';
 import {
-  type ActivateBody,
   activateQuiz,
   blockNickname,
   getSessionSnapshot,
@@ -38,7 +36,6 @@ import {
 
 type Snapshot = Awaited<ReturnType<typeof getSessionSnapshot>>;
 type Activation = Awaited<ReturnType<typeof activateQuiz>>;
-type Phase = 'modal' | 'loading' | 'running' | 'error';
 type SortKey = 'nickname' | 'status' | 'score';
 
 const SORT_COLUMNS = [
@@ -118,7 +115,6 @@ export function RunningQuizView({
   onBack,
   onLogout,
 }: Props) {
-  const [phase, setPhase] = useState<Phase>('modal');
   const [activation, setActivation] = useState<Activation | null>(null);
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -242,20 +238,27 @@ export function RunningQuizView({
     }
   };
 
-  const handleModalConfirm = async (body: ActivateBody) => {
-    setPhase('loading');
-    try {
-      const nextActivation = await activateQuiz(quizId, body);
-      setActivation(nextActivation);
-      setPhase('running');
-    } catch (e) {
-      setErr(String(e));
-      setPhase('error');
-    }
-  };
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const nextActivation = await activateQuiz(quizId);
+        if (!cancelled) {
+          setActivation(nextActivation);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setErr(String(e));
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [quizId]);
 
   useEffect(() => {
-    if (phase !== 'running') {
+    if (!activation) {
       return;
     }
     let cancelled = false;
@@ -274,25 +277,9 @@ export function RunningQuizView({
     return () => {
       cancelled = true;
     };
-  }, [phase, quizId]);
+  }, [activation, quizId]);
 
-  if (phase === 'modal') {
-    return (
-      <AdminLayout
-        activeItem={menuActiveItem}
-        logoHref={logoHref}
-        onMenuNavigate={onMenuNavigate}
-        onLogout={onLogout}
-      >
-        <ActivateModal
-          onConfirm={(body) => void handleModalConfirm(body)}
-          onCancel={onBack}
-        />
-      </AdminLayout>
-    );
-  }
-
-  if (phase === 'error' || err) {
+  if (err) {
     return (
       <AdminLayout
         activeItem={menuActiveItem}
@@ -313,7 +300,7 @@ export function RunningQuizView({
     );
   }
 
-  if (phase === 'loading' || !activation) {
+  if (!activation) {
     return (
       <AdminLayout
         activeItem={menuActiveItem}

@@ -11,6 +11,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 
+import { ActivateModal } from '@/app/components/admin/dashboard/ActivateModal';
 import { SortableTh } from '@/app/components/common/SortableTh';
 import StatusBadge from '@/app/components/common/StatusBadge';
 import type { QuizInfo, ResultRow } from '@/app/types';
@@ -18,6 +19,7 @@ import { useSortableColumns } from '@/hooks/useSortableColumns';
 import { AdminQuizApiError, deleteAdminQuiz } from '@/lib/admin-quiz';
 import { parseResultDate, parseTimeSeconds } from '@/lib/admin-result-sort';
 import { downloadExport } from '@/lib/import-export/client';
+import { type ActivateBody, activateQuiz } from '@/lib/sessions/client';
 
 import AdminLayout from '../layout/AdminLayout';
 import {
@@ -69,6 +71,12 @@ export default function QuizDetail({
   const router = useRouter();
   const [deleteBusy, setDeleteBusy] = useState<string | null>(null);
   const [exportBusy, setExportBusy] = useState<string | null>(null);
+  const [expandedQuizId, setExpandedQuizId] = useState<string | null>(null);
+  const [activating, setActivating] = useState(false);
+  const [panelAnchor, setPanelAnchor] = useState<{
+    top: number;
+    right: number;
+  } | null>(null);
 
   const selectedQuiz = selectedQuizId
     ? quizzes.find((quiz) => quiz.id === selectedQuizId)
@@ -80,6 +88,22 @@ export default function QuizDetail({
       router.push(`${adminBase}?${qs.toString()}`);
     },
     [router, adminBase],
+  );
+
+  const handleActivateConfirm = useCallback(
+    async (quizId: string, body: ActivateBody) => {
+      setActivating(true);
+      try {
+        await activateQuiz(quizId, body);
+        setExpandedQuizId(null);
+        goRunning(quizId);
+      } catch {
+        window.alert('Nie udało się uruchomić quizu.');
+      } finally {
+        setActivating(false);
+      }
+    },
+    [goRunning],
   );
 
   const goResults = useCallback(
@@ -235,7 +259,16 @@ export default function QuizDetail({
                 </button>
                 <button
                   type="button"
-                  onClick={() => goRunning(quiz.id)}
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setPanelAnchor({
+                      top: rect.bottom + 8,
+                      right: window.innerWidth - rect.right,
+                    });
+                    setExpandedQuizId(
+                      expandedQuizId === quiz.id ? null : quiz.id,
+                    );
+                  }}
                   className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--text-dark)] px-3 py-2 text-xs font-semibold text-[var(--text-dark)] hover:bg-[var(--text-dark)] hover:text-white"
                 >
                   <Play size={14} />
@@ -323,6 +356,27 @@ export default function QuizDetail({
           </section>
         )}
       </div>
+
+      {expandedQuizId && panelAnchor && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setExpandedQuizId(null)}
+          />
+          <div
+            className="fixed z-50 w-[420px]"
+            style={{ top: panelAnchor.top, right: panelAnchor.right }}
+          >
+            <ActivateModal
+              onConfirm={(body) =>
+                void handleActivateConfirm(expandedQuizId, body)
+              }
+              onCancel={() => setExpandedQuizId(null)}
+              busy={activating}
+            />
+          </div>
+        </>
+      )}
     </AdminLayout>
   );
 }
