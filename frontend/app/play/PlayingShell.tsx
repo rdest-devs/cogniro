@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
+import ProgressBar from '@/app/components/common/ProgressBar';
 import SubmitButton from '@/app/components/common/SubmitButton';
 import MultipleChoice from '@/app/components/quiz/questions/MultipleChoice';
 import Ordering from '@/app/components/quiz/questions/Ordering';
@@ -115,10 +116,15 @@ function ActiveQuestion({
   }, [q.time_s]);
 
   const timeDisplay = remaining === null ? '--:--' : formatTime(remaining);
+  const progressPercent =
+    q.time_s && remaining !== null
+      ? (remaining / q.time_s) * 100
+      : ((questionNumber - 1) / total) * 100 + 100 / total;
   const qImage = questionImage(q.media);
 
+  let questionEl: React.ReactNode = null;
   if (q.type === 'singlechoice') {
-    return (
+    questionEl = (
       <SingleChoice
         questionNumber={questionNumber}
         totalQuestions={total}
@@ -129,10 +135,8 @@ function ActiveQuestion({
         onSubmit={(idx) => onAdvance(idx)}
       />
     );
-  }
-
-  if (q.type === 'multichoice') {
-    return (
+  } else if (q.type === 'multichoice') {
+    questionEl = (
       <MultipleChoice
         questionNumber={questionNumber}
         totalQuestions={total}
@@ -143,10 +147,8 @@ function ActiveQuestion({
         onSubmit={(indices) => onAdvance(indices)}
       />
     );
-  }
-
-  if (q.type === 'truefalse') {
-    return (
+  } else if (q.type === 'truefalse') {
+    questionEl = (
       <QuizLayout
         questionNumber={questionNumber}
         totalQuestions={total}
@@ -168,10 +170,8 @@ function ActiveQuestion({
         />
       </QuizLayout>
     );
-  }
-
-  if (q.type === 'slider') {
-    return (
+  } else if (q.type === 'slider') {
+    questionEl = (
       <SliderQuestion
         questionNumber={questionNumber}
         totalQuestions={total}
@@ -189,10 +189,8 @@ function ActiveQuestion({
         onSubmit={(n) => onAdvance(n)}
       />
     );
-  }
-
-  if (q.type === 'ordering') {
-    return (
+  } else if (q.type === 'ordering') {
+    questionEl = (
       <Ordering
         questionNumber={questionNumber}
         totalQuestions={total}
@@ -205,7 +203,12 @@ function ActiveQuestion({
     );
   }
 
-  return null;
+  return (
+    <>
+      <ProgressBar percent={progressPercent} />
+      {questionEl}
+    </>
+  );
 }
 
 type Props = {

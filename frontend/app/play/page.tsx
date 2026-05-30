@@ -33,18 +33,11 @@ type Stage =
       skipServerSubmit?: boolean;
     };
 
-function formatGlobalTime(seconds: number): string {
-  const s = Math.max(0, Math.ceil(seconds));
-  const mm = String(Math.floor(s / 60)).padStart(2, '0');
-  const ss = String(s % 60).padStart(2, '0');
-  return `${mm}:${ss}`;
-}
-
 function useGlobalQuizTimer(
   timeLimit: number | null | undefined,
   startedAt: string | undefined,
   onExpire: () => void,
-): string | null {
+): number | null {
   const [remaining, setRemaining] = useState<number | null>(timeLimit ?? null);
   const onExpireRef = useRef(onExpire);
 
@@ -64,7 +57,7 @@ function useGlobalQuizTimer(
         clearInterval(interval);
         setTimeout(() => onExpireRef.current(), 0);
       }
-    }, 500);
+    }, 250);
     return () => {
       active = false;
       clearInterval(interval);
@@ -72,7 +65,7 @@ function useGlobalQuizTimer(
   }, [timeLimit, startedAt]);
 
   if (remaining === null || !timeLimit) return null;
-  return formatGlobalTime(remaining);
+  return remaining;
 }
 
 function shuffleArray<T>(arr: T[]): T[] {
@@ -94,8 +87,10 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
   /** Ustawiane w `onPlayAgain` — kolejne zakończenie nie wywołuje `submitPlay`. */
   const skipSubmitAfterLocalReplayRef = useRef(false);
 
-  const globalTimerDisplay = useGlobalQuizTimer(
-    stage.name === 'playing' ? stage.state.quiz.front_matter.time_limit : null,
+  const timeLimit =
+    stage.name === 'playing' ? stage.state.quiz.front_matter.time_limit : null;
+  const globalRemaining = useGlobalQuizTimer(
+    timeLimit,
     stage.name === 'playing' ? stage.state.startedAt : undefined,
     () => {
       if (stage.name !== 'playing') return;
@@ -111,6 +106,10 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
       });
     },
   );
+  const progressPct =
+    timeLimit && globalRemaining !== null
+      ? Math.max(0, Math.min(100, (globalRemaining / timeLimit) * 100))
+      : null;
 
   if (stage.name === 'result') {
     return (
@@ -229,9 +228,12 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
       )}
       {stage.name === 'playing' && (
         <div className="flex min-h-0 flex-1 flex-col">
-          {globalTimerDisplay !== null && (
-            <div className="flex items-center justify-center bg-[var(--primary-blue)] px-4 py-1.5 text-sm font-bold text-white">
-              Czas quizu: {globalTimerDisplay}
+          {progressPct !== null && (
+            <div className="h-1.5 w-full bg-[var(--border)]">
+              <div
+                className="h-full bg-[var(--primary-blue)] transition-[width] duration-200 ease-linear"
+                style={{ width: `${progressPct}%` }}
+              />
             </div>
           )}
           <PlayingShell

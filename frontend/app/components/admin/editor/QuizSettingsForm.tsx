@@ -159,7 +159,7 @@ export default function QuizSettingsForm({
         {shuffleQuestions && (
           <div className="flex flex-col gap-1 rounded-xl border border-[var(--border)] bg-white px-3 py-3">
             <span className="text-[13px] font-medium text-[var(--text-muted)]">
-              Tryb losowania
+              Sposób losowania
             </span>
             <label className="flex cursor-pointer items-center gap-2 py-1">
               <input
@@ -171,9 +171,9 @@ export default function QuizSettingsForm({
                 className="accent-[var(--primary-blue)]"
               />
               <span className="text-sm text-[var(--text-dark)]">
-                <span className="font-medium">Każdy gracz inaczej</span>
+                <span className="font-medium">Indywidualne dla uczestnika</span>
                 <span className="ml-1 text-[12px] text-[var(--text-muted)]">
-                  — silniejsza ochrona przed ściąganiem
+                  — każdy uczestnik otrzymuje inną kolejność pytań
                 </span>
               </span>
             </label>
@@ -187,9 +187,9 @@ export default function QuizSettingsForm({
                 className="accent-[var(--primary-blue)]"
               />
               <span className="text-sm text-[var(--text-dark)]">
-                <span className="font-medium">Wszyscy gracze tak samo</span>
+                <span className="font-medium">Jednakowe dla całej sesji</span>
                 <span className="ml-1 text-[12px] text-[var(--text-muted)]">
-                  — ta sama kolejność w całej sesji
+                  — wszyscy uczestnicy widzą pytania w tej samej kolejności
                 </span>
               </span>
             </label>

@@ -1,15 +1,22 @@
 interface ProgressBarProps {
-  current: number;
-  total: number;
+  percent: number;
+  animated?: boolean;
 }
 
-export default function ProgressBar({ current, total }: ProgressBarProps) {
-  const percent = total > 0 ? Math.min((current / total) * 100, 100) : 0;
+export default function ProgressBar({
+  percent,
+  animated = true,
+}: ProgressBarProps) {
+  const clamped = Math.max(0, Math.min(100, percent));
   return (
     <div className="h-1.5 w-full bg-[var(--border)]">
       <div
-        className="h-full bg-[var(--orange)] transition-all duration-300"
-        style={{ width: `${percent}%` }}
+        className={
+          animated
+            ? 'h-full bg-[var(--orange)] transition-[width] duration-300 ease-linear'
+            : 'h-full bg-[var(--orange)]'
+        }
+        style={{ width: `${clamped}%` }}
       />
     </div>
   );
