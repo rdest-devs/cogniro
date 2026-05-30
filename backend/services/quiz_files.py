@@ -7,7 +7,7 @@ import logging
 import re
 import shutil
 from urllib.parse import urlparse
-from dataclasses import dataclass
+from dataclasses import dataclass, fields as dataclass_fields
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 
@@ -83,8 +83,9 @@ def read_meta_or_rebuild(quiz_dir: Path, quiz_id: str) -> QuizMeta:
             data = json.loads(meta_path.read_text(encoding="utf-8"))
             if data.get("id") != quiz_id:
                 raise ValueError("meta id mismatch")
-            return QuizMeta(**data)
-        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+            known = {f.name for f in dataclass_fields(QuizMeta)}
+            return QuizMeta(**{k: v for k, v in data.items() if k in known})
+        except (json.JSONDecodeError, KeyError, ValueError):
             pass
     quiz = read_quiz_kqf(quiz_dir)
     now = (

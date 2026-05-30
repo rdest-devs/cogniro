@@ -32,6 +32,16 @@ const stopResponseSchema = z.object({
   filename: z.string(),
 });
 
+export class AdminFetchError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'AdminFetchError';
+  }
+}
+
 async function adminFetch(path: string, init?: RequestInit): Promise<unknown> {
   const headers = new Headers(init?.headers);
   const token = getStoredAdminToken();
@@ -46,7 +56,14 @@ async function adminFetch(path: string, init?: RequestInit): Promise<unknown> {
     headers,
   });
   if (!r.ok) {
-    throw new Error(`${r.status}`);
+    let message = `HTTP ${r.status}`;
+    try {
+      const body = (await r.json()) as { detail?: string };
+      if (typeof body.detail === 'string' && body.detail) message = body.detail;
+    } catch {
+      /* ignore */
+    }
+    throw new AdminFetchError(r.status, message);
   }
   if (r.status === 204) {
     return null;

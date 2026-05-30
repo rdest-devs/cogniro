@@ -72,7 +72,7 @@ export default function QuizDetail({
   const [deleteBusy, setDeleteBusy] = useState<string | null>(null);
   const [exportBusy, setExportBusy] = useState<string | null>(null);
   const [expandedQuizId, setExpandedQuizId] = useState<string | null>(null);
-  const [activating, setActivating] = useState(false);
+  const [activatingId, setActivatingId] = useState<string | null>(null);
   const [panelAnchor, setPanelAnchor] = useState<{
     top: number;
     right: number;
@@ -92,7 +92,7 @@ export default function QuizDetail({
 
   const handleActivateConfirm = useCallback(
     async (quizId: string, body: ActivateBody) => {
-      setActivating(true);
+      setActivatingId(quizId);
       try {
         await activateQuiz(quizId, body);
         setExpandedQuizId(null);
@@ -100,7 +100,7 @@ export default function QuizDetail({
       } catch {
         window.alert('Nie udało się uruchomić quizu.');
       } finally {
-        setActivating(false);
+        setActivatingId(null);
       }
     },
     [goRunning],
@@ -372,7 +372,7 @@ export default function QuizDetail({
                 void handleActivateConfirm(expandedQuizId, body)
               }
               onCancel={() => setExpandedQuizId(null)}
-              busy={activating}
+              busy={activatingId === expandedQuizId}
             />
           </div>
         </>

@@ -35,7 +35,6 @@ from services.quiz_files import (
     read_quiz_kqf,
     remove_obsolete_quiz_media_files,
     update_availability,
-    update_last_activated_at,
     write_meta_json_atomic,
     write_quiz_dir,
     write_text_atomic,
@@ -63,13 +62,13 @@ def _now_iso() -> str:
 def check_availability(meta: QuizMeta) -> tuple[bool, str | None]:
     if meta.manual_status == "closed":
         return False, "manually_closed"
+    if meta.manual_status == "open":
+        return True, None
     now = datetime.now(timezone.utc)
     if meta.schedule_end:
         end = datetime.fromisoformat(meta.schedule_end)
         if now > end:
             return False, "expired"
-    if meta.manual_status == "open":
-        return True, None
     if meta.schedule_start:
         start = datetime.fromisoformat(meta.schedule_start)
         if now < start:
@@ -215,7 +214,8 @@ def activate_quiz(
             ) from None
         return _activation_payload(raced, meta)
     now_ts = _now_iso()
-    if body is not None:
+    with QUIZ_WRITE_LOCK:
+        meta = read_meta_or_rebuild(qd, quiz_id)
         new_meta = QuizMeta(
             id=meta.id,
             title=meta.title,
@@ -224,16 +224,16 @@ def activate_quiz(
             updated_at=meta.updated_at,
             question_count=meta.question_count,
             last_activated_at=now_ts,
-            schedule_start=body.schedule_start,
-            schedule_end=body.schedule_end,
-            manual_status=body.manual_status,
+            schedule_start=body.schedule_start
+            if body is not None
+            else meta.schedule_start,
+            schedule_end=body.schedule_end if body is not None else meta.schedule_end,
+            manual_status=body.manual_status
+            if body is not None
+            else meta.manual_status,
         )
         write_meta_json_atomic(qd / "meta.json", new_meta)
-        meta = new_meta
-    else:
-        update_last_activated_at(qd, now_ts)
-        meta = read_meta_or_rebuild(qd, quiz_id)
-    return _activation_payload(session, meta)
+    return _activation_payload(session, new_meta)
 
 
 def _build_join_url(pin: str) -> str:
@@ -306,13 +306,9 @@ def stop_quiz(app: FastAPI, quiz_id: str) -> dict[str, str]:
         entries=entries,
         max_score=max_score,
     )
-    meta = read_meta_or_rebuild(qd, quiz_id)
-    if meta.manual_status is not None:
+    with QUIZ_WRITE_LOCK:
         update_availability(
-            qd,
-            schedule_start=meta.schedule_start,
-            schedule_end=meta.schedule_end,
-            manual_status=None,
+            qd, schedule_start=None, schedule_end=None, manual_status=None
         )
     return {"date": stopped_at.strftime("%Y-%m-%d"), "filename": filename}
 
@@ -324,23 +320,24 @@ def patch_availability(
     qd = quiz_dir_for(paths, quiz_id)
     if not qd.is_dir():
         raise HTTPException(status_code=404, detail="Nie znaleziono quizu.")
-    meta = read_meta_or_rebuild(qd, quiz_id)
-    fields = body.model_fields_set
-    new_schedule_start = (
-        body.schedule_start if "schedule_start" in fields else meta.schedule_start
-    )
-    new_schedule_end = (
-        body.schedule_end if "schedule_end" in fields else meta.schedule_end
-    )
-    new_manual_status = (
-        body.manual_status if "manual_status" in fields else meta.manual_status
-    )
-    update_availability(
-        qd,
-        schedule_start=new_schedule_start,
-        schedule_end=new_schedule_end,
-        manual_status=new_manual_status,
-    )
+    with QUIZ_WRITE_LOCK:
+        meta = read_meta_or_rebuild(qd, quiz_id)
+        fields = body.model_fields_set
+        new_schedule_start = (
+            body.schedule_start if "schedule_start" in fields else meta.schedule_start
+        )
+        new_schedule_end = (
+            body.schedule_end if "schedule_end" in fields else meta.schedule_end
+        )
+        new_manual_status = (
+            body.manual_status if "manual_status" in fields else meta.manual_status
+        )
+        update_availability(
+            qd,
+            schedule_start=new_schedule_start,
+            schedule_end=new_schedule_end,
+            manual_status=new_manual_status,
+        )
 
 
 def _safe_import_member_path(quiz_dir: Path, member: str) -> Path | None:

@@ -118,6 +118,7 @@ export function RunningQuizView({
   const [activation, setActivation] = useState<Activation | null>(null);
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [patchErr, setPatchErr] = useState<string | null>(null);
   const sort = useSortableColumns<SortKey>({ initialKey: 'score' });
 
   const sortedParticipants = useMemo(() => {
@@ -405,11 +406,24 @@ export function RunningQuizView({
                     prev ? { ...prev, schedule_end: null } : prev,
                   );
                 } catch (e) {
-                  setErr(String(e));
+                  setPatchErr(String(e));
                 }
               }}
             >
               Anuluj limit
+            </button>
+          </div>
+        )}
+        {patchErr && (
+          <div className="flex items-center justify-between rounded-xl border border-[var(--wrong-fg)] bg-[var(--wrong-bg)] px-4 py-2 text-sm text-[var(--wrong-fg)]">
+            <span>{patchErr}</span>
+            <button
+              type="button"
+              onClick={() => setPatchErr(null)}
+              className="ml-4 font-semibold hover:opacity-70"
+              aria-label="Zamknij"
+            >
+              ×
             </button>
           </div>
         )}
@@ -439,7 +453,7 @@ export function RunningQuizView({
                     prev ? { ...prev, manual_status: 'closed' } : prev,
                   );
                 } catch (e) {
-                  setErr(String(e));
+                  setPatchErr(String(e));
                 }
               }}
             >
@@ -457,7 +471,7 @@ export function RunningQuizView({
                     prev ? { ...prev, manual_status: 'open' } : prev,
                   );
                 } catch (e) {
-                  setErr(String(e));
+                  setPatchErr(String(e));
                 }
               }}
             >

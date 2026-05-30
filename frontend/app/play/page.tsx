@@ -199,7 +199,7 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
                       : 'Quiz jeszcze nie jest dostępny.',
                   );
                 } else if (r.status === 410) {
-                  setJoinError('Quiz został zamknięty.');
+                  setJoinError('Czas dostępności quizu minął.');
                 } else if (r.status === 403) {
                   setJoinError('Quiz jest chwilowo niedostępny.');
                 } else if (r.status === 429) {

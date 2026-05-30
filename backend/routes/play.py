@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field, StringConstraints
 from schemas.kqf import KqfQuestion, KqfQuiz
 from services import sessions
 from services.admin_quiz import check_availability
+from services.kqf import KqfParseError
 from services.play_rate_limit import enforce_play_rate_limit
 from services.profanity import is_nickname_allowed
 from services.quiz_files import (
@@ -69,9 +70,12 @@ async def play_join(pin: str, body: JoinBody, request: Request) -> KqfQuiz:
     if session is None:
         raise HTTPException(status_code=404, detail="pin_not_active")
     paths = get_storage(request.app)
-    meta = await run_in_threadpool(
-        read_meta_or_rebuild, quiz_dir_for(paths, session.quiz_id), session.quiz_id
-    )
+    try:
+        meta = await run_in_threadpool(
+            read_meta_or_rebuild, quiz_dir_for(paths, session.quiz_id), session.quiz_id
+        )
+    except (OSError, KqfParseError):
+        raise HTTPException(status_code=404, detail="pin_not_active") from None
     available, reason = check_availability(meta)
     if not available:
         if reason == "not_yet":

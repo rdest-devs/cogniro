@@ -20,16 +20,17 @@ export function ActivateModal({ onConfirm, onCancel, busy = false }: Props) {
   const [schedEnd, setSchedEnd] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const now = new Date();
+  const minDate = new Date();
 
   const handleConfirm = () => {
     setError(null);
+    const now = new Date();
 
     if (mode === 'now') {
       onConfirm({
         schedule_start: null,
         schedule_end: endDate ? endDate.toISOString() : null,
-        manual_status: 'open',
+        manual_status: null,
       });
       return;
     }
@@ -92,7 +93,7 @@ export function ActivateModal({ onConfirm, onCancel, busy = false }: Props) {
           label="Zamknij dostęp o (opcjonalnie):"
           value={endDate}
           onChange={setEndDate}
-          minDate={now}
+          minDate={minDate}
           optional
         />
       )}
@@ -103,13 +104,13 @@ export function ActivateModal({ onConfirm, onCancel, busy = false }: Props) {
             label="Dostępny od:"
             value={startDate}
             onChange={setStartDate}
-            minDate={now}
+            minDate={minDate}
           />
           <DateTimePicker
             label="Dostępny do (opcjonalnie):"
             value={schedEnd}
             onChange={setSchedEnd}
-            minDate={startDate ?? now}
+            minDate={startDate ?? minDate}
             optional
           />
         </div>

@@ -37,7 +37,7 @@ export function DateTimePicker({
   const [openUp, setOpenUp] = useState(false);
   const [hour, setHour] = useState(value ? value.getHours() : 12);
   const [minute, setMinute] = useState(
-    value ? (Math.round(value.getMinutes() / 5) * 5) % 60 : 0,
+    value ? Math.min(Math.round(value.getMinutes() / 5) * 5, 55) : 0,
   );
   const [selectedDay, setSelectedDay] = useState<Date | undefined>(
     value ?? undefined,
