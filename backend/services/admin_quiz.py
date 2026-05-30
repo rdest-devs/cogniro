@@ -69,13 +69,21 @@ def check_availability(meta: QuizMeta) -> tuple[bool, str | None]:
         return True, None
     now = datetime.now(timezone.utc)
     if meta.schedule_end:
-        end = datetime.fromisoformat(meta.schedule_end)
-        if now > end:
-            return False, "expired"
+        try:
+            end = datetime.fromisoformat(meta.schedule_end)
+            if now > end:
+                return False, "expired"
+        except ValueError:
+            logger.warning("Unparseable schedule_end, skipping: %r", meta.schedule_end)
     if meta.schedule_start:
-        start = datetime.fromisoformat(meta.schedule_start)
-        if now < start:
-            return False, "not_yet"
+        try:
+            start = datetime.fromisoformat(meta.schedule_start)
+            if now < start:
+                return False, "not_yet"
+        except ValueError:
+            logger.warning(
+                "Unparseable schedule_start, skipping: %r", meta.schedule_start
+            )
     return True, None
 
 

@@ -27,6 +27,10 @@ export function ActivateModal({ onConfirm, onCancel, busy = false }: Props) {
     const now = new Date();
 
     if (mode === 'now') {
+      if (endDate && endDate <= now) {
+        setError('Godzina zakończenia musi być w przyszłości.');
+        return;
+      }
       onConfirm({
         schedule_start: null,
         schedule_end: endDate ? endDate.toISOString() : null,

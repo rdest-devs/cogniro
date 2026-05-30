@@ -28,6 +28,7 @@ import { useSortableColumns } from '@/hooks/useSortableColumns';
 import { formatAdminDate } from '@/lib/admin-date-time';
 import {
   activateQuiz,
+  AdminFetchError,
   blockNickname,
   getSessionSnapshot,
   patchAvailability,
@@ -406,7 +407,13 @@ export function RunningQuizView({
                     prev ? { ...prev, schedule_end: null } : prev,
                   );
                 } catch (e) {
-                  setPatchErr(String(e));
+                  setPatchErr(
+                    e instanceof AdminFetchError
+                      ? e.message
+                      : e instanceof Error
+                        ? e.message
+                        : String(e),
+                  );
                 }
               }}
             >
@@ -453,7 +460,13 @@ export function RunningQuizView({
                     prev ? { ...prev, manual_status: 'closed' } : prev,
                   );
                 } catch (e) {
-                  setPatchErr(String(e));
+                  setPatchErr(
+                    e instanceof AdminFetchError
+                      ? e.message
+                      : e instanceof Error
+                        ? e.message
+                        : String(e),
+                  );
                 }
               }}
             >
@@ -471,7 +484,13 @@ export function RunningQuizView({
                     prev ? { ...prev, manual_status: 'open' } : prev,
                   );
                 } catch (e) {
-                  setPatchErr(String(e));
+                  setPatchErr(
+                    e instanceof AdminFetchError
+                      ? e.message
+                      : e instanceof Error
+                        ? e.message
+                        : String(e),
+                  );
                 }
               }}
             >
