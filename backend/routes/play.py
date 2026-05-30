@@ -73,7 +73,7 @@ async def _resolve_pin_availability(pin: str, request: Request) -> sessions.Quiz
         meta = await run_in_threadpool(
             read_meta_or_rebuild, quiz_dir_for(paths, session.quiz_id), session.quiz_id
         )
-    except (OSError, KqfParseError):
+    except OSError, KqfParseError:
         raise HTTPException(status_code=404, detail="pin_not_active") from None
     available, reason = check_availability(meta)
     if not available:

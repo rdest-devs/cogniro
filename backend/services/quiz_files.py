@@ -85,7 +85,7 @@ def read_meta_or_rebuild(quiz_dir: Path, quiz_id: str) -> QuizMeta:
                 raise ValueError("meta id mismatch")
             known = {f.name for f in dataclass_fields(QuizMeta)}
             return QuizMeta(**{k: v for k, v in data.items() if k in known})
-        except (json.JSONDecodeError, KeyError, ValueError):
+        except json.JSONDecodeError, KeyError, ValueError:
             pass
     quiz = read_quiz_kqf(quiz_dir)
     now = (
@@ -144,7 +144,7 @@ def max_points_from_quiz_dir(quiz_dir: Path) -> int:
         return 0
     try:
         quiz = read_quiz_kqf(quiz_dir)
-    except (OSError, UnicodeDecodeError, KqfParseError):
+    except OSError, UnicodeDecodeError, KqfParseError:
         return 0
     return sum(q.points for q in quiz.questions)
 
