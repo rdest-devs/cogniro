@@ -96,6 +96,9 @@ export function createDefaultQuizFormValues(): QuizEditorFormValues {
     author: null,
     tags: [],
     showAnswerReview: true,
+    quizTimeLimit: null,
+    shuffleQuestions: false,
+    shuffleMode: 'per_player',
     questions: [createEmptyQuestion()],
   };
 }

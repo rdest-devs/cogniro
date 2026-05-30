@@ -172,6 +172,9 @@ export default function QuizEditor({
   const watchedDescription = watch('description') ?? '';
   const watchedAuthor = watch('author') ?? '';
   const watchedShowAnswerReview = watch('showAnswerReview');
+  const watchedQuizTimeLimit = watch('quizTimeLimit') ?? null;
+  const watchedShuffleQuestions = watch('shuffleQuestions') ?? false;
+  const watchedShuffleMode = watch('shuffleMode') ?? 'per_player';
   const isMissingQuizId = mode === 'edit' && !quizId;
   const hasBlockingLoadError =
     mode === 'edit' && (isMissingQuizId || Boolean(loadError));
@@ -369,6 +372,27 @@ export default function QuizEditor({
               showAnswerReview={watchedShowAnswerReview}
               onShowAnswerReviewChange={(value) =>
                 setValue('showAnswerReview', value, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              quizTimeLimit={watchedQuizTimeLimit}
+              onQuizTimeLimitChange={(value) =>
+                setValue('quizTimeLimit', value, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              shuffleQuestions={watchedShuffleQuestions}
+              onShuffleQuestionsChange={(value) =>
+                setValue('shuffleQuestions', value, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              shuffleMode={watchedShuffleMode}
+              onShuffleModeChange={(value) =>
+                setValue('shuffleMode', value, {
                   shouldDirty: true,
                   shouldValidate: true,
                 })

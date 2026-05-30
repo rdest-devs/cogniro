@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import random
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Request
@@ -75,6 +76,23 @@ async def play_join(pin: str, body: JoinBody, request: Request) -> KqfQuiz:
 
     paths = get_storage(request.app)
     quiz = await run_in_threadpool(read_quiz_kqf, quiz_dir_for(paths, session.quiz_id))
+
+    fm = quiz.front_matter
+    if fm.shuffle_questions and fm.shuffle_mode == "session":
+        with sessions._LOCK:
+            if session.shuffled_question_ids is None:
+                ids = [q.id for q in quiz.questions]
+                random.shuffle(ids)
+                session.shuffled_question_ids = ids
+            order = {qid: i for i, qid in enumerate(session.shuffled_question_ids)}
+            quiz = quiz.model_copy(
+                update={
+                    "questions": sorted(
+                        quiz.questions, key=lambda q: order.get(q.id, 999)
+                    )
+                }
+            )
+
     return kqf_with_absolute_media(quiz, session.quiz_id, _origin_from(request))
 
 

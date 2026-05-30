@@ -27,6 +27,7 @@ class QuizSession:
     pin: str
     started_at: datetime
     participants: dict[str, Participant] = field(default_factory=dict)
+    shuffled_question_ids: list[str] | None = None
 
 
 _SESSIONS_BY_QUIZ: dict[str, QuizSession] = {}

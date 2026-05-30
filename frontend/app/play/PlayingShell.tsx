@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
+
 import SubmitButton from '@/app/components/common/SubmitButton';
 import MultipleChoice from '@/app/components/quiz/questions/MultipleChoice';
 import Ordering from '@/app/components/quiz/questions/Ordering';
@@ -10,6 +12,7 @@ import QuestionCard from '@/app/components/quiz/shared/QuestionCard';
 import QuizLayout from '@/app/components/quiz/shared/QuizLayout';
 import type { PlayState } from '@/app/play/storage';
 import type { QuizChoiceAnswer, QuizImage } from '@/app/types';
+import type { KqfQuestion } from '@/lib/kqf';
 import { resolveKqfPlayImageUrls } from '@/lib/media-url';
 
 function sliderTicks(min: number, max: number): number[] {
@@ -58,6 +61,153 @@ function choiceAnswer(c: {
   };
 }
 
+function formatTime(seconds: number): string {
+  const s = Math.max(0, Math.ceil(seconds));
+  const mm = String(Math.floor(s / 60)).padStart(2, '0');
+  const ss = String(s % 60).padStart(2, '0');
+  return `${mm}:${ss}`;
+}
+
+type ActiveQuestionProps = {
+  question: KqfQuestion;
+  questionNumber: number;
+  total: number;
+  answers: Record<string, unknown>;
+  onAdvance: (value: unknown) => void;
+  onAnswerChange: (value: unknown) => void;
+};
+
+function ActiveQuestion({
+  question: q,
+  questionNumber,
+  total,
+  answers,
+  onAdvance,
+  onAnswerChange,
+}: ActiveQuestionProps) {
+  // Initialized once per mount (component remounts via key={q.id} in parent)
+  const [remaining, setRemaining] = useState<number | null>(q.time_s ?? null);
+  const onAdvanceRef = useRef(onAdvance);
+
+  useEffect(() => {
+    onAdvanceRef.current = onAdvance;
+  });
+
+  useEffect(() => {
+    if (!q.time_s) return;
+    let active = true;
+    const interval = setInterval(() => {
+      setRemaining((prev) => {
+        if (prev === null) return null;
+        const next = prev - 1;
+        if (next <= 0 && active) {
+          active = false;
+          setTimeout(() => onAdvanceRef.current(undefined), 0);
+          return 0;
+        }
+        return Math.max(0, next);
+      });
+    }, 1000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [q.time_s]);
+
+  const timeDisplay = remaining === null ? '--:--' : formatTime(remaining);
+  const qImage = questionImage(q.media);
+
+  if (q.type === 'singlechoice') {
+    return (
+      <SingleChoice
+        questionNumber={questionNumber}
+        totalQuestions={total}
+        time={timeDisplay}
+        question={q.text}
+        questionImage={qImage}
+        answers={q.choices.map(choiceAnswer)}
+        onSubmit={(idx) => onAdvance(idx)}
+      />
+    );
+  }
+
+  if (q.type === 'multichoice') {
+    return (
+      <MultipleChoice
+        questionNumber={questionNumber}
+        totalQuestions={total}
+        time={timeDisplay}
+        question={q.text}
+        questionImage={qImage}
+        answers={q.choices.map(choiceAnswer)}
+        onSubmit={(indices) => onAdvance(indices)}
+      />
+    );
+  }
+
+  if (q.type === 'truefalse') {
+    return (
+      <QuizLayout
+        questionNumber={questionNumber}
+        totalQuestions={total}
+        time={timeDisplay}
+      >
+        <QuestionCard question={q.text} hint={q.media?.hint} />
+        <TrueFalseQuestion
+          value={answers[q.id] as boolean | undefined}
+          onChange={onAnswerChange}
+        />
+        <SubmitButton
+          label={questionNumber === total ? 'Zakończ quiz' : 'Dalej'}
+          disabled={answers[q.id] === undefined}
+          onClick={() => {
+            const v = answers[q.id];
+            if (v === undefined) return;
+            onAdvance(v);
+          }}
+        />
+      </QuizLayout>
+    );
+  }
+
+  if (q.type === 'slider') {
+    return (
+      <SliderQuestion
+        questionNumber={questionNumber}
+        totalQuestions={total}
+        time={timeDisplay}
+        question={q.text}
+        hint={q.media?.hint}
+        min={q.min}
+        max={q.max}
+        step={q.step}
+        defaultValue={(answers[q.id] as number | undefined) ?? q.min}
+        unit={q.unit ?? ''}
+        ticks={sliderTicks(q.min, q.max)}
+        labelMin={q.label_min}
+        labelMax={q.label_max}
+        onSubmit={(n) => onAdvance(n)}
+      />
+    );
+  }
+
+  if (q.type === 'ordering') {
+    return (
+      <Ordering
+        questionNumber={questionNumber}
+        totalQuestions={total}
+        time={timeDisplay}
+        question={q.text}
+        hint={q.media?.hint}
+        items={q.items}
+        onSubmit={(order) => onAdvance(order)}
+      />
+    );
+  }
+
+  return null;
+}
+
 type Props = {
   state: PlayState;
   onChange: (s: PlayState) => void;
@@ -67,7 +217,7 @@ type Props = {
 export function PlayingShell({ state, onChange, onFinish }: Props) {
   const q = state.quiz.questions[state.currentQuestionIndex];
   const total = state.quiz.questions.length;
-  const qImage = questionImage(q.media);
+  const questionNumber = state.currentQuestionIndex + 1;
 
   const advance = (value: unknown) => {
     const nextAnswers = { ...state.answers, [q.id]: value };
@@ -80,99 +230,19 @@ export function PlayingShell({ state, onChange, onFinish }: Props) {
     }
   };
 
-  const questionNumber = state.currentQuestionIndex + 1;
-
   return (
     <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-      {q.type === 'singlechoice' && (
-        <SingleChoice
-          key={q.id}
-          questionNumber={questionNumber}
-          totalQuestions={total}
-          time="--:--"
-          question={q.text}
-          questionImage={qImage}
-          answers={q.choices.map(choiceAnswer)}
-          onSubmit={(idx) => advance(idx)}
-        />
-      )}
-      {q.type === 'multichoice' && (
-        <MultipleChoice
-          key={q.id}
-          questionNumber={questionNumber}
-          totalQuestions={total}
-          time="--:--"
-          question={q.text}
-          questionImage={qImage}
-          answers={q.choices.map(choiceAnswer)}
-          onSubmit={(indices) => advance(indices)}
-        />
-      )}
-      {q.type === 'truefalse' && (
-        <QuizLayout
-          key={q.id}
-          questionNumber={questionNumber}
-          totalQuestions={total}
-          time="--:--"
-        >
-          <QuestionCard question={q.text} hint={q.media?.hint} />
-          <TrueFalseQuestion
-            value={state.answers[q.id] as boolean | undefined}
-            onChange={(v) =>
-              onChange({
-                ...state,
-                answers: { ...state.answers, [q.id]: v },
-              })
-            }
-          />
-          <SubmitButton
-            label={
-              state.currentQuestionIndex + 1 === total
-                ? 'Zakończ quiz'
-                : 'Dalej'
-            }
-            disabled={state.answers[q.id] === undefined}
-            onClick={() => {
-              const v = state.answers[q.id];
-              if (v === undefined) {
-                return;
-              }
-              advance(v);
-            }}
-          />
-        </QuizLayout>
-      )}
-      {q.type === 'slider' && (
-        <SliderQuestion
-          key={q.id}
-          questionNumber={questionNumber}
-          totalQuestions={total}
-          time="--:--"
-          question={q.text}
-          hint={q.media?.hint}
-          min={q.min}
-          max={q.max}
-          step={q.step}
-          defaultValue={(state.answers[q.id] as number | undefined) ?? q.min}
-          unit={q.unit ?? ''}
-          ticks={sliderTicks(q.min, q.max)}
-          labelMin={q.label_min}
-          labelMax={q.label_max}
-          onSubmit={(n) => advance(n)}
-        />
-      )}
-      {q.type === 'ordering' && (
-        <Ordering
-          key={q.id}
-          questionNumber={questionNumber}
-          totalQuestions={total}
-          time="--:--"
-          question={q.text}
-          hint={q.media?.hint}
-          items={q.items}
-          onSubmit={(order) => advance(order)}
-        />
-      )}
+      <ActiveQuestion
+        key={q.id}
+        question={q}
+        questionNumber={questionNumber}
+        total={total}
+        answers={state.answers}
+        onAdvance={advance}
+        onAnswerChange={(v) =>
+          onChange({ ...state, answers: { ...state.answers, [q.id]: v } })
+        }
+      />
     </div>
   );
 }
