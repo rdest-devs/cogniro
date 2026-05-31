@@ -21,6 +21,7 @@ import {
   adminDangerOutlineButtonClass,
   adminToolbarButtonClass,
 } from '@/app/components/admin/shared/constants';
+import { formatAdminDate } from '@/lib/admin-date-time';
 import {
   activateQuiz,
   blockNickname,
@@ -310,7 +311,7 @@ export function RunningQuizView({
             </div>
             <div className="text-sm text-[var(--text-dark)]">
               Aktywny od:{' '}
-              {new Date(activation.started_at).toLocaleTimeString('pl-PL')}
+              {formatAdminDate(activation.started_at, 'datetime') ?? '—'}
             </div>
             <div className="mt-4 flex flex-wrap gap-3">
               <button
