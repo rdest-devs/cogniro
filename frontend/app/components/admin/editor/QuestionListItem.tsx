@@ -1087,7 +1087,7 @@ export default function QuestionListItem({
                 </div>
                 {rawQuestionImage && !questionImageUrls && (
                   <p className="text-xs text-[var(--text-muted)]">
-                    Obraz z katalogu quizu (`./media/…`) — zapisz quiz, aby znać
+                    Obraz z katalogu quizu (`./media/…`) - zapisz quiz, aby znać
                     identyfikator i zbudować adres podglądu.
                   </p>
                 )}

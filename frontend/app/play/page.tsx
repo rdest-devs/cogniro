@@ -30,7 +30,7 @@ type Stage =
       quiz: KqfQuiz;
       score: number;
       answers: AnswerMap;
-      /** True after „Spróbuj ponownie" — brak ponownego POST wyniku. */
+      /** True after „Spróbuj ponownie" - brak ponownego POST wyniku. */
       skipServerSubmit?: boolean;
     };
 
@@ -85,7 +85,7 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
       : { name: 'enter-code' },
   );
   const [joinError, setJoinError] = useState<string | null>(null);
-  /** Ustawiane w `onPlayAgain` — kolejne zakończenie nie wywołuje `submitPlay`. */
+  /** Ustawiane w `onPlayAgain` - kolejne zakończenie nie wywołuje `submitPlay`. */
   const skipSubmitAfterLocalReplayRef = useRef(false);
   /** Guards against double-finish when global timer and per-question timer race. */
   const finishedRef = useRef(false);

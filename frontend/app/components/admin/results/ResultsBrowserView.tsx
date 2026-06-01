@@ -136,7 +136,7 @@ export function ResultsBrowserView({
           Statystyki
         </h2>
         <p className="mt-1 text-sm text-[var(--text-muted)]">
-          Zapisane sesje z wynikami — kliknij wiersz, aby zobaczyć szczegóły.
+          Zapisane sesje z wynikami - kliknij wiersz, aby zobaczyć szczegóły.
         </p>
 
         {err && <p className="mt-4 text-sm text-[var(--wrong-fg)]">{err}</p>}

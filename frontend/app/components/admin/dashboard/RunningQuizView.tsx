@@ -84,10 +84,10 @@ function drawWrappedCenteredText(
 
 function formatScoreVsMax(score: number | null, maxScore: number): string {
   if (maxScore <= 0) {
-    return score == null ? '—' : String(score);
+    return score == null ? '-' : String(score);
   }
   if (score == null) {
-    return `— / ${maxScore}`;
+    return `- / ${maxScore}`;
   }
   return `${score} / ${maxScore}`;
 }
