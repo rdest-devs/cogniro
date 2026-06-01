@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field, StringConstraints
 from schemas.kqf import KqfQuiz
 from services import sessions
 from services.play_rate_limit import enforce_play_rate_limit
+from services.profanity import is_nickname_allowed
 from services.quiz_files import (
     kqf_with_absolute_media,
     max_points_from_quiz_dir,
@@ -53,6 +54,16 @@ async def play_join(pin: str, body: JoinBody, request: Request) -> KqfQuiz:
     session = sessions.lookup_by_pin(pin)
     if session is None:
         raise HTTPException(status_code=404, detail="pin_not_active")
+    if not is_nickname_allowed(body.nickname):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "nickname_profanity",
+                "detail_pl": (
+                    "Ten pseudonim zawiera niedozwolone słowa. Wybierz inny."
+                ),
+            },
+        )
     try:
         await run_in_threadpool(
             sessions.register_participant, pin=pin, nickname=body.nickname

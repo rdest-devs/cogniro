@@ -93,7 +93,11 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
             try {
               const r = await joinPlay(stage.code, nickname);
               if (!r.ok) {
-                if (r.status === 409) {
+                if (r.status === 400 && r.profanity) {
+                  setJoinError(
+                    'Ten pseudonim zawiera niedozwolone słowa. Wybierz inny.',
+                  );
+                } else if (r.status === 409) {
                   setJoinError('Ten pseudonim jest już zajęty.');
                 } else if (r.status === 404) {
                   setJoinError('Ten quiz nie jest już aktywny. Sprawdź kod.');

@@ -3,7 +3,7 @@ import { type KqfQuiz, kqfQuizSchema } from '@/lib/kqf';
 
 export type JoinResult =
   | { ok: true; quiz: KqfQuiz }
-  | { ok: false; status: number };
+  | { ok: false; status: number; profanity?: boolean };
 
 export type SubmitResult =
   | { ok: true }
@@ -24,6 +24,24 @@ export async function joinPlay(
     return { ok: false, status: 0 };
   }
   if (!r.ok) {
+    if (r.status === 400) {
+      try {
+        const body = (await r.json()) as {
+          detail?: { error?: string } | string;
+        };
+        const d = body?.detail;
+        if (
+          typeof d === 'object' &&
+          d !== null &&
+          'error' in d &&
+          d.error === 'nickname_profanity'
+        ) {
+          return { ok: false, status: 400, profanity: true };
+        }
+      } catch {
+        /* fallthrough */
+      }
+    }
     return { ok: false, status: r.status };
   }
   let payload: unknown;
