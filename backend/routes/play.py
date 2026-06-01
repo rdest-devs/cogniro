@@ -35,6 +35,16 @@ class SubmitBody(BaseModel):
     score: int = Field(ge=0)
 
 
+class LeaderboardEntryModel(BaseModel):
+    position: int
+    nickname: str
+    score: int
+
+
+class LeaderboardResponse(BaseModel):
+    entries: list[LeaderboardEntryModel]
+
+
 def _origin_from(request: Request) -> str:
     """Base URL for rewriting relative quiz media paths on join.
 
@@ -106,3 +116,25 @@ async def play_submit(pin: str, body: SubmitBody, request: Request) -> dict:
             },
         ) from None
     return {"accepted": True}
+
+
+@router.get("/{pin}/leaderboard", response_model=LeaderboardResponse)
+async def play_leaderboard(pin: str) -> LeaderboardResponse:
+    """Public leaderboard for an active session, ranked by score.
+
+    Returns every participant who submitted a score so the player view can show the
+    top positions and pin the current participant when they are outside the top.
+    Not rate limited: it is a read-only ranking fetched once on the results screen,
+    and sharing the join+submit budget would risk false 429s in the normal flow.
+    """
+    entries = sessions.leaderboard_for_pin(pin)
+    if entries is None:
+        raise HTTPException(status_code=404, detail="pin_not_active")
+    return LeaderboardResponse(
+        entries=[
+            LeaderboardEntryModel(
+                position=entry.position, nickname=entry.nickname, score=entry.score
+            )
+            for entry in entries
+        ]
+    )

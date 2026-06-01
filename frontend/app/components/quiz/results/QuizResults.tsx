@@ -1,6 +1,6 @@
 'use client';
 
-import { FileCheck, RotateCcw } from 'lucide-react';
+import { FileCheck, PartyPopper, RotateCcw } from 'lucide-react';
 
 import type { RankingEntry } from '@/app/types';
 
@@ -13,6 +13,10 @@ interface QuizResultsProps {
   scoreTotal: number;
   message: string;
   ranking?: RankingEntry[];
+  /** Heading shown above the ranking list. */
+  rankingTitle?: string;
+  /** Show a celebratory banner when the current participant is on the podium. */
+  celebratePodium?: boolean;
   showAnswerReview?: boolean;
   onRetry?: () => void;
   onReview?: () => void;
@@ -24,6 +28,8 @@ export default function QuizResults({
   scoreTotal,
   message,
   ranking,
+  rankingTitle = 'Ranking Wydziałowy',
+  celebratePodium = false,
   showAnswerReview = true,
   onRetry,
   onReview,
@@ -61,11 +67,27 @@ export default function QuizResults({
           </div>
         </section>
 
+        {celebratePodium && (
+          <section
+            className="flex items-center gap-3 rounded-2xl border border-[var(--orange)] bg-[var(--highlight-bg)] px-4 py-3.5"
+            role="status"
+          >
+            <PartyPopper
+              size={22}
+              className="shrink-0 text-[var(--orange)] motion-safe:animate-bounce"
+              aria-hidden
+            />
+            <p className="text-[15px] font-bold text-[var(--text-dark)]">
+              Brawo! Jesteś na podium!
+            </p>
+          </section>
+        )}
+
         {ranking && ranking.length > 0 && (
           <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card-bg)]">
             <div className="px-4 py-3.5">
               <h2 className="text-[15px] font-bold text-[var(--text-dark)]">
-                Ranking Wydziałowy
+                {rankingTitle}
               </h2>
             </div>
             <div className="h-px bg-[var(--border)]" />

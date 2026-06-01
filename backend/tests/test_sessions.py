@@ -1,18 +1,44 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from services.sessions import (
+    Participant,
     block_participant,
     generate_pin,
     is_quiz_running,
+    leaderboard_for_pin,
     list_participants,
     lookup_by_pin,
     lookup_by_quiz,
+    rank_submitted_participants,
     record_submission,
     register_participant,
     reset_sessions_for_tests,
     start_session,
     stop_session,
 )
+
+
+def _participant(
+    nickname: str,
+    score: int | None,
+    *,
+    blocked: bool = False,
+    submitted: bool = True,
+    second: int = 0,
+) -> Participant:
+    return Participant(
+        nickname=nickname,
+        joined_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        blocked=blocked,
+        score=score if submitted else None,
+        submitted_at=(
+            datetime(2026, 1, 1, 0, 0, second, tzinfo=timezone.utc)
+            if submitted
+            else None
+        ),
+    )
 
 
 def setup_function(_: object) -> None:
@@ -66,3 +92,53 @@ def test_stop_session_returns_snapshot_and_clears() -> None:
     assert snapshot.participants["ala"].score == 100
     assert not is_quiz_running("q1")
     assert lookup_by_pin(s.pin) is None
+
+
+def test_rank_orders_by_score_then_time_then_nickname() -> None:
+    entries = rank_submitted_participants(
+        [
+            _participant("low", 10, second=1),
+            _participant("high", 100, second=5),
+            _participant("midLate", 50, second=2),
+            _participant("midEarly", 50, second=1),
+        ]
+    )
+    assert [e.nickname for e in entries] == ["high", "midEarly", "midLate", "low"]
+    assert [e.position for e in entries] == [1, 2, 3, 4]
+
+
+def test_rank_tie_breaks_by_nickname_when_score_and_time_equal() -> None:
+    entries = rank_submitted_participants(
+        [
+            _participant("Zoe", 50, second=1),
+            _participant("Ala", 50, second=1),
+        ]
+    )
+    assert [e.nickname for e in entries] == ["Ala", "Zoe"]
+
+
+def test_rank_excludes_unsubmitted_and_blocked() -> None:
+    entries = rank_submitted_participants(
+        [
+            _participant("done", 30, second=1),
+            _participant("pending", None, submitted=False),
+            _participant("blocked", 99, blocked=True, second=2),
+        ]
+    )
+    assert [e.nickname for e in entries] == ["done"]
+
+
+def test_leaderboard_for_pin_unknown_returns_none() -> None:
+    assert leaderboard_for_pin("ZZZZZZ") is None
+
+
+def test_leaderboard_for_pin_ranks_session_submissions() -> None:
+    s = start_session(quiz_id="q1", quiz_title="T")
+    register_participant(pin=s.pin, nickname="Ala")
+    register_participant(pin=s.pin, nickname="Bob")
+    record_submission(pin=s.pin, nickname="Ala", score=10)
+    record_submission(pin=s.pin, nickname="Bob", score=50)
+    leaderboard = leaderboard_for_pin(s.pin)
+    assert leaderboard is not None
+    assert [e.nickname for e in leaderboard] == ["Bob", "Ala"]
+    assert leaderboard[0].position == 1

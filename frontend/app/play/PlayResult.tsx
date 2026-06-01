@@ -10,8 +10,10 @@ import {
   maxScoreFromQuiz,
 } from '@/app/play/scoring';
 import { clearPlayState } from '@/app/play/storage';
+import type { RankingEntry } from '@/app/types';
 import type { KqfQuiz } from '@/lib/kqf';
-import { submitPlay } from '@/lib/play/client';
+import { getLeaderboard, submitPlay } from '@/lib/play/client';
+import { buildLeaderboardRows, currentOnPodium } from '@/lib/play/leaderboard';
 
 type View = 'results' | 'review';
 
@@ -38,6 +40,7 @@ export function PlayResult({
 }: Props) {
   const [view, setView] = useState<View>('results');
   const [submitNote, setSubmitNote] = useState<string | null>(null);
+  const [ranking, setRanking] = useState<RankingEntry[] | null>(null);
 
   const acceptedRef = useRef(() => {
     clearPlayState(window.sessionStorage, code, nickname);
@@ -50,36 +53,41 @@ export function PlayResult({
   }, [code, nickname]);
 
   useEffect(() => {
-    if (skipServerSubmit) {
-      return;
-    }
     let cancelled = false;
     void (async () => {
-      try {
-        const r = await submitPlay(code, nickname, score);
-        if (cancelled) {
-          return;
-        }
-        if (r.ok) {
-          acceptedRef.current();
-          return;
-        }
-        if (r.nicknameViolation) {
+      if (!skipServerSubmit) {
+        try {
+          const r = await submitPlay(code, nickname, score);
+          if (cancelled) {
+            return;
+          }
+          if (r.ok) {
+            acceptedRef.current();
+          } else if (r.nicknameViolation) {
+            setSubmitNote(
+              'Twój pseudonim został odrzucony (naruszenie zasad). Wynik nie został zapisany na serwerze.',
+            );
+          } else {
+            setSubmitNote(
+              'Nie udało się zapisać wyniku na serwerze. Twój wynik powyżej jest liczony lokalnie.',
+            );
+          }
+        } catch {
+          if (cancelled) {
+            return;
+          }
           setSubmitNote(
-            'Twój pseudonim został odrzucony (naruszenie zasad). Wynik nie został zapisany na serwerze.',
+            'Błąd sieci. Nie udało się zapisać wyniku na serwerze. Twój wynik powyżej jest liczony lokalnie.',
           );
-          return;
         }
-        setSubmitNote(
-          'Nie udało się zapisać wyniku na serwerze. Twój wynik powyżej jest liczony lokalnie.',
-        );
-      } catch {
-        if (cancelled) {
-          return;
-        }
-        setSubmitNote(
-          'Błąd sieci. Nie udało się zapisać wyniku na serwerze. Twój wynik powyżej jest liczony lokalnie.',
-        );
+      }
+      // Fetch the live leaderboard once the score has been submitted (best-effort).
+      const lb = await getLeaderboard(code);
+      if (cancelled) {
+        return;
+      }
+      if (lb.ok) {
+        setRanking(buildLeaderboardRows(lb.entries, nickname));
       }
     })();
     return () => {
@@ -115,6 +123,9 @@ export function PlayResult({
                 scorePoints={scorePointsDisplay}
                 scoreTotal={scoreTotalDisplay}
                 message={message}
+                ranking={ranking ?? undefined}
+                rankingTitle="Tablica wyników"
+                celebratePodium={ranking ? currentOnPodium(ranking) : false}
                 showAnswerReview={allowAnswerReview}
                 onReview={
                   allowAnswerReview ? () => setView('review') : undefined

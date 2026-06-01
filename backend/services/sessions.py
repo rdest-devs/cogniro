@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import secrets
 import threading
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
@@ -18,6 +19,13 @@ class Participant:
     blocked: bool = False
     score: int | None = None
     submitted_at: datetime | None = None
+
+
+@dataclass
+class LeaderboardEntry:
+    position: int
+    nickname: str
+    score: int
 
 
 @dataclass
@@ -145,3 +153,36 @@ def stop_session(quiz_id: str) -> QuizSession | None:
             return None
         _SESSIONS_BY_PIN.pop(session.pin, None)
         return session
+
+
+def rank_submitted_participants(
+    participants: Iterable[Participant],
+) -> list[LeaderboardEntry]:
+    """Rank participants who submitted a score.
+
+    Ranking order (predictable, deterministic tie-breaking):
+    1. higher score first,
+    2. earlier submission first,
+    3. nickname (case-insensitive) as the final tie-breaker.
+
+    Blocked participants and those who have not submitted are excluded.
+    """
+    submitted = [
+        p
+        for p in participants
+        if p.submitted_at is not None and p.score is not None and not p.blocked
+    ]
+    submitted.sort(key=lambda p: (-int(p.score), p.submitted_at, p.nickname.casefold()))
+    return [
+        LeaderboardEntry(position=index + 1, nickname=p.nickname, score=int(p.score))
+        for index, p in enumerate(submitted)
+    ]
+
+
+def leaderboard_for_pin(pin: str) -> list[LeaderboardEntry] | None:
+    """Return the ranked leaderboard for an active session, or None if the pin is inactive."""
+    with _LOCK:
+        session = _SESSIONS_BY_PIN.get(pin)
+        if session is None:
+            return None
+        return rank_submitted_participants(session.participants.values())
