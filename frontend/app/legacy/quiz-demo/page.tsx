@@ -68,7 +68,7 @@ type QuizQuestion =
 type SubmittedAnswer = {
   questionId: number;
   selected?: number[];
-  ordering?: string[];
+  ordering?: number[];
   value?: number;
 };
 

@@ -106,12 +106,15 @@ export const kqfSliderSchema = z
   .object({
     ...baseFields,
     type: z.literal('slider'),
-    correct: z.number(),
+    correct: z.number().nullable().default(null),
     min: z.number(),
     max: z.number(),
     step: z.number().default(1),
     tolerance: z.number().nonnegative().default(0),
     unit: nullableJsonString,
+    score: z.enum(['range', 'scale']).default('range'),
+    label_min: nullableJsonString,
+    label_max: nullableJsonString,
   })
   .superRefine((v, ctx) => {
     if (v.min >= v.max) {
@@ -121,19 +124,57 @@ export const kqfSliderSchema = z
         path: ['max'],
       });
     }
-    if (v.correct < v.min || v.correct > v.max) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'correct must be in [min, max]',
-        path: ['correct'],
-      });
-    }
     if (v.step <= 0) {
       ctx.addIssue({
         code: 'custom',
         message: 'step must be > 0',
         path: ['step'],
       });
+    }
+    if (v.score === 'range') {
+      if (v.correct === null) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'slider with score=range requires correct field',
+          path: ['correct'],
+        });
+      } else if (v.correct < v.min || v.correct > v.max) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'correct must be in [min, max]',
+          path: ['correct'],
+        });
+      }
+    }
+  });
+
+export const kqfOrderingSchema = z
+  .object({
+    ...baseFields,
+    type: z.literal('ordering'),
+    items: z.array(z.string().min(1)).min(2).max(8),
+    correct_order: z.array(z.number().int().nonnegative()),
+  })
+  .superRefine((v, ctx) => {
+    const n = v.items.length;
+    if (v.correct_order.length !== n) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `correct_order must have ${n} elements`,
+        path: ['correct_order'],
+      });
+      return;
+    }
+    const sorted = [...v.correct_order].sort((a, b) => a - b);
+    for (let i = 0; i < n; i++) {
+      if (sorted[i] !== i) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'correct_order must be a permutation of 0..n-1',
+          path: ['correct_order'],
+        });
+        return;
+      }
     }
   });
 
@@ -142,6 +183,7 @@ export const kqfQuestionSchema = z.discriminatedUnion('type', [
   kqfMultiChoiceSchema,
   kqfTrueFalseSchema,
   kqfSliderSchema,
+  kqfOrderingSchema,
 ]);
 
 export const kqfQuizSchema = z.object({
@@ -155,5 +197,6 @@ export type KqfSingleChoice = z.infer<typeof kqfSingleChoiceSchema>;
 export type KqfMultiChoice = z.infer<typeof kqfMultiChoiceSchema>;
 export type KqfTrueFalse = z.infer<typeof kqfTrueFalseSchema>;
 export type KqfSlider = z.infer<typeof kqfSliderSchema>;
+export type KqfOrdering = z.infer<typeof kqfOrderingSchema>;
 export type KqfMedia = z.infer<typeof kqfMediaSchema>;
 export type KqfChoice = z.infer<typeof kqfChoiceSchema>;

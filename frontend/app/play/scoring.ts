@@ -40,8 +40,21 @@ export function questionAnswerCorrect(
   if (q.type === 'truefalse') {
     return answer === q.correct;
   }
+  if (q.type === 'ordering') {
+    const response = Array.isArray(answer) ? (answer as number[]) : [];
+    return (
+      response.length === q.correct_order.length &&
+      response.every((v, i) => v === q.correct_order[i])
+    );
+  }
+  // slider
+  if (q.score === 'scale') return false;
   const v = typeof answer === 'number' ? answer : NaN;
-  return Number.isFinite(v) && Math.abs(v - q.correct) <= q.tolerance;
+  return (
+    Number.isFinite(v) &&
+    q.correct !== null &&
+    Math.abs(v - q.correct) <= q.tolerance
+  );
 }
 
 export function correctAnswerCount(quiz: KqfQuiz, answers: AnswerMap): number {

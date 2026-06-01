@@ -133,23 +133,23 @@ const editorTrueFalseSchema = questionCommonFormSchema.extend({
   correct: z.boolean(),
 });
 
+const nullableOptionalString = z
+  .union([z.string(), z.literal(''), z.null()])
+  .optional()
+  .transform((v) => (v === undefined || v === null || v === '' ? null : v));
+
 const editorSliderSchema = questionCommonFormSchema
   .extend({
     type: z.literal('slider'),
-    correct: z.coerce.number().finite(),
+    correct: z.coerce.number().finite().nullable().default(null),
     min: z.coerce.number().finite(),
     max: z.coerce.number().finite(),
     step: z.coerce.number().finite().positive().default(1),
     tolerance: z.coerce.number().finite().min(0).default(0),
-    unit: z
-      .union([z.string(), z.literal(''), z.null()])
-      .optional()
-      .transform((v) => {
-        if (v === undefined || v === null || v === '') {
-          return null;
-        }
-        return v;
-      }),
+    unit: nullableOptionalString,
+    score: z.enum(['range', 'scale']).default('range'),
+    label_min: nullableOptionalString,
+    label_max: nullableOptionalString,
   })
   .superRefine((q, ctx) => {
     if (q.min >= q.max) {
@@ -159,12 +159,52 @@ const editorSliderSchema = questionCommonFormSchema
         path: ['min'],
       });
     }
-    if (q.correct < q.min || q.correct > q.max) {
+    if (q.score === 'range') {
+      if (q.correct === null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Poprawna wartość jest wymagana dla trybu zakresowego',
+          path: ['correct'],
+        });
+      } else if (q.correct < q.min || q.correct > q.max) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Poprawna wartość musi być w zakresie [min, max]',
+          path: ['correct'],
+        });
+      }
+    }
+  });
+
+const editorOrderingSchema = questionCommonFormSchema
+  .extend({
+    type: z.literal('ordering'),
+    items: z
+      .array(z.string())
+      .min(2, 'Minimum 2 elementy')
+      .max(8, 'Maksimum 8 elementów'),
+    correct_order: z.array(z.number().int().nonnegative()),
+  })
+  .superRefine((q, ctx) => {
+    const n = q.items.length;
+    if (q.correct_order.length !== n) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Poprawna wartość musi być w zakresie [min, max]',
-        path: ['correct'],
+        message: `Prawidłowa kolejność musi zawierać ${n} indeksów`,
+        path: ['correct_order'],
       });
+      return;
+    }
+    const sorted = [...q.correct_order].sort((a, b) => a - b);
+    for (let i = 0; i < n; i++) {
+      if (sorted[i] !== i) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Prawidłowa kolejność musi być permutacją 0..n-1',
+          path: ['correct_order'],
+        });
+        return;
+      }
     }
   });
 
@@ -173,6 +213,7 @@ export const quizEditorQuestionFormSchema = z.discriminatedUnion('type', [
   editorMultiChoiceSchema,
   editorTrueFalseSchema,
   editorSliderSchema,
+  editorOrderingSchema,
 ]);
 
 export const quizEditorFormSchema = z.object({
@@ -257,12 +298,24 @@ const adminQuizApiSliderSchema = z
   .object({
     ...apiQuestionCommon,
     type: z.literal('slider'),
-    correct: z.coerce.number(),
+    correct: z.coerce.number().nullable().default(null),
     min: z.coerce.number(),
     max: z.coerce.number(),
     step: z.coerce.number(),
     tolerance: z.coerce.number(),
     unit: optionalTrimmedString,
+    score: z.enum(['range', 'scale']).default('range'),
+    label_min: optionalTrimmedString,
+    label_max: optionalTrimmedString,
+  })
+  .passthrough();
+
+const adminQuizApiOrderingSchema = z
+  .object({
+    ...apiQuestionCommon,
+    type: z.literal('ordering'),
+    items: z.array(z.string()),
+    correct_order: z.array(z.coerce.number().int().nonnegative()),
   })
   .passthrough();
 
@@ -271,6 +324,7 @@ export const adminQuizApiQuestionSchema = z.discriminatedUnion('type', [
   adminQuizApiMultiSchema,
   adminQuizApiTrueFalseSchema,
   adminQuizApiSliderSchema,
+  adminQuizApiOrderingSchema,
 ]);
 
 export const adminQuizApiDetailsSchema = z
@@ -402,25 +456,28 @@ const upsertTrueFalseSchema = z.object({
   correct: z.boolean(),
 });
 
+const upsertOptionalString = z
+  .union([z.string(), z.literal(''), z.null()])
+  .optional()
+  .transform((v) => {
+    if (v === undefined || v === null || v === '') return undefined;
+    const t = v.trim();
+    return t === '' ? undefined : t;
+  });
+
 const upsertSliderSchema = z
   .object({
     ...upsertCommon,
     type: z.literal('slider'),
-    correct: z.number().finite(),
+    correct: z.number().finite().nullable().optional(),
     min: z.number().finite(),
     max: z.number().finite(),
     step: z.number().finite().positive().default(1),
     tolerance: z.number().finite().min(0).default(0),
-    unit: z
-      .union([z.string(), z.literal(''), z.null()])
-      .optional()
-      .transform((v) => {
-        if (v === undefined || v === null || v === '') {
-          return undefined;
-        }
-        const t = v.trim();
-        return t === '' ? undefined : t;
-      }),
+    unit: upsertOptionalString,
+    score: z.enum(['range', 'scale']).default('range'),
+    label_min: upsertOptionalString,
+    label_max: upsertOptionalString,
   })
   .superRefine((q, ctx) => {
     if (q.min >= q.max) {
@@ -430,12 +487,50 @@ const upsertSliderSchema = z
         path: ['min'],
       });
     }
-    if (q.correct < q.min || q.correct > q.max) {
+    if (q.score === 'range') {
+      if (q.correct == null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'correct is required for score=range',
+          path: ['correct'],
+        });
+      } else if (q.correct < q.min || q.correct > q.max) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'correct must be in [min, max]',
+          path: ['correct'],
+        });
+      }
+    }
+  });
+
+const upsertOrderingSchema = z
+  .object({
+    ...upsertCommon,
+    type: z.literal('ordering'),
+    items: z.array(z.string().min(1)).min(2).max(8),
+    correct_order: z.array(z.number().int().nonnegative()),
+  })
+  .superRefine((q, ctx) => {
+    const n = q.items.length;
+    if (q.correct_order.length !== n) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'correct must be in [min, max]',
-        path: ['correct'],
+        message: `correct_order must have ${n} elements`,
+        path: ['correct_order'],
       });
+      return;
+    }
+    const sorted = [...q.correct_order].sort((a, b) => a - b);
+    for (let i = 0; i < n; i++) {
+      if (sorted[i] !== i) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'correct_order must be a permutation of 0..n-1',
+          path: ['correct_order'],
+        });
+        return;
+      }
     }
   });
 
@@ -444,6 +539,7 @@ const adminQuizUpsertQuestionSchema = z.discriminatedUnion('type', [
   upsertMultiSchema,
   upsertTrueFalseSchema,
   upsertSliderSchema,
+  upsertOrderingSchema,
 ]);
 
 export const adminQuizUpsertPayloadSchema = z.object({

@@ -5,12 +5,72 @@ from schemas.kqf import (
     KqfFrontMatter,
     KqfMedia,
     KqfMultiChoice,
+    KqfOrdering,
     KqfQuiz,
     KqfSingleChoice,
     KqfSlider,
     KqfTrueFalse,
 )
 from services.kqf import parse_kqf, serialize_kqf
+
+
+def test_roundtrip_ordering() -> None:
+    quiz = KqfQuiz(
+        front_matter=KqfFrontMatter(title="Order"),
+        questions=[
+            KqfOrdering(
+                id="O1",
+                type="ordering",
+                text="Sort these.",
+                items=["B", "C", "A", "D"],
+                correct_order=[2, 0, 1, 3],
+                time_s=30,
+                points=500,
+            )
+        ],
+    )
+    _assert_roundtrip(quiz)
+
+
+def test_roundtrip_slider_scale() -> None:
+    quiz = KqfQuiz(
+        front_matter=KqfFrontMatter(title="Scale"),
+        questions=[
+            KqfSlider(
+                id="S1",
+                type="slider",
+                text="Rate your confidence.",
+                min=1,
+                max=10,
+                step=1,
+                score="scale",
+                label_min="Niska pewność",
+                label_max="Wysoka pewność",
+                points=1,
+            )
+        ],
+    )
+    _assert_roundtrip(quiz)
+
+
+def test_roundtrip_slider_range_with_labels() -> None:
+    quiz = KqfQuiz(
+        front_matter=KqfFrontMatter(title="Range"),
+        questions=[
+            KqfSlider(
+                id="S2",
+                type="slider",
+                text="Year?",
+                correct=1989,
+                min=1900,
+                max=2000,
+                label_min="Early",
+                label_max="Late",
+                points=800,
+            )
+        ],
+    )
+    _assert_roundtrip(quiz)
 
 
 def _assert_roundtrip(quiz: KqfQuiz) -> None:
