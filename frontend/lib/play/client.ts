@@ -42,7 +42,13 @@ export async function checkPlayAvailability(
 
 export type JoinResult =
   | { ok: true; quiz: KqfQuiz }
-  | { ok: false; status: number; detail?: string; opensAt?: string };
+  | {
+      ok: false;
+      status: number;
+      detail?: string;
+      opensAt?: string;
+      profanity?: boolean;
+    };
 
 export type SubmitResult =
   | { ok: true }
@@ -79,6 +85,7 @@ export async function joinPlay(
                   ? d.error
                   : undefined,
             opensAt: typeof d.opens_at === 'string' ? d.opens_at : undefined,
+            profanity: d.error === 'nickname_profanity' || undefined,
           };
         }
         if (typeof detail === 'string') {
