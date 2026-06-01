@@ -10,6 +10,7 @@ import {
   adminPrimaryOutlineButtonClass,
   adminToolbarButtonClass,
 } from '@/app/components/admin/shared/constants';
+import { formatAdminDate } from '@/lib/admin-date-time';
 import {
   formatArchivedScore,
   type ResultArchivePayload,
@@ -148,7 +149,9 @@ export function ResultDetailView({
       <section>
         <h2 className="text-xl font-semibold">
           {fileTitle}{' '}
-          <span className="text-base font-normal text-zinc-500">({date})</span>
+          <span className="text-base font-normal text-zinc-500">
+            ({formatAdminDate(date, 'folder-date') ?? date})
+          </span>
         </h2>
         {err && <p className="text-sm text-red-700">{err}</p>}
         {parsed && !err && (
@@ -166,13 +169,21 @@ export function ResultDetailView({
               {(parsed.session_started_at || parsed.session_stopped_at) && (
                 <p className="mt-1 text-sm text-[var(--text-muted)]">
                   {parsed.session_started_at && (
-                    <>Start: {parsed.session_started_at}</>
+                    <>
+                      Start:{' '}
+                      {formatAdminDate(parsed.session_started_at, 'datetime') ??
+                        parsed.session_started_at}
+                    </>
                   )}
                   {parsed.session_started_at &&
                     parsed.session_stopped_at &&
                     ' · '}
                   {parsed.session_stopped_at && (
-                    <>Koniec: {parsed.session_stopped_at}</>
+                    <>
+                      Koniec:{' '}
+                      {formatAdminDate(parsed.session_stopped_at, 'datetime') ??
+                        parsed.session_stopped_at}
+                    </>
                   )}
                 </p>
               )}
@@ -206,7 +217,8 @@ export function ResultDetailView({
                         {formatArchivedScore(row.score, parsed.max_score ?? 0)}
                       </td>
                       <td className="px-4 py-2.5 text-[var(--text-muted)]">
-                        {row.submitted_at}
+                        {formatAdminDate(row.submitted_at, 'datetime') ??
+                          row.submitted_at}
                       </td>
                     </tr>
                   ))}
