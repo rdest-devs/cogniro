@@ -6,6 +6,7 @@ from schemas.admin_quiz import (
     AdminQuizChoicePayload,
     AdminQuizDetailResponse,
     AdminQuizMultiChoicePayload,
+    AdminQuizOrderingPayload,
     AdminQuizQuestionPayload,
     AdminQuizSingleChoicePayload,
     AdminQuizSliderPayload,
@@ -17,6 +18,7 @@ from schemas.kqf import (
     KqfFrontMatter,
     KqfMedia,
     KqfMultiChoice,
+    KqfOrdering,
     KqfQuestion,
     KqfQuiz,
     KqfSingleChoice,
@@ -83,6 +85,18 @@ def upsert_payload_to_kqf(
                     step=q.step,
                     tolerance=q.tolerance,
                     unit=q.unit,
+                    score=q.score,
+                    label_min=q.label_min,
+                    label_max=q.label_max,
+                    **common,
+                )
+            )
+        elif isinstance(q, AdminQuizOrderingPayload):
+            questions.append(
+                KqfOrdering(
+                    type="ordering",
+                    items=q.items,
+                    correct_order=q.correct_order,
                     **common,
                 )
             )
@@ -157,6 +171,18 @@ def kqf_to_admin_detail_payload(
                     step=q.step,
                     tolerance=q.tolerance,
                     unit=q.unit,
+                    score=q.score,
+                    label_min=q.label_min,
+                    label_max=q.label_max,
+                    **common,
+                )
+            )
+        elif q.type == "ordering":
+            questions.append(
+                AdminQuizOrderingPayload(
+                    type="ordering",
+                    items=q.items,
+                    correct_order=q.correct_order,
                     **common,
                 )
             )

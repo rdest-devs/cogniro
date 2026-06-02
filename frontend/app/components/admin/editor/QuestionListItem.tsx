@@ -1,6 +1,13 @@
 'use client';
 
-import { ChevronDown, Loader2, Plus, Trash2, Upload } from 'lucide-react';
+import {
+  ChevronDown,
+  Loader2,
+  Plus,
+  Shuffle,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import { useMemo, useState } from 'react';
 import type { Path } from 'react-hook-form';
@@ -42,6 +49,7 @@ const typeOptions: Array<{ label: string; value: KqfQuestionType }> = [
   { label: 'Wielokrotny', value: 'multichoice' },
   { label: 'Prawda / fałsz', value: 'truefalse' },
   { label: 'Suwak', value: 'slider' },
+  { label: 'Porządkowanie', value: 'ordering' },
 ];
 
 const typeLabelMap: Record<KqfQuestionType, string> = {
@@ -49,6 +57,7 @@ const typeLabelMap: Record<KqfQuestionType, string> = {
   multichoice: 'Wielokrotny',
   truefalse: 'Prawda / fałsz',
   slider: 'Suwak',
+  ordering: 'Porządkowanie',
 };
 
 function toUploadErrorMessage(error: unknown): string {
@@ -383,13 +392,31 @@ function SliderSection({ questionIndex }: { questionIndex: number }) {
   const { register, watch, setValue, trigger } =
     useFormContext<QuizEditorFormValues>();
   const questionPath = `questions.${questionIndex}` as const;
-  const min = Number(watch(`${questionPath}.min` as const));
-  const max = Number(watch(`${questionPath}.max` as const));
-  const step = Number(watch(`${questionPath}.step` as const));
-  const correct = Number(watch(`${questionPath}.correct` as const));
-  const tolerance = Number(watch(`${questionPath}.tolerance` as const));
+  const min = Number(
+    watch(`${questionPath}.min` as unknown as Path<QuizEditorFormValues>),
+  );
+  const max = Number(
+    watch(`${questionPath}.max` as unknown as Path<QuizEditorFormValues>),
+  );
+  const step = Number(
+    watch(`${questionPath}.step` as unknown as Path<QuizEditorFormValues>),
+  );
+  const correct = watch(
+    `${questionPath}.correct` as unknown as Path<QuizEditorFormValues>,
+  ) as number | null;
+  const tolerance = Number(
+    watch(`${questionPath}.tolerance` as unknown as Path<QuizEditorFormValues>),
+  );
   const unitStr =
-    (watch(`${questionPath}.unit` as const) as string | null)?.trim() ?? '';
+    (
+      watch(`${questionPath}.unit` as unknown as Path<QuizEditorFormValues>) as
+        | string
+        | null
+    )?.trim() ?? '';
+  const scoreMode =
+    (watch(
+      `${questionPath}.score` as unknown as Path<QuizEditorFormValues>,
+    ) as string) ?? 'range';
 
   const safeStep = Number.isFinite(step) && step > 0 ? step : 1;
   const previewTicks = 5;
@@ -405,8 +432,39 @@ function SliderSection({ questionIndex }: { questionIndex: number }) {
         )
       : [];
 
+  const inputClass =
+    'rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm';
+
   return (
     <div className="flex flex-col gap-3">
+      <label className="flex flex-col gap-1">
+        <span className="text-[13px] font-medium text-[var(--text-muted)]">
+          Tryb punktacji
+        </span>
+        <select
+          value={scoreMode}
+          onChange={(e) => {
+            setValue(
+              `${questionPath}.score` as unknown as Path<QuizEditorFormValues>,
+              e.target.value,
+              { shouldDirty: true },
+            );
+            if (e.target.value === 'scale') {
+              setValue(
+                `${questionPath}.correct` as unknown as Path<QuizEditorFormValues>,
+                null,
+                { shouldDirty: true },
+              );
+            }
+            void trigger(questionPath);
+          }}
+          className={inputClass}
+        >
+          <option value="range">Zakres (z wartością docelową)</option>
+          <option value="scale">Skala opinii (bez oceny)</option>
+        </select>
+      </label>
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <label className="flex flex-col gap-1">
           <span className="text-[13px] font-medium text-[var(--text-muted)]">
@@ -415,10 +473,11 @@ function SliderSection({ questionIndex }: { questionIndex: number }) {
           <input
             type="number"
             step="any"
-            {...register(`${questionPath}.min` as const, {
-              valueAsNumber: true,
-            })}
-            className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
+            {...register(
+              `${questionPath}.min` as unknown as Path<QuizEditorFormValues>,
+              { valueAsNumber: true },
+            )}
+            className={inputClass}
           />
         </label>
         <label className="flex flex-col gap-1">
@@ -428,25 +487,29 @@ function SliderSection({ questionIndex }: { questionIndex: number }) {
           <input
             type="number"
             step="any"
-            {...register(`${questionPath}.max` as const, {
-              valueAsNumber: true,
-            })}
-            className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
+            {...register(
+              `${questionPath}.max` as unknown as Path<QuizEditorFormValues>,
+              { valueAsNumber: true },
+            )}
+            className={inputClass}
           />
         </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-[13px] font-medium text-[var(--text-muted)]">
-            Poprawna wartość
-          </span>
-          <input
-            type="number"
-            step="any"
-            {...register(`${questionPath}.correct` as const, {
-              valueAsNumber: true,
-            })}
-            className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
-          />
-        </label>
+        {scoreMode === 'range' && (
+          <label className="flex flex-col gap-1">
+            <span className="text-[13px] font-medium text-[var(--text-muted)]">
+              Poprawna wartość
+            </span>
+            <input
+              type="number"
+              step="any"
+              {...register(
+                `${questionPath}.correct` as unknown as Path<QuizEditorFormValues>,
+                { valueAsNumber: true },
+              )}
+              className={inputClass}
+            />
+          </label>
+        )}
         <label className="flex flex-col gap-1">
           <span className="text-[13px] font-medium text-[var(--text-muted)]">
             Krok
@@ -454,43 +517,95 @@ function SliderSection({ questionIndex }: { questionIndex: number }) {
           <input
             type="number"
             step="any"
-            {...register(`${questionPath}.step` as const, {
-              valueAsNumber: true,
-            })}
-            className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
+            {...register(
+              `${questionPath}.step` as unknown as Path<QuizEditorFormValues>,
+              { valueAsNumber: true },
+            )}
+            className={inputClass}
           />
         </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-[13px] font-medium text-[var(--text-muted)]">
-            Tolerancja
-          </span>
-          <input
-            type="number"
-            step="any"
-            min={0}
-            {...register(`${questionPath}.tolerance` as const, {
-              valueAsNumber: true,
-            })}
-            className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
-          />
-        </label>
+        {scoreMode === 'range' && (
+          <label className="flex flex-col gap-1">
+            <span className="text-[13px] font-medium text-[var(--text-muted)]">
+              Tolerancja
+            </span>
+            <input
+              type="number"
+              step="any"
+              min={0}
+              {...register(
+                `${questionPath}.tolerance` as unknown as Path<QuizEditorFormValues>,
+                { valueAsNumber: true },
+              )}
+              className={inputClass}
+            />
+          </label>
+        )}
         <label className="flex flex-col gap-1">
           <span className="text-[13px] font-medium text-[var(--text-muted)]">
             Jednostka (opcj.)
           </span>
           <input
             value={
-              (watch(`${questionPath}.unit` as const) as string | null) ?? ''
+              (watch(
+                `${questionPath}.unit` as unknown as Path<QuizEditorFormValues>,
+              ) as string | null) ?? ''
             }
             onChange={(event) => {
               const v = event.target.value;
-              setValue(`${questionPath}.unit`, v.trim() ? v : null, {
-                shouldDirty: true,
-                shouldValidate: true,
-              });
+              setValue(
+                `${questionPath}.unit` as unknown as Path<QuizEditorFormValues>,
+                v.trim() ? v : null,
+                {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                },
+              );
               void trigger(questionPath);
             }}
-            className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
+            className={inputClass}
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-[13px] font-medium text-[var(--text-muted)]">
+            Etykieta min (opcj.)
+          </span>
+          <input
+            value={
+              (watch(
+                `${questionPath}.label_min` as unknown as Path<QuizEditorFormValues>,
+              ) as string | null) ?? ''
+            }
+            onChange={(event) => {
+              const v = event.target.value;
+              setValue(
+                `${questionPath}.label_min` as unknown as Path<QuizEditorFormValues>,
+                v || null,
+                { shouldDirty: true },
+              );
+            }}
+            className={inputClass}
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-[13px] font-medium text-[var(--text-muted)]">
+            Etykieta max (opcj.)
+          </span>
+          <input
+            value={
+              (watch(
+                `${questionPath}.label_max` as unknown as Path<QuizEditorFormValues>,
+              ) as string | null) ?? ''
+            }
+            onChange={(event) => {
+              const v = event.target.value;
+              setValue(
+                `${questionPath}.label_max` as unknown as Path<QuizEditorFormValues>,
+                v || null,
+                { shouldDirty: true },
+              );
+            }}
+            className={inputClass}
           />
         </label>
       </div>
@@ -502,17 +617,24 @@ function SliderSection({ questionIndex }: { questionIndex: number }) {
         {Number.isFinite(min) && Number.isFinite(max) ? (
           <>
             [{min}, {max}]{unitStr ? ` ${unitStr}` : ''} · krok {safeStep}
-            {Number.isFinite(tolerance) && tolerance > 0
+            {scoreMode === 'range' &&
+            Number.isFinite(tolerance) &&
+            tolerance > 0
               ? ` · ±${tolerance}`
               : ''}
-            {Number.isFinite(correct) ? ` · cel: ${correct}` : ''}
+            {scoreMode === 'range' &&
+            correct !== null &&
+            Number.isFinite(correct)
+              ? ` · cel: ${correct}`
+              : ''}
+            {scoreMode === 'scale' ? ' · skala opinii' : ''}
           </>
         ) : (
           'Uzupełnij min i max.'
         )}
       </div>
 
-      {tickValues.length > 0 && (
+      {tickValues.length > 0 && scoreMode === 'range' && (
         <div className="flex flex-col gap-1">
           <span className="text-[11px] font-medium tracking-wide text-[var(--text-muted)] uppercase">
             Skala (orientacyjnie)
@@ -529,7 +651,7 @@ function SliderSection({ questionIndex }: { questionIndex: number }) {
                 />
               );
             })}
-            {Number.isFinite(correct) && span > 0 && (
+            {correct !== null && Number.isFinite(correct) && span > 0 && (
               <span
                 className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[var(--orange)] shadow"
                 style={{
@@ -540,6 +662,164 @@ function SliderSection({ questionIndex }: { questionIndex: number }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function fisherYates<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function OrderingSection({ questionIndex }: { questionIndex: number }) {
+  const { watch, setValue, trigger } = useFormContext<QuizEditorFormValues>();
+  const questionPath = `questions.${questionIndex}` as const;
+
+  type FV = QuizEditorFormValues;
+  const p = (s: string) => s as unknown as Path<FV>;
+
+  const items = (watch(p(`${questionPath}.items`)) as string[]) ?? [];
+  const correctOrder =
+    (watch(p(`${questionPath}.correct_order`)) as number[]) ?? [];
+
+  // Local string state so the user can type freely without the field snapping back.
+  // We sync it explicitly whenever we programmatically change correct_order.
+  const [orderStr, setOrderStr] = useState(() =>
+    correctOrder.map((i) => i + 1).join(', '),
+  );
+
+  const applyItems = (next: string[]) =>
+    setValue(p(`${questionPath}.items`), next, { shouldDirty: true });
+
+  const applyOrder = (next: number[]) => {
+    setValue(p(`${questionPath}.correct_order`), next, { shouldDirty: true });
+    setOrderStr(next.map((i) => i + 1).join(', '));
+    void trigger(questionPath);
+  };
+
+  const handleAddItem = () => {
+    applyItems([...items, '']);
+    applyOrder([...correctOrder, items.length]);
+  };
+
+  const handleRemoveItem = (idx: number) => {
+    applyItems(items.filter((_, i) => i !== idx));
+    applyOrder(
+      correctOrder.filter((i) => i !== idx).map((i) => (i > idx ? i - 1 : i)),
+    );
+  };
+
+  const handleShuffle = () => {
+    // Derive the correct semantic sequence from the current data
+    const seq = correctOrder.map((i) => items[i]);
+    let shuffled: string[];
+    let attempts = 0;
+    // Retry until the shuffled order is NOT already the correct sequence
+    do {
+      shuffled = fisherYates(items);
+      attempts++;
+    } while (attempts < 100 && seq.every((item, k) => shuffled[k] === item));
+
+    const newOrder = seq.map((item) => shuffled.indexOf(item));
+    applyItems(shuffled);
+    applyOrder(newOrder);
+  };
+
+  const handleOrderStrChange = (value: string) => {
+    setOrderStr(value);
+    // Push to form only when the string is a valid complete permutation
+    const parts = value.split(',').map((s) => parseInt(s.trim(), 10) - 1);
+    const n = items.length;
+    const isValid =
+      parts.length === n &&
+      parts.every((v) => Number.isFinite(v) && v >= 0 && v < n) &&
+      new Set(parts).size === n;
+    if (isValid) {
+      setValue(p(`${questionPath}.correct_order`), parts, {
+        shouldDirty: true,
+      });
+      void trigger(questionPath);
+    }
+  };
+
+  const inputClass =
+    'rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm';
+
+  return (
+    <div className="flex flex-col gap-3">
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-1 text-[13px] font-medium text-[var(--text-muted)]">
+          Elementy do porządkowania ({items.length}/8)
+        </legend>
+        {items.map((item, idx) => (
+          <div key={idx} className="flex items-center gap-2">
+            <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[var(--orange)] text-[11px] font-bold text-white">
+              {idx + 1}
+            </span>
+            <input
+              value={item}
+              onChange={(e) => {
+                const next = [...items];
+                next[idx] = e.target.value;
+                applyItems(next);
+              }}
+              placeholder={`Element ${idx + 1}`}
+              className="flex-1 rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
+            />
+            <button
+              type="button"
+              disabled={items.length <= 2}
+              onClick={() => handleRemoveItem(idx)}
+              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border border-[var(--wrong-fg)] text-[var(--wrong-fg)] hover:bg-[var(--wrong-fg)] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        ))}
+        <div className="flex flex-wrap gap-2">
+          {items.length < 8 && (
+            <button
+              type="button"
+              onClick={handleAddItem}
+              className="flex items-center gap-1.5 rounded-xl border border-[var(--primary-blue)] px-3 py-1.5 text-xs font-semibold text-[var(--primary-blue)] hover:bg-[var(--primary-blue)] hover:text-white"
+            >
+              <Plus size={13} />
+              Dodaj element
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleShuffle}
+            title="Losowo przetasuj kolejność elementów (wynik nie będzie poprawnym ułożeniem)"
+            className="flex items-center gap-1.5 rounded-xl border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--text-muted)] hover:border-[var(--orange)] hover:text-[var(--orange)]"
+          >
+            <Shuffle size={13} />
+            Przetasuj
+          </button>
+        </div>
+      </fieldset>
+
+      <label className="flex flex-col gap-1">
+        <span className="text-[13px] font-medium text-[var(--text-muted)]">
+          Prawidłowa kolejność (numery elementów oddzielone przecinkami)
+        </span>
+        <input
+          value={orderStr}
+          onChange={(e) => handleOrderStrChange(e.target.value)}
+          onBlur={() => setOrderStr(correctOrder.map((i) => i + 1).join(', '))}
+          placeholder={`np. ${Array.from({ length: items.length }, (_, i) => i + 1).join(', ')}`}
+          className={inputClass}
+        />
+        <span className="text-[11px] text-[var(--text-muted)]">
+          Wpisz numery elementów (1–{items.length}) w poprawnej kolejności, np.{' '}
+          <code>2, 1, 4, 3</code>. Zapis do formularza nastąpi gdy wpiszesz
+          kompletną permutację.
+        </span>
+      </label>
     </div>
   );
 }
@@ -868,6 +1148,10 @@ export default function QuestionListItem({
 
               {questionType === 'slider' && (
                 <SliderSection questionIndex={index} />
+              )}
+
+              {questionType === 'ordering' && (
+                <OrderingSection questionIndex={index} />
               )}
 
               {uploadError && (

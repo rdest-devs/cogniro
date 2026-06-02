@@ -2,6 +2,7 @@
 
 import SubmitButton from '@/app/components/common/SubmitButton';
 import MultipleChoice from '@/app/components/quiz/questions/MultipleChoice';
+import Ordering from '@/app/components/quiz/questions/Ordering';
 import SingleChoice from '@/app/components/quiz/questions/SingleChoice';
 import SliderQuestion from '@/app/components/quiz/questions/SliderQuestion';
 import { TrueFalseQuestion } from '@/app/components/quiz/questions/TrueFalseQuestion';
@@ -155,7 +156,21 @@ export function PlayingShell({ state, onChange, onFinish }: Props) {
           defaultValue={(state.answers[q.id] as number | undefined) ?? q.min}
           unit={q.unit ?? ''}
           ticks={sliderTicks(q.min, q.max)}
+          labelMin={q.label_min}
+          labelMax={q.label_max}
           onSubmit={(n) => advance(n)}
+        />
+      )}
+      {q.type === 'ordering' && (
+        <Ordering
+          key={q.id}
+          questionNumber={questionNumber}
+          totalQuestions={total}
+          time="--:--"
+          question={q.text}
+          hint={q.media?.hint}
+          items={q.items}
+          onSubmit={(order) => advance(order)}
         />
       )}
     </div>

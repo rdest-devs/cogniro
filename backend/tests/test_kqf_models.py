@@ -8,6 +8,7 @@ from schemas.kqf import (
     KqfFrontMatter,
     KqfMedia,
     KqfMultiChoice,
+    KqfOrdering,
     KqfQuiz,
     KqfSingleChoice,
     KqfSlider,
@@ -116,6 +117,74 @@ def test_quiz_discriminator_routes_to_correct_subtype() -> None:
     )
     assert isinstance(quiz.questions[0], KqfSingleChoice)
     assert isinstance(quiz.questions[1], KqfTrueFalse)
+
+
+def test_slider_scale_allows_null_correct() -> None:
+    q = KqfSlider(id="Q5", type="slider", text="Rate.", min=1, max=10, score="scale")
+    assert q.correct is None
+    assert q.score == "scale"
+
+
+def test_slider_range_requires_correct() -> None:
+    with pytest.raises(ValidationError, match="correct"):
+        KqfSlider(id="Q5", type="slider", text="?", min=1, max=10, score="range")
+
+
+def test_slider_scale_ignores_correct_bounds() -> None:
+    # score=scale with correct present is allowed (correct is ignored at scoring time)
+    q = KqfSlider(
+        id="Q5", type="slider", text=".", min=1, max=10, score="scale", correct=5.0
+    )
+    assert q.correct == 5.0
+
+
+def test_slider_label_fields() -> None:
+    q = KqfSlider(
+        id="Q5",
+        type="slider",
+        text=".",
+        correct=5,
+        min=1,
+        max=10,
+        label_min="Low",
+        label_max="High",
+    )
+    assert q.label_min == "Low"
+    assert q.label_max == "High"
+
+
+def test_ordering_valid() -> None:
+    q = KqfOrdering(
+        id="O1",
+        type="ordering",
+        text="Order these.",
+        items=["B", "C", "A"],
+        correct_order=[2, 0, 1],
+    )
+    assert q.items == ["B", "C", "A"]
+    assert q.correct_order == [2, 0, 1]
+
+
+def test_ordering_rejects_wrong_length() -> None:
+    with pytest.raises(ValidationError):
+        KqfOrdering(
+            id="O1",
+            type="ordering",
+            text="?",
+            items=["A", "B", "C"],
+            correct_order=[0, 1],
+        )
+
+
+def test_ordering_rejects_duplicate_index() -> None:
+    with pytest.raises(ValidationError):
+        KqfOrdering(
+            id="O1",
+            type="ordering",
+            text="?",
+            items=["A", "B", "C"],
+            correct_order=[0, 0, 2],
+        )
 
 
 def test_media_optional_and_independent_fields() -> None:

@@ -79,21 +79,55 @@ function reviewAnswersForQuestion(
     ];
   }
 
+  if (q.type === 'ordering') {
+    const response = Array.isArray(answer) ? (answer as number[]) : [];
+    return q.correct_order.map((correctIdx, position) => {
+      const playerIdx = response[position];
+      const correctAtPosition = playerIdx === correctIdx;
+      const itemText =
+        q.items[playerIdx ?? correctIdx] ?? `(pozycja ${position + 1})`;
+      return {
+        text: `${position + 1}. ${itemText}`,
+        state: (correctAtPosition ? 'correct-selected' : 'wrong-selected') as
+          | 'correct-selected'
+          | 'wrong-selected',
+        yourAnswer: playerIdx !== undefined,
+      };
+    });
+  }
+
+  // slider
   const v = typeof answer === 'number' ? answer : NaN;
-  const ok = Number.isFinite(v) && Math.abs(v - q.correct) <= q.tolerance;
   const unit = q.unit?.trim();
   const suffix = unit ? ` ${unit}` : '';
   const userLabel = Number.isFinite(v) ? `${v}${suffix}` : 'Brak odpowiedzi';
 
+  if (q.score === 'scale') {
+    return [
+      {
+        text: `Twoja odpowiedź: ${userLabel}`,
+        state: 'neutral' as const,
+        yourAnswer: true,
+      },
+    ];
+  }
+
+  const ok =
+    Number.isFinite(v) &&
+    q.correct !== null &&
+    Math.abs(v - q.correct) <= q.tolerance;
+
   return [
     {
       text: `Twoja odpowiedź: ${userLabel}`,
-      state: ok ? 'correct-selected' : 'wrong-selected',
+      state: (ok ? 'correct-selected' : 'wrong-selected') as
+        | 'correct-selected'
+        | 'wrong-selected',
       yourAnswer: true,
     },
     {
       text: `Wartość referencyjna: ${q.correct}${suffix} (±${q.tolerance})`,
-      state: ok ? 'neutral' : 'correct',
+      state: (ok ? 'neutral' : 'correct') as 'neutral' | 'correct',
     },
   ];
 }

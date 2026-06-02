@@ -19,6 +19,7 @@ export const kqfQuestionTypeValues = [
   'multichoice',
   'truefalse',
   'slider',
+  'ordering',
 ] as const;
 
 export type KqfQuestionType = (typeof kqfQuestionTypeValues)[number];
@@ -55,12 +56,20 @@ export type QuizEditorQuestionForm =
     })
   | (QuizEditorQuestionFormBase & {
       type: 'slider';
-      correct: number;
+      correct: number | null;
       min: number;
       max: number;
       step: number;
       tolerance: number;
       unit?: string | null;
+      score: 'range' | 'scale';
+      label_min?: string | null;
+      label_max?: string | null;
+    })
+  | (QuizEditorQuestionFormBase & {
+      type: 'ordering';
+      items: string[];
+      correct_order: number[];
     });
 
 export interface QuizEditorFormValues {
@@ -119,12 +128,26 @@ export type AdminQuizApiQuestion =
       points?: number | null;
       image?: string | null;
       hint?: string | null;
-      correct: number;
+      correct: number | null;
       min: number;
       max: number;
       step: number;
       tolerance: number;
       unit?: string | null;
+      score?: 'range' | 'scale';
+      label_min?: string | null;
+      label_max?: string | null;
+    }
+  | {
+      id?: string;
+      type: 'ordering';
+      text: string;
+      time_s?: number | null;
+      points?: number | null;
+      image?: string | null;
+      hint?: string | null;
+      items: string[];
+      correct_order: number[];
     };
 
 export interface AdminQuizApiDetails {
@@ -198,12 +221,26 @@ export type AdminQuizUpsertQuestionPayload =
       points: number;
       image?: string | null;
       hint?: string | null;
-      correct: number;
+      correct?: number | null;
       min: number;
       max: number;
       step: number;
       tolerance: number;
       unit?: string | null;
+      score?: 'range' | 'scale';
+      label_min?: string | null;
+      label_max?: string | null;
+    }
+  | {
+      id?: string;
+      type: 'ordering';
+      text: string;
+      time_s?: number | null;
+      points: number;
+      image?: string | null;
+      hint?: string | null;
+      items: string[];
+      correct_order: number[];
     };
 
 export interface AdminQuizUpsertPayload {

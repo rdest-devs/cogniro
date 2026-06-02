@@ -85,28 +85,49 @@ class KqfTrueFalse(_KqfBaseQuestion):
 
 class KqfSlider(_KqfBaseQuestion):
     type: Literal["slider"]
-    correct: float
+    correct: float | None = None
     min: float
     max: float
     step: float = 1
     tolerance: float = 0
     unit: str | None = None
+    score: Literal["range", "scale"] = "range"
+    label_min: str | None = None
+    label_max: str | None = None
 
     @model_validator(mode="after")
     def _validate_range(self) -> KqfSlider:
         if self.min >= self.max:
             raise ValueError("min must be < max")
-        if not (self.min <= self.correct <= self.max):
-            raise ValueError("correct must be in [min, max]")
         if self.step <= 0:
             raise ValueError("step must be > 0")
         if self.tolerance < 0:
             raise ValueError("tolerance must be >= 0")
+        if self.score == "range":
+            if self.correct is None:
+                raise ValueError("slider with score=range requires correct field")
+            if not (self.min <= self.correct <= self.max):
+                raise ValueError("correct must be in [min, max]")
+        return self
+
+
+class KqfOrdering(_KqfBaseQuestion):
+    type: Literal["ordering"]
+    items: list[str] = Field(min_length=2, max_length=8)
+    correct_order: list[int] = Field(min_length=2)
+
+    @model_validator(mode="after")
+    def _validate_order(self) -> "KqfOrdering":
+        n = len(self.items)
+        if len(self.correct_order) != n:
+            raise ValueError(f"correct_order must have exactly {n} indices")
+        if sorted(self.correct_order) != list(range(n)):
+            raise ValueError("correct_order must be a permutation of 0..n-1")
         return self
 
 
 KqfQuestion = Annotated[
-    KqfSingleChoice | KqfMultiChoice | KqfTrueFalse | KqfSlider,
+    KqfSingleChoice | KqfMultiChoice | KqfTrueFalse | KqfSlider | KqfOrdering,
     Field(discriminator="type"),
 ]
 
