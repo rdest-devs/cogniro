@@ -23,6 +23,8 @@ interface SliderQuestionProps {
   defaultValue: number;
   unit: string;
   ticks: number[];
+  minLabel?: string | null;
+  maxLabel?: string | null;
   onSubmit?: (value: number) => void;
 }
 
@@ -34,6 +36,8 @@ function SliderBody({
   value,
   unit,
   ticks,
+  minLabel,
+  maxLabel,
   onChange,
 }: {
   question: string;
@@ -43,6 +47,8 @@ function SliderBody({
   value: number;
   unit: string;
   ticks: number[];
+  minLabel?: string | null;
+  maxLabel?: string | null;
   onChange: (v: number) => void;
 }) {
   const range = max - min;
@@ -85,6 +91,13 @@ function SliderBody({
             </span>
           ))}
         </div>
+
+        {(minLabel?.trim() || maxLabel?.trim()) && (
+          <div className="mt-1 flex w-full justify-between gap-3 px-1 text-xs font-medium text-[var(--text-muted)]">
+            <span className="max-w-[45%] text-left">{minLabel?.trim()}</span>
+            <span className="max-w-[45%] text-right">{maxLabel?.trim()}</span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -103,6 +116,8 @@ export default function SliderQuestion({
   defaultValue,
   unit,
   ticks,
+  minLabel,
+  maxLabel,
   onSubmit,
 }: SliderQuestionProps) {
   const [value, setValue] = useState(defaultValue);
@@ -118,6 +133,8 @@ export default function SliderQuestion({
         value={value}
         unit={unit}
         ticks={ticks}
+        minLabel={minLabel}
+        maxLabel={maxLabel}
         onChange={setValue}
       />
       <SubmitButton

@@ -72,7 +72,8 @@ function previewBody(
         </p>
       );
     case 'slider': {
-      const { min, max, step, correct, tolerance, unit } = question;
+      const { min, max, step, correct, tolerance, unit, minLabel, maxLabel } =
+        question;
       return (
         <div className="flex flex-col gap-1 text-sm text-[var(--text-dark)]">
           <p>
@@ -80,6 +81,13 @@ function previewBody(
             {unit ? ` ${unit}` : ''}, krok {step}
             {tolerance > 0 ? `, tolerancja ±${tolerance}` : ''}
           </p>
+          {(minLabel?.trim() || maxLabel?.trim()) && (
+            <p className="text-[var(--text-muted)]">
+              {minLabel?.trim() ? `${min}: ${minLabel.trim()}` : ''}
+              {minLabel?.trim() && maxLabel?.trim() ? ' · ' : ''}
+              {maxLabel?.trim() ? `${max}: ${maxLabel.trim()}` : ''}
+            </p>
+          )}
           <p className="font-semibold">Docelowo: {correct}</p>
         </div>
       );

@@ -112,6 +112,8 @@ export const kqfSliderSchema = z
     step: z.number().default(1),
     tolerance: z.number().nonnegative().default(0),
     unit: nullableJsonString,
+    min_label: nullableJsonString,
+    max_label: nullableJsonString,
   })
   .superRefine((v, ctx) => {
     if (v.min >= v.max) {

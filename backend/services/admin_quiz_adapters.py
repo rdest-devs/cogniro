@@ -83,6 +83,8 @@ def upsert_payload_to_kqf(
                     step=q.step,
                     tolerance=q.tolerance,
                     unit=q.unit,
+                    min_label=q.min_label,
+                    max_label=q.max_label,
                     **common,
                 )
             )
@@ -157,6 +159,8 @@ def kqf_to_admin_detail_payload(
                     step=q.step,
                     tolerance=q.tolerance,
                     unit=q.unit,
+                    min_label=q.min_label,
+                    max_label=q.max_label,
                     **common,
                 )
             )

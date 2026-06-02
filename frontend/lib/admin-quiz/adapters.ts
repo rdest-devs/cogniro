@@ -105,6 +105,8 @@ function mapApiQuestionToForm(q: AdminQuizApiQuestion): QuizEditorQuestionForm {
         step: q.step,
         tolerance: q.tolerance,
         unit: q.unit ?? null,
+        minLabel: q.min_label ?? null,
+        maxLabel: q.max_label ?? null,
       };
     default: {
       const _exhaustive: never = q;
@@ -177,6 +179,8 @@ function coerceApiQuestionLoose(
       step: typeof raw.step === 'number' ? raw.step : 1,
       tolerance: typeof raw.tolerance === 'number' ? raw.tolerance : 0,
       unit: typeof raw.unit === 'string' ? raw.unit : null,
+      minLabel: typeof raw.min_label === 'string' ? raw.min_label : null,
+      maxLabel: typeof raw.max_label === 'string' ? raw.max_label : null,
     };
   }
 
@@ -342,6 +346,8 @@ function mapQuestionToPayload(
         step: q.step,
         tolerance: q.tolerance,
         unit: q.unit?.trim() ? q.unit.trim() : undefined,
+        min_label: q.minLabel?.trim() ? q.minLabel.trim() : undefined,
+        max_label: q.maxLabel?.trim() ? q.maxLabel.trim() : undefined,
       };
     default: {
       const _never: never = q;

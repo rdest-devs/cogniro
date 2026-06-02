@@ -91,6 +91,9 @@ class KqfSlider(_KqfBaseQuestion):
     step: float = 1
     tolerance: float = 0
     unit: str | None = None
+    # Optional labels describing the slider extremes (e.g. what min and max mean).
+    min_label: str | None = None
+    max_label: str | None = None
 
     @model_validator(mode="after")
     def _validate_range(self) -> KqfSlider:

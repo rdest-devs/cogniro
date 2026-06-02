@@ -73,3 +73,29 @@ def test_roundtrip_full_kqf_example() -> None:
         ],
     )
     _assert_roundtrip(quiz)
+
+
+def test_roundtrip_slider_with_extreme_labels() -> None:
+    quiz = KqfQuiz(
+        front_matter=KqfFrontMatter(title="Opinions"),
+        questions=[
+            KqfSlider(
+                id="Q1",
+                type="slider",
+                text="How much do you agree?",
+                correct=5,
+                min=1,
+                max=10,
+                step=1,
+                tolerance=2,
+                min_label="Zdecydowanie nie",
+                max_label="Zdecydowanie tak",
+            ),
+        ],
+    )
+    _assert_roundtrip(quiz)
+    parsed = parse_kqf(serialize_kqf(quiz))
+    slider = parsed.questions[0]
+    assert isinstance(slider, KqfSlider)
+    assert slider.min_label == "Zdecydowanie nie"
+    assert slider.max_label == "Zdecydowanie tak"

@@ -67,6 +67,8 @@ export function createQuestionForType(
         step: 1,
         tolerance: 0,
         unit: null,
+        minLabel: null,
+        maxLabel: null,
       };
     default: {
       const _exhaustive: never = type;

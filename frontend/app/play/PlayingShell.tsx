@@ -155,6 +155,8 @@ export function PlayingShell({ state, onChange, onFinish }: Props) {
           defaultValue={(state.answers[q.id] as number | undefined) ?? q.min}
           unit={q.unit ?? ''}
           ticks={sliderTicks(q.min, q.max)}
+          minLabel={q.min_label}
+          maxLabel={q.max_label}
           onSubmit={(n) => advance(n)}
         />
       )}

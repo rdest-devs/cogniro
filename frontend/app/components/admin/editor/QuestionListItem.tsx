@@ -390,6 +390,10 @@ function SliderSection({ questionIndex }: { questionIndex: number }) {
   const tolerance = Number(watch(`${questionPath}.tolerance` as const));
   const unitStr =
     (watch(`${questionPath}.unit` as const) as string | null)?.trim() ?? '';
+  const minLabelStr =
+    (watch(`${questionPath}.minLabel` as const) as string | null) ?? '';
+  const maxLabelStr =
+    (watch(`${questionPath}.maxLabel` as const) as string | null) ?? '';
 
   const safeStep = Number.isFinite(step) && step > 0 ? step : 1;
   const previewTicks = 5;
@@ -495,6 +499,45 @@ function SliderSection({ questionIndex }: { questionIndex: number }) {
         </label>
       </div>
 
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label className="flex flex-col gap-1">
+          <span className="text-[13px] font-medium text-[var(--text-muted)]">
+            Podpis wartości min (opcj.)
+          </span>
+          <input
+            value={minLabelStr}
+            placeholder={`Co oznacza ${Number.isFinite(min) ? min : 'min'}?`}
+            onChange={(event) => {
+              const v = event.target.value;
+              setValue(`${questionPath}.minLabel`, v.trim() ? v : null, {
+                shouldDirty: true,
+                shouldValidate: true,
+              });
+              void trigger(questionPath);
+            }}
+            className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-[13px] font-medium text-[var(--text-muted)]">
+            Podpis wartości max (opcj.)
+          </span>
+          <input
+            value={maxLabelStr}
+            placeholder={`Co oznacza ${Number.isFinite(max) ? max : 'max'}?`}
+            onChange={(event) => {
+              const v = event.target.value;
+              setValue(`${questionPath}.maxLabel`, v.trim() ? v : null, {
+                shouldDirty: true,
+                shouldValidate: true,
+              });
+              void trigger(questionPath);
+            }}
+            className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
+          />
+        </label>
+      </div>
+
       <div className="rounded-xl border border-dashed border-[var(--border)] bg-white px-3 py-2 text-xs text-[var(--text-muted)]">
         <span className="font-semibold text-[var(--text-dark)]">
           Podgląd zakresu:
@@ -538,6 +581,12 @@ function SliderSection({ questionIndex }: { questionIndex: number }) {
               />
             )}
           </div>
+          {(minLabelStr.trim() || maxLabelStr.trim()) && (
+            <div className="flex justify-between gap-2 text-xs font-medium text-[var(--text-muted)]">
+              <span className="truncate">{minLabelStr.trim()}</span>
+              <span className="truncate text-right">{maxLabelStr.trim()}</span>
+            </div>
+          )}
         </div>
       )}
     </div>

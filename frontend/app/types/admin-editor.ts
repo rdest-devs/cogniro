@@ -61,6 +61,8 @@ export type QuizEditorQuestionForm =
       step: number;
       tolerance: number;
       unit?: string | null;
+      minLabel?: string | null;
+      maxLabel?: string | null;
     });
 
 export interface QuizEditorFormValues {
@@ -125,6 +127,8 @@ export type AdminQuizApiQuestion =
       step: number;
       tolerance: number;
       unit?: string | null;
+      min_label?: string | null;
+      max_label?: string | null;
     };
 
 export interface AdminQuizApiDetails {
@@ -204,6 +208,8 @@ export type AdminQuizUpsertQuestionPayload =
       step: number;
       tolerance: number;
       unit?: string | null;
+      min_label?: string | null;
+      max_label?: string | null;
     };
 
 export interface AdminQuizUpsertPayload {

@@ -55,7 +55,8 @@ _HEADER_RE = re.compile(
 _CHOICE_RE = re.compile(r"^-\s*\[(?P<mark>[ xX])\](?:\s+(?P<text>.+?))?\s*$")
 _DIRECTIVE_RE = re.compile(r"^@(?P<key>image|video|audio|hint):\s*(?P<value>.+?)\s*$")
 _SLIDER_FIELD_RE = re.compile(
-    r"^\s{2,}(?P<key>correct|min|max|step|tolerance|unit):\s*(?P<value>.+?)\s*$"
+    r"^\s{2,}(?P<key>correct|min_label|max_label|min|max|step|tolerance|unit):"
+    r"\s*(?P<value>.+?)\s*$"
 )
 
 
@@ -291,7 +292,11 @@ def _build_slider(
     if not fields:
         raise KqfParseError("slider question requires @slider: block", line=header_line)
     try:
-        kwargs: dict[str, object] = {"unit": fields.get("unit")}
+        kwargs: dict[str, object] = {
+            "unit": fields.get("unit"),
+            "min_label": fields.get("min_label"),
+            "max_label": fields.get("max_label"),
+        }
         for key in ("correct", "min", "max"):
             if key not in fields:
                 raise KqfParseError(
@@ -351,6 +356,10 @@ def _write_question(buf: io.StringIO, question: object) -> None:
             buf.write(f"  tolerance: {_fmt_num(question.tolerance)}\n")
         if question.unit:
             buf.write(f"  unit: {question.unit}\n")
+        if question.min_label:
+            buf.write(f"  min_label: {question.min_label}\n")
+        if question.max_label:
+            buf.write(f"  max_label: {question.max_label}\n")
 
     media_kwargs = question.media.model_dump(exclude_none=True)
     if media_kwargs:

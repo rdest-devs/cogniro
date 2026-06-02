@@ -150,6 +150,14 @@ const editorSliderSchema = questionCommonFormSchema
         }
         return v;
       }),
+    minLabel: z
+      .union([z.string(), z.literal(''), z.null()])
+      .optional()
+      .transform((v) => (v === undefined || v === null || v === '' ? null : v)),
+    maxLabel: z
+      .union([z.string(), z.literal(''), z.null()])
+      .optional()
+      .transform((v) => (v === undefined || v === null || v === '' ? null : v)),
   })
   .superRefine((q, ctx) => {
     if (q.min >= q.max) {
@@ -263,6 +271,8 @@ const adminQuizApiSliderSchema = z
     step: z.coerce.number(),
     tolerance: z.coerce.number(),
     unit: optionalTrimmedString,
+    min_label: optionalTrimmedString,
+    max_label: optionalTrimmedString,
   })
   .passthrough();
 
@@ -412,6 +422,26 @@ const upsertSliderSchema = z
     step: z.number().finite().positive().default(1),
     tolerance: z.number().finite().min(0).default(0),
     unit: z
+      .union([z.string(), z.literal(''), z.null()])
+      .optional()
+      .transform((v) => {
+        if (v === undefined || v === null || v === '') {
+          return undefined;
+        }
+        const t = v.trim();
+        return t === '' ? undefined : t;
+      }),
+    min_label: z
+      .union([z.string(), z.literal(''), z.null()])
+      .optional()
+      .transform((v) => {
+        if (v === undefined || v === null || v === '') {
+          return undefined;
+        }
+        const t = v.trim();
+        return t === '' ? undefined : t;
+      }),
+    max_label: z
       .union([z.string(), z.literal(''), z.null()])
       .optional()
       .transform((v) => {

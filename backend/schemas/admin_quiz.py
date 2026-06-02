@@ -114,6 +114,8 @@ class AdminQuizSliderPayload(_AdminQuizPayloadBase):
     step: float = 1
     tolerance: float = 0
     unit: str | None = None
+    min_label: str | None = None
+    max_label: str | None = None
 
     @model_validator(mode="after")
     def _validate(self) -> AdminQuizSliderPayload:
