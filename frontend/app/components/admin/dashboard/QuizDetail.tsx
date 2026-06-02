@@ -1,7 +1,9 @@
 'use client';
-
 import {
   Calendar,
+  ChevronDown,
+  ChevronsUpDown,
+  ChevronUp,
   Download,
   Eye,
   List,
@@ -10,7 +12,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import StatusBadge from '@/app/components/common/StatusBadge';
 import type { QuizInfo, ResultRow } from '@/app/types';
@@ -26,6 +28,9 @@ import {
   adminBlueHeadTableTheadClass,
   statusColors,
 } from '../shared/constants';
+
+type SortKey = 'name' | 'score' | 'time' | 'date';
+type SortDir = 'asc' | 'desc';
 
 interface QuizDetailProps {
   quizzes: QuizInfo[];
@@ -121,6 +126,44 @@ export default function QuizDetail({
     },
     [router, adminBase, onQuizDeleted],
   );
+
+  const [sortKey, setSortKey] = useState<SortKey>('score');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+
+  const sortedResults = useMemo(() => {
+    return [...resultsForQuiz].sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === 'score') {
+        cmp = a.score - b.score;
+      } else if (sortKey === 'name') {
+        cmp = a.name.localeCompare(b.name, 'pl');
+      } else if (sortKey === 'time') {
+        cmp = a.time.localeCompare(b.time);
+      } else if (sortKey === 'date') {
+        cmp = a.date.localeCompare(b.date);
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [resultsForQuiz, sortKey, sortDir]);
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir(key === 'score' ? 'desc' : 'asc');
+    }
+  }
+
+  function SortIcon({ col }: { col: SortKey }) {
+    if (sortKey !== col)
+      return <ChevronsUpDown size={13} className="opacity-50" />;
+    return sortDir === 'asc' ? (
+      <ChevronUp size={13} />
+    ) : (
+      <ChevronDown size={13} />
+    );
+  }
 
   return (
     <AdminLayout
@@ -235,14 +278,29 @@ export default function QuizDetail({
             <table className={adminBlueHeadTableClass}>
               <thead className={adminBlueHeadTableTheadClass}>
                 <tr>
-                  <th className={adminBlueHeadTableThClass}>Imię</th>
-                  <th className={adminBlueHeadTableThClass}>Wynik</th>
-                  <th className={adminBlueHeadTableThClass}>Czas</th>
-                  <th className={adminBlueHeadTableThClass}>Data</th>
+                  {(
+                    [
+                      { key: 'name', label: 'Imię' },
+                      { key: 'score', label: 'Wynik' },
+                      { key: 'time', label: 'Czas' },
+                      { key: 'date', label: 'Data' },
+                    ] as { key: SortKey; label: string }[]
+                  ).map(({ key, label }) => (
+                    <th key={key} className={adminBlueHeadTableThClass}>
+                      <button
+                        type="button"
+                        onClick={() => handleSort(key)}
+                        className="flex cursor-pointer items-center gap-1 hover:opacity-80"
+                      >
+                        {label}
+                        <SortIcon col={key} />
+                      </button>
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {resultsForQuiz.length === 0 ? (
+                {sortedResults.length === 0 ? (
                   <tr>
                     <td
                       colSpan={4}
@@ -252,7 +310,7 @@ export default function QuizDetail({
                     </td>
                   </tr>
                 ) : (
-                  resultsForQuiz.map((row, index) => (
+                  sortedResults.map((row, index) => (
                     <tr
                       key={`${row.name}-${index}`}
                       className="border-t border-[var(--border)]"

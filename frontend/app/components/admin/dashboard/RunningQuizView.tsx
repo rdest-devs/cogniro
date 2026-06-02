@@ -3,12 +3,15 @@
 import {
   ArrowLeft,
   Ban,
+  ChevronDown,
+  ChevronsUpDown,
+  ChevronUp,
   CircleStop,
   Download,
   ExternalLink,
   RefreshCcw,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { QrCode } from '@/app/components/admin/dashboard/QrCode';
 import AdminLayout from '@/app/components/admin/layout/AdminLayout';
@@ -30,6 +33,14 @@ import {
 } from '@/lib/sessions/client';
 
 type Snapshot = Awaited<ReturnType<typeof getSessionSnapshot>>;
+type SortKey = 'nickname' | 'status' | 'score';
+type SortDir = 'asc' | 'desc';
+
+function statusOrder(p: { blocked: boolean; has_submitted: boolean }): number {
+  if (p.blocked) return 0;
+  if (p.has_submitted) return 2;
+  return 1;
+}
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -103,6 +114,42 @@ export function RunningQuizView({
   } | null>(null);
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>('score');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+
+  const sortedParticipants = useMemo(() => {
+    const list = snap?.participants ?? [];
+    return [...list].sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === 'score') {
+        cmp = (a.score ?? -1) - (b.score ?? -1);
+      } else if (sortKey === 'nickname') {
+        cmp = a.nickname.localeCompare(b.nickname, 'pl');
+      } else {
+        cmp = statusOrder(a) - statusOrder(b);
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [snap, sortKey, sortDir]);
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir(key === 'score' ? 'desc' : 'asc');
+    }
+  }
+
+  function SortIcon({ col }: { col: SortKey }) {
+    if (sortKey !== col)
+      return <ChevronsUpDown size={13} className="opacity-50" />;
+    return sortDir === 'asc' ? (
+      <ChevronUp size={13} />
+    ) : (
+      <ChevronDown size={13} />
+    );
+  }
 
   const buildPresenterUrl = () => {
     if (!activation) {
@@ -386,16 +433,29 @@ export function RunningQuizView({
           <table className={adminBlueHeadTableClass}>
             <thead className={adminBlueHeadTableTheadClass}>
               <tr>
-                <th className={adminBlueHeadTableThClass}>Pseudonim</th>
-                <th className={adminBlueHeadTableThClass}>Stan</th>
-                <th className={adminBlueHeadTableThClass}>
-                  Wynik (zdobyte / maks.)
-                </th>
+                {(
+                  [
+                    { key: 'nickname', label: 'Pseudonim' },
+                    { key: 'status', label: 'Stan' },
+                    { key: 'score', label: 'Wynik (zdobyte / maks.)' },
+                  ] as { key: SortKey; label: string }[]
+                ).map(({ key, label }) => (
+                  <th key={key} className={adminBlueHeadTableThClass}>
+                    <button
+                      type="button"
+                      onClick={() => handleSort(key)}
+                      className="flex cursor-pointer items-center gap-1 hover:opacity-80"
+                    >
+                      {label}
+                      <SortIcon col={key} />
+                    </button>
+                  </th>
+                ))}
                 <th className={adminBlueHeadTableThClass}>Akcje</th>
               </tr>
             </thead>
             <tbody>
-              {(snap?.participants ?? []).length === 0 ? (
+              {sortedParticipants.length === 0 ? (
                 <tr>
                   <td
                     colSpan={4}
@@ -405,7 +465,7 @@ export function RunningQuizView({
                   </td>
                 </tr>
               ) : (
-                (snap?.participants ?? []).map((p) => (
+                sortedParticipants.map((p) => (
                   <tr
                     key={p.nickname}
                     className="border-t border-[var(--border)]"

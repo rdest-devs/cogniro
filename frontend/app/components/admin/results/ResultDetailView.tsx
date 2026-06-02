@@ -1,6 +1,14 @@
 'use client';
 
-import { ArrowLeft, List, RefreshCcw, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  ChevronDown,
+  ChevronsUpDown,
+  ChevronUp,
+  List,
+  RefreshCcw,
+  Trash2,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -18,6 +26,9 @@ import {
   resultFileDisplayName,
 } from '@/lib/results/archivePayload';
 import { deleteResult, readResult } from '@/lib/results/client';
+
+type SortKey = 'nickname' | 'score' | 'submitted_at';
+type SortDir = 'asc' | 'desc';
 
 type Props = {
   adminBase: string;
@@ -42,6 +53,8 @@ export function ResultDetailView({
 }: Props) {
   const [payload, setPayload] = useState<unknown>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>('score');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   /* Clear stale archive UI before each date/file fetch. */
   /* eslint-disable react-hooks/set-state-in-effect -- reset payload/err when inputs change */
@@ -76,6 +89,40 @@ export function ResultDetailView({
     const r = resultArchivePayloadSchema.safeParse(payload);
     return r.success ? r.data : null;
   }, [payload]);
+
+  const sortedScores = useMemo(() => {
+    if (!parsed) return [];
+    return [...parsed.scores].sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === 'score') {
+        cmp = a.score - b.score;
+      } else if (sortKey === 'nickname') {
+        cmp = a.nickname.localeCompare(b.nickname, 'pl');
+      } else {
+        cmp = a.submitted_at.localeCompare(b.submitted_at);
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [parsed, sortKey, sortDir]);
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir(key === 'score' ? 'desc' : 'asc');
+    }
+  }
+
+  function SortIcon({ col }: { col: SortKey }) {
+    if (sortKey !== col)
+      return <ChevronsUpDown size={13} className="opacity-50" />;
+    return sortDir === 'asc' ? (
+      <ChevronUp size={13} />
+    ) : (
+      <ChevronDown size={13} />
+    );
+  }
 
   const fileTitle = resultFileDisplayName(file);
 
@@ -193,19 +240,31 @@ export function ResultDetailView({
               <table className="w-full min-w-[320px] text-left text-sm">
                 <thead className="border-b border-[var(--border)] bg-[var(--page-bg)]">
                   <tr>
-                    <th className="px-4 py-3 font-semibold text-[var(--text-dark)]">
-                      Pseudonim
-                    </th>
-                    <th className="px-4 py-3 font-semibold text-[var(--text-dark)]">
-                      Wynik (zdobyte / maks.)
-                    </th>
-                    <th className="px-4 py-3 font-semibold text-[var(--text-dark)]">
-                      Wysłano
-                    </th>
+                    {(
+                      [
+                        { key: 'nickname', label: 'Pseudonim' },
+                        { key: 'score', label: 'Wynik (zdobyte / maks.)' },
+                        { key: 'submitted_at', label: 'Wysłano' },
+                      ] as { key: SortKey; label: string }[]
+                    ).map(({ key, label }) => (
+                      <th
+                        key={key}
+                        className="px-4 py-3 font-semibold text-[var(--text-dark)]"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleSort(key)}
+                          className="flex cursor-pointer items-center gap-1 hover:opacity-70"
+                        >
+                          {label}
+                          <SortIcon col={key} />
+                        </button>
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {parsed.scores.map((row) => (
+                  {sortedScores.map((row) => (
                     <tr
                       key={`${row.nickname}-${row.submitted_at}`}
                       className="border-t border-[var(--border)]"

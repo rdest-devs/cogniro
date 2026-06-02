@@ -46,6 +46,7 @@ export function ResultsBrowserView({
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
     };
