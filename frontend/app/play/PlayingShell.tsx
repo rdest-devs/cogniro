@@ -1,6 +1,7 @@
 'use client';
 
 import SubmitButton from '@/app/components/common/SubmitButton';
+import ImagePixelateQuestion from '@/app/components/quiz/questions/ImagePixelateQuestion';
 import MultipleChoice from '@/app/components/quiz/questions/MultipleChoice';
 import SingleChoice from '@/app/components/quiz/questions/SingleChoice';
 import SliderQuestion from '@/app/components/quiz/questions/SliderQuestion';
@@ -156,6 +157,19 @@ export function PlayingShell({ state, onChange, onFinish }: Props) {
           unit={q.unit ?? ''}
           ticks={sliderTicks(q.min, q.max)}
           onSubmit={(n) => advance(n)}
+        />
+      )}
+      {q.type === 'imagepixelate' && qImage && (
+        <ImagePixelateQuestion
+          key={q.id}
+          questionNumber={questionNumber}
+          totalQuestions={total}
+          time="--:--"
+          question={q.text}
+          hint={q.media?.hint}
+          imageUrl={qImage.url}
+          answers={q.choices.map((c) => c.text)}
+          onSubmit={(idx) => advance(idx)}
         />
       )}
     </div>

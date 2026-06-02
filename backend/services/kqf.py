@@ -17,6 +17,7 @@ from pydantic import ValidationError
 from schemas.kqf import (
     KqfChoice,
     KqfFrontMatter,
+    KqfImagePixelate,
     KqfMedia,
     KqfMultiChoice,
     KqfQuiz,
@@ -49,7 +50,8 @@ def _normalize_kqf_stored_image_path(value: str) -> str:
 
 
 _HEADER_RE = re.compile(
-    r"^##\s+(?P<id>[A-Za-z0-9_-]+)\s*\|\s*(?P<type>singlechoice|multichoice|truefalse|slider)"
+    r"^##\s+(?P<id>[A-Za-z0-9_-]+)\s*\|\s*"
+    r"(?P<type>singlechoice|multichoice|truefalse|slider|imagepixelate)"
     r"(?:\s*\|\s*(?P<time>\d+)s)?(?:\s*\|\s*(?P<points>\d+)pts)?\s*$"
 )
 _CHOICE_RE = re.compile(r"^-\s*\[(?P<mark>[ xX])\](?:\s+(?P<text>.+?))?\s*$")
@@ -241,6 +243,14 @@ def _parse_question_block(block: str, header_line: int):
                 media=media,
                 **common,
             )
+        if qtype == "imagepixelate":
+            return KqfImagePixelate(
+                type="imagepixelate",
+                text=question_text,
+                choices=choices,
+                media=media,
+                **common,
+            )
         if qtype == "truefalse":
             return _build_truefalse(common, question_text, choices, media, header_line)
         if qtype == "slider":
@@ -330,7 +340,7 @@ def _write_question(buf: io.StringIO, question: object) -> None:
     buf.write(question.text)
     buf.write("\n\n")
 
-    if isinstance(question, (KqfSingleChoice, KqfMultiChoice)):
+    if isinstance(question, (KqfSingleChoice, KqfMultiChoice, KqfImagePixelate)):
         for choice in question.choices:
             mark = "x" if choice.is_correct else " "
             text_part = f" {choice.text}" if choice.text else ""

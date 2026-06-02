@@ -168,11 +168,37 @@ const editorSliderSchema = questionCommonFormSchema
     }
   });
 
+const editorImagePixelateSchema = questionCommonFormSchema
+  .extend({
+    type: z.literal('imagepixelate'),
+    choices: z
+      .array(editorChoiceSchema)
+      .min(2, 'Minimum 2 odpowiedzi')
+      .max(6, 'Maksimum 6 odpowiedzi'),
+  })
+  .superRefine((q, ctx) => {
+    if (countCorrectChoices(q.choices) !== 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Pytanie z obrazem wymaga dokładnie 1 poprawnej odpowiedzi',
+        path: ['choices'],
+      });
+    }
+    if (!q.image) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'To pytanie wymaga obrazu',
+        path: ['image'],
+      });
+    }
+  });
+
 export const quizEditorQuestionFormSchema = z.discriminatedUnion('type', [
   editorSingleChoiceSchema,
   editorMultiChoiceSchema,
   editorTrueFalseSchema,
   editorSliderSchema,
+  editorImagePixelateSchema,
 ]);
 
 export const quizEditorFormSchema = z.object({
@@ -266,11 +292,20 @@ const adminQuizApiSliderSchema = z
   })
   .passthrough();
 
+const adminQuizApiImagePixelateSchema = z
+  .object({
+    ...apiQuestionCommon,
+    type: z.literal('imagepixelate'),
+    choices: z.array(apiChoiceSchema).min(1),
+  })
+  .passthrough();
+
 export const adminQuizApiQuestionSchema = z.discriminatedUnion('type', [
   adminQuizApiSingleSchema,
   adminQuizApiMultiSchema,
   adminQuizApiTrueFalseSchema,
   adminQuizApiSliderSchema,
+  adminQuizApiImagePixelateSchema,
 ]);
 
 export const adminQuizApiDetailsSchema = z
@@ -439,11 +474,35 @@ const upsertSliderSchema = z
     }
   });
 
+const upsertImagePixelateSchema = z
+  .object({
+    ...upsertCommon,
+    type: z.literal('imagepixelate'),
+    choices: z.array(upsertChoiceSchema).min(2).max(6),
+  })
+  .superRefine((q, ctx) => {
+    if (q.choices.filter((c) => c.is_correct).length !== 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'imagepixelate wymaga dokładnie 1 poprawnej odpowiedzi',
+        path: ['choices'],
+      });
+    }
+    if (!q.image) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'imagepixelate wymaga obrazu',
+        path: ['image'],
+      });
+    }
+  });
+
 const adminQuizUpsertQuestionSchema = z.discriminatedUnion('type', [
   upsertSingleSchema,
   upsertMultiSchema,
   upsertTrueFalseSchema,
   upsertSliderSchema,
+  upsertImagePixelateSchema,
 ]);
 
 export const adminQuizUpsertPayloadSchema = z.object({

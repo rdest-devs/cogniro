@@ -68,6 +68,12 @@ export function createQuestionForType(
         tolerance: 0,
         unit: null,
       };
+    case 'imagepixelate':
+      return {
+        ...base,
+        type: 'imagepixelate',
+        choices: [createEmptyChoice(), createEmptyChoice()],
+      };
     default: {
       const _exhaustive: never = type;
       return _exhaustive;

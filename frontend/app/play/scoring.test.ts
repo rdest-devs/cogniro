@@ -60,6 +60,27 @@ test('slider outside tolerance', () => {
   assert.equal(calculateScore(quiz as never, { Q3: 80 }), 0);
 });
 
+test('imagepixelate scored like singlechoice', () => {
+  const q = {
+    front_matter: { title: 'T', tags: [] },
+    questions: [
+      {
+        id: 'P',
+        type: 'imagepixelate',
+        text: '?',
+        points: 80,
+        media: { image: './media/x.jpg' },
+        choices: [
+          { text: 'a', is_correct: true },
+          { text: 'b', is_correct: false },
+        ],
+      },
+    ],
+  };
+  assert.equal(calculateScore(q as never, { P: 0 }), 80);
+  assert.equal(calculateScore(q as never, { P: 1 }), 0);
+});
+
 test('multichoice exact match', () => {
   const q = {
     front_matter: { title: 'T', tags: [] },

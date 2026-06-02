@@ -5,6 +5,7 @@ from typing import Literal
 from schemas.admin_quiz import (
     AdminQuizChoicePayload,
     AdminQuizDetailResponse,
+    AdminQuizImagePixelatePayload,
     AdminQuizMultiChoicePayload,
     AdminQuizQuestionPayload,
     AdminQuizSingleChoicePayload,
@@ -15,6 +16,7 @@ from schemas.admin_quiz import (
 from schemas.kqf import (
     KqfChoice,
     KqfFrontMatter,
+    KqfImagePixelate,
     KqfMedia,
     KqfMultiChoice,
     KqfQuestion,
@@ -62,6 +64,17 @@ def upsert_payload_to_kqf(
             questions.append(
                 KqfMultiChoice(
                     type="multichoice",
+                    choices=[
+                        KqfChoice(text=c.text, is_correct=c.is_correct, image=c.image)
+                        for c in q.choices
+                    ],
+                    **common,
+                )
+            )
+        elif isinstance(q, AdminQuizImagePixelatePayload):
+            questions.append(
+                KqfImagePixelate(
+                    type="imagepixelate",
                     choices=[
                         KqfChoice(text=c.text, is_correct=c.is_correct, image=c.image)
                         for c in q.choices
@@ -134,6 +147,19 @@ def kqf_to_admin_detail_payload(
             questions.append(
                 AdminQuizMultiChoicePayload(
                     type="multichoice",
+                    choices=[
+                        AdminQuizChoicePayload(
+                            text=c.text, is_correct=c.is_correct, image=c.image
+                        )
+                        for c in q.choices
+                    ],
+                    **common,
+                )
+            )
+        elif q.type == "imagepixelate":
+            questions.append(
+                AdminQuizImagePixelatePayload(
+                    type="imagepixelate",
                     choices=[
                         AdminQuizChoicePayload(
                             text=c.text, is_correct=c.is_correct, image=c.image

@@ -16,7 +16,7 @@ export function questionAnswerCorrect(
   q: KqfQuestion,
   answer: unknown,
 ): boolean {
-  if (q.type === 'singlechoice') {
+  if (q.type === 'singlechoice' || q.type === 'imagepixelate') {
     const idx = typeof answer === 'number' ? answer : -1;
     return !!q.choices[idx]?.is_correct;
   }

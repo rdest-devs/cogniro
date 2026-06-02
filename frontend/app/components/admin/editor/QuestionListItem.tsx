@@ -42,6 +42,7 @@ const typeOptions: Array<{ label: string; value: KqfQuestionType }> = [
   { label: 'Wielokrotny', value: 'multichoice' },
   { label: 'Prawda / fałsz', value: 'truefalse' },
   { label: 'Suwak', value: 'slider' },
+  { label: 'Obraz pikselowany', value: 'imagepixelate' },
 ];
 
 const typeLabelMap: Record<KqfQuestionType, string> = {
@@ -49,6 +50,7 @@ const typeLabelMap: Record<KqfQuestionType, string> = {
   multichoice: 'Wielokrotny',
   truefalse: 'Prawda / fałsz',
   slider: 'Suwak',
+  imagepixelate: 'Obraz pikselowany',
 };
 
 function toUploadErrorMessage(error: unknown): string {
@@ -84,7 +86,10 @@ function ChoiceAnswersSection({
   const choicesPath = `${questionPath}.choices` as const;
   const questionType = watch(`${questionPath}.type` as const) as
     | 'singlechoice'
-    | 'multichoice';
+    | 'multichoice'
+    | 'imagepixelate';
+  const isSingleSelect =
+    questionType === 'singlechoice' || questionType === 'imagepixelate';
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -110,7 +115,7 @@ function ChoiceAnswersSection({
   // Field errors for discriminated question unions are not narrowed by RHF.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const questionErrors = errors.questions?.[questionIndex] as any;
-  const maxChoices = questionType === 'singlechoice' ? 6 : 8;
+  const maxChoices = isSingleSelect ? 6 : 8;
 
   const handleSetSingleCorrect = (selectedAnswerIndex: number) => {
     const answers = getValues(choicesPath);
@@ -187,7 +192,7 @@ function ChoiceAnswersSection({
 
         return (
           <div key={answerField.id} className="flex items-start gap-2">
-            {questionType === 'singlechoice' ? (
+            {isSingleSelect ? (
               <input
                 type="radio"
                 name={`question-${questionIndex}-correct`}
@@ -763,8 +768,15 @@ export default function QuestionListItem({
 
               <div className="flex flex-col gap-2">
                 <span className="text-[13px] font-medium text-[var(--text-muted)]">
-                  Obraz do pytania (opcj., URL z uploadu)
+                  {questionType === 'imagepixelate'
+                    ? 'Obraz do pytania (wymagany — będzie pikselowany)'
+                    : 'Obraz do pytania (opcj., URL z uploadu)'}
                 </span>
+                {questionType === 'imagepixelate' && !rawQuestionImage && (
+                  <p className="text-xs text-[var(--wrong-fg)]">
+                    To pytanie wymaga obrazu, który będzie się odpikselowywać.
+                  </p>
+                )}
                 <div className="flex flex-wrap items-center gap-2">
                   <span
                     className={cn(
@@ -855,7 +867,8 @@ export default function QuestionListItem({
               </label>
 
               {(questionType === 'singlechoice' ||
-                questionType === 'multichoice') && (
+                questionType === 'multichoice' ||
+                questionType === 'imagepixelate') && (
                 <ChoiceAnswersSection
                   questionIndex={index}
                   editorQuizId={editorQuizId}

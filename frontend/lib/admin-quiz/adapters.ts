@@ -26,6 +26,8 @@ const legacyTypeMap: Record<string, KqfQuestionType> = {
   truefalse: 'truefalse',
   true_false: 'truefalse',
   slider: 'slider',
+  imagepixelate: 'imagepixelate',
+  image_pixelate: 'imagepixelate',
 };
 
 export function normalizeQuestionType(raw?: string): KqfQuestionType {
@@ -105,6 +107,17 @@ function mapApiQuestionToForm(q: AdminQuizApiQuestion): QuizEditorQuestionForm {
         step: q.step,
         tolerance: q.tolerance,
         unit: q.unit ?? null,
+      };
+    case 'imagepixelate':
+      return {
+        id,
+        text,
+        timeS,
+        points,
+        image,
+        hint,
+        type: 'imagepixelate',
+        choices: q.choices.map(mapApiChoiceToForm),
       };
     default: {
       const _exhaustive: never = q;
@@ -230,6 +243,19 @@ function coerceApiQuestionLoose(
     };
   }
 
+  if (type === 'imagepixelate') {
+    return {
+      id,
+      text,
+      timeS,
+      points,
+      image,
+      hint,
+      type: 'imagepixelate',
+      choices: padded,
+    };
+  }
+
   return {
     id,
     text,
@@ -254,7 +280,8 @@ function safeParseApiQuestion(
     t === 'singlechoice' ||
     t === 'multichoice' ||
     t === 'truefalse' ||
-    t === 'slider'
+    t === 'slider' ||
+    t === 'imagepixelate'
   ) {
     return mapApiQuestionToForm(o as AdminQuizApiQuestion);
   }
@@ -342,6 +369,12 @@ function mapQuestionToPayload(
         step: q.step,
         tolerance: q.tolerance,
         unit: q.unit?.trim() ? q.unit.trim() : undefined,
+      };
+    case 'imagepixelate':
+      return {
+        ...common,
+        type: 'imagepixelate',
+        choices: q.choices.map(mapFormChoiceToPayload),
       };
     default: {
       const _never: never = q;

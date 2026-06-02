@@ -20,6 +20,7 @@ const typeLabel: Record<QuizEditorQuestionForm['type'], string> = {
   multichoice: 'Wielokrotny wybór',
   truefalse: 'Prawda / fałsz',
   slider: 'Suwak',
+  imagepixelate: 'Obraz pikselowany',
 };
 
 function previewBody(
@@ -29,6 +30,7 @@ function previewBody(
   switch (question.type) {
     case 'singlechoice':
     case 'multichoice':
+    case 'imagepixelate':
       return question.choices.map((choice, i) => {
         const rawChoiceImage =
           typeof choice.image === 'string' && choice.image.trim()

@@ -105,8 +105,22 @@ class KqfSlider(_KqfBaseQuestion):
         return self
 
 
+class KqfImagePixelate(_KqfBaseQuestion):
+    type: Literal["imagepixelate"]
+    choices: list[KqfChoice] = Field(min_length=2, max_length=6)
+
+    @model_validator(mode="after")
+    def _validate(self) -> KqfImagePixelate:
+        correct = sum(1 for choice in self.choices if choice.is_correct)
+        if correct != 1:
+            raise ValueError("imagepixelate must have exactly one correct choice")
+        if not (self.media.image and self.media.image.strip()):
+            raise ValueError("imagepixelate requires an image")
+        return self
+
+
 KqfQuestion = Annotated[
-    KqfSingleChoice | KqfMultiChoice | KqfTrueFalse | KqfSlider,
+    KqfSingleChoice | KqfMultiChoice | KqfTrueFalse | KqfSlider | KqfImagePixelate,
     Field(discriminator="type"),
 ]
 

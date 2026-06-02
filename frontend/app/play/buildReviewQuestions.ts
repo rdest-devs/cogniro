@@ -7,7 +7,7 @@ function reviewAnswersForQuestion(
   q: KqfQuestion,
   answer: unknown,
 ): ReviewAnswer[] {
-  if (q.type === 'singlechoice') {
+  if (q.type === 'singlechoice' || q.type === 'imagepixelate') {
     const idx = typeof answer === 'number' ? answer : -1;
     return q.choices.map((c, i) => {
       const selected = i === idx;
