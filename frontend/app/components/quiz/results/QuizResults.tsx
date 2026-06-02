@@ -4,6 +4,7 @@ import { FileCheck, RotateCcw } from 'lucide-react';
 
 import type { RankingEntry } from '@/app/types';
 
+import PromoCard from './PromoCard';
 import RankingRow from './RankingRow';
 import ScoreCircle from './ScoreCircle';
 
@@ -105,16 +106,9 @@ export default function QuizResults({
               </span>
             </button>
           ) : null}
-
-          <a
-            href="https://www.informatyka.agh.edu.pl"
-            target="_blank"
-            rel="noreferrer"
-            className="text-sm font-medium text-[var(--text-muted)] hover:underline"
-          >
-            Zobacz stronę Wydziału Informatyki AGH!
-          </a>
         </nav>
+
+        <PromoCard />
       </div>
     </div>
   );
