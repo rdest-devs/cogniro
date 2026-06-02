@@ -143,11 +143,11 @@ export function RunningQuizView({
 
   function SortIcon({ col }: { col: SortKey }) {
     if (sortKey !== col)
-      return <ChevronsUpDown size={13} className="opacity-50" />;
+      return <ChevronsUpDown size={13} className="opacity-50" aria-hidden />;
     return sortDir === 'asc' ? (
-      <ChevronUp size={13} />
+      <ChevronUp size={13} aria-hidden />
     ) : (
-      <ChevronDown size={13} />
+      <ChevronDown size={13} aria-hidden />
     );
   }
 
@@ -440,7 +440,17 @@ export function RunningQuizView({
                     { key: 'score', label: 'Wynik (zdobyte / maks.)' },
                   ] as { key: SortKey; label: string }[]
                 ).map(({ key, label }) => (
-                  <th key={key} className={adminBlueHeadTableThClass}>
+                  <th
+                    key={key}
+                    aria-sort={
+                      sortKey === key
+                        ? sortDir === 'asc'
+                          ? 'ascending'
+                          : 'descending'
+                        : 'none'
+                    }
+                    className={adminBlueHeadTableThClass}
+                  >
                     <button
                       type="button"
                       onClick={() => handleSort(key)}

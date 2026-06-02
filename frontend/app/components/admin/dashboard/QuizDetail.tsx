@@ -71,7 +71,16 @@ function parseResultDate(value: string): number {
   if (month === undefined) {
     return Number.NaN;
   }
-  return new Date(year, month, day).getTime();
+  const date = new Date(year, month, day);
+  // Reject overflowed dates (e.g. "31 kwi") that Date silently normalizes.
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month ||
+    date.getDate() !== day
+  ) {
+    return Number.NaN;
+  }
+  return date.getTime();
 }
 
 interface QuizDetailProps {
@@ -173,18 +182,25 @@ export default function QuizDetail({
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   const sortedResults = useMemo(() => {
+    const dir = sortDir === 'asc' ? 1 : -1;
+    /** Compares two numbers, always sorting NaN (invalid) values last regardless of direction. */
+    const compareNumeric = (av: number, bv: number) => {
+      const aNaN = Number.isNaN(av);
+      const bNaN = Number.isNaN(bv);
+      if (aNaN || bNaN) return aNaN === bNaN ? 0 : aNaN ? 1 : -1;
+      return (av - bv) * dir;
+    };
     return [...resultsForQuiz].sort((a, b) => {
-      let cmp = 0;
-      if (sortKey === 'score') {
-        cmp = a.score - b.score;
-      } else if (sortKey === 'name') {
-        cmp = a.name.localeCompare(b.name, 'pl');
-      } else if (sortKey === 'time') {
-        cmp = parseTimeSeconds(a.time) - parseTimeSeconds(b.time);
-      } else if (sortKey === 'date') {
-        cmp = parseResultDate(a.date) - parseResultDate(b.date);
-      }
-      return sortDir === 'asc' ? cmp : -cmp;
+      if (sortKey === 'score') return (a.score - b.score) * dir;
+      if (sortKey === 'name') return a.name.localeCompare(b.name, 'pl') * dir;
+      if (sortKey === 'time')
+        return compareNumeric(
+          parseTimeSeconds(a.time),
+          parseTimeSeconds(b.time),
+        );
+      if (sortKey === 'date')
+        return compareNumeric(parseResultDate(a.date), parseResultDate(b.date));
+      return 0;
     });
   }, [resultsForQuiz, sortKey, sortDir]);
 
@@ -199,11 +215,11 @@ export default function QuizDetail({
 
   function SortIcon({ col }: { col: SortKey }) {
     if (sortKey !== col)
-      return <ChevronsUpDown size={13} className="opacity-50" />;
+      return <ChevronsUpDown size={13} className="opacity-50" aria-hidden />;
     return sortDir === 'asc' ? (
-      <ChevronUp size={13} />
+      <ChevronUp size={13} aria-hidden />
     ) : (
-      <ChevronDown size={13} />
+      <ChevronDown size={13} aria-hidden />
     );
   }
 
@@ -328,7 +344,17 @@ export default function QuizDetail({
                       { key: 'date', label: 'Data' },
                     ] as { key: SortKey; label: string }[]
                   ).map(({ key, label }) => (
-                    <th key={key} className={adminBlueHeadTableThClass}>
+                    <th
+                      key={key}
+                      aria-sort={
+                        sortKey === key
+                          ? sortDir === 'asc'
+                            ? 'ascending'
+                            : 'descending'
+                          : 'none'
+                      }
+                      className={adminBlueHeadTableThClass}
+                    >
                       <button
                         type="button"
                         onClick={() => handleSort(key)}

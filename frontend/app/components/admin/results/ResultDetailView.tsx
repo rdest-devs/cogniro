@@ -116,11 +116,11 @@ export function ResultDetailView({
 
   function SortIcon({ col }: { col: SortKey }) {
     if (sortKey !== col)
-      return <ChevronsUpDown size={13} className="opacity-50" />;
+      return <ChevronsUpDown size={13} className="opacity-50" aria-hidden />;
     return sortDir === 'asc' ? (
-      <ChevronUp size={13} />
+      <ChevronUp size={13} aria-hidden />
     ) : (
-      <ChevronDown size={13} />
+      <ChevronDown size={13} aria-hidden />
     );
   }
 
@@ -249,6 +249,13 @@ export function ResultDetailView({
                     ).map(({ key, label }) => (
                       <th
                         key={key}
+                        aria-sort={
+                          sortKey === key
+                            ? sortDir === 'asc'
+                              ? 'ascending'
+                              : 'descending'
+                            : 'none'
+                        }
                         className="px-4 py-3 font-semibold text-[var(--text-dark)]"
                       >
                         <button
