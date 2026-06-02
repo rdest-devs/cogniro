@@ -6,6 +6,7 @@ import logging
 import os
 import uuid
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Annotated, Any
 
 import bcrypt
@@ -147,6 +148,39 @@ def verify_password(plain: str) -> bool:
         )
     except ValueError:
         return False
+
+
+# bcrypt cost factor for admin password changes (matches scripts/hash_admin_password.py).
+_ADMIN_PASSWORD_BCRYPT_ROUNDS = 12
+
+
+def load_admin_password_override(store_path: Path) -> None:
+    """Load a persisted password hash from ``store_path``, overriding the env value.
+
+    Called at startup so an admin password changed at runtime survives restarts.
+    No-op when the file does not exist.
+    """
+    global _password_hash
+    try:
+        raw = store_path.read_text(encoding="utf-8").strip()
+    except OSError:
+        return
+    if raw:
+        _password_hash = raw.encode("utf-8")
+
+
+def set_admin_password(new_password: str, *, store_path: Path) -> None:
+    """Hash and persist a new admin password, then use it for subsequent logins."""
+    new_hash = bcrypt.hashpw(
+        new_password.encode("utf-8"),
+        bcrypt.gensalt(rounds=_ADMIN_PASSWORD_BCRYPT_ROUNDS),
+    )
+    store_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = store_path.with_name(f"{store_path.name}.tmp")
+    tmp_path.write_text(new_hash.decode("utf-8"), encoding="utf-8")
+    os.replace(tmp_path, store_path)
+    global _password_hash
+    _password_hash = new_hash
 
 
 def create_access_token() -> tuple[str, int]:

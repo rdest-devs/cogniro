@@ -84,6 +84,43 @@ export async function refreshAdminToken(): Promise<{
   return payload;
 }
 
+export async function changeAdminPassword(input: {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}): Promise<void> {
+  const token = getStoredAdminToken();
+  const response = await fetch(
+    joinApiUrl(BACKEND_BASE_URL, 'admin/auth/change-password'),
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        current_password: input.currentPassword,
+        new_password: input.newPassword,
+        confirm_password: input.confirmPassword,
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    let detail = 'change_password_failed';
+    try {
+      const body = (await response.json()) as { detail?: unknown };
+      if (typeof body.detail === 'string') {
+        detail = body.detail;
+      }
+    } catch {
+      // ignore
+    }
+    throw new Error(detail);
+  }
+}
+
 export async function logoutAdmin(): Promise<void> {
   const token = getStoredAdminToken();
   const init: RequestInit = {

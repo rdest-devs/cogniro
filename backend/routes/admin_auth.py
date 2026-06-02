@@ -2,9 +2,11 @@
 
 import asyncio
 
-from fastapi import APIRouter, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from schemas.admin_auth import (
+    AdminChangePasswordRequest,
+    AdminChangePasswordResponse,
     AdminLoginRequest,
     AdminLogoutResponse,
     AdminTokenResponse,
@@ -15,10 +17,13 @@ from security.admin_auth import (
     create_access_token,
     create_refresh_token,
     decode_admin_token,
+    require_admin,
     revoke_token_jti,
+    set_admin_password,
     set_refresh_cookie,
     verify_password,
 )
+from services.storage import admin_password_file, get_storage
 
 router = APIRouter(tags=["admin-auth"])
 
@@ -93,3 +98,29 @@ async def admin_auth_logout(
 
     response.delete_cookie(**clear_refresh_cookie())
     return AdminLogoutResponse(ok=True)
+
+
+@router.post(
+    "/auth/change-password",
+    response_model=AdminChangePasswordResponse,
+    dependencies=[Depends(require_admin)],
+)
+async def admin_auth_change_password(
+    body: AdminChangePasswordRequest,
+    request: Request,
+) -> AdminChangePasswordResponse:
+    if body.new_password != body.confirm_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="password_mismatch",
+        )
+    if not await asyncio.to_thread(verify_password, body.current_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="invalid_current_password",
+        )
+    store_path = admin_password_file(get_storage(request.app))
+    await asyncio.to_thread(
+        set_admin_password, body.new_password, store_path=store_path
+    )
+    return AdminChangePasswordResponse(ok=True)
