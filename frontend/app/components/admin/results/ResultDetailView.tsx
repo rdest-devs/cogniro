@@ -31,8 +31,18 @@ function downloadCsv(filename: string, text: string): void {
   a.download = filename;
   document.body.appendChild(a);
   a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  // Defer cleanup: some browsers resolve the blob lazily, so revoking the URL in
+  // the same tick can cancel the download.
+  setTimeout(() => {
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, 0);
+}
+
+const plNumberFormat = new Intl.NumberFormat('pl-PL');
+
+function formatStat(value: number | null): string {
+  return value === null ? '-' : plNumberFormat.format(value);
 }
 
 type Props = {
@@ -218,19 +228,10 @@ export function ResultDetailView({
             {stats && (
               <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {[
-                  { label: 'Uczestnicy', value: String(stats.count) },
-                  {
-                    label: 'Średni wynik',
-                    value: stats.average === null ? '-' : String(stats.average),
-                  },
-                  {
-                    label: 'Min. wynik',
-                    value: stats.min === null ? '-' : String(stats.min),
-                  },
-                  {
-                    label: 'Maks. wynik',
-                    value: stats.max === null ? '-' : String(stats.max),
-                  },
+                  { label: 'Uczestnicy', value: formatStat(stats.count) },
+                  { label: 'Średni wynik', value: formatStat(stats.average) },
+                  { label: 'Min. wynik', value: formatStat(stats.min) },
+                  { label: 'Maks. wynik', value: formatStat(stats.max) },
                 ].map((item) => (
                   <div
                     key={item.label}

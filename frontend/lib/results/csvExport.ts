@@ -14,19 +14,31 @@ export interface ScoreStats {
 export function computeScoreStats(
   scores: readonly { score: number }[],
 ): ScoreStats {
-  const values = scores
-    .map((s) => s.score)
-    .filter((v): v is number => Number.isFinite(v));
-  if (values.length === 0) {
+  let count = 0;
+  let sum = 0;
+  let min = Infinity;
+  let max = -Infinity;
+  for (const { score } of scores) {
+    if (!Number.isFinite(score)) {
+      continue;
+    }
+    count += 1;
+    sum += score;
+    if (score < min) {
+      min = score;
+    }
+    if (score > max) {
+      max = score;
+    }
+  }
+  if (count === 0) {
     return { count: 0, average: null, min: null, max: null };
   }
-  const sum = values.reduce((acc, v) => acc + v, 0);
-  const average = Math.round((sum / values.length) * 100) / 100;
   return {
-    count: values.length,
-    average,
-    min: Math.min(...values),
-    max: Math.max(...values),
+    count,
+    average: Math.round((sum / count) * 100) / 100,
+    min,
+    max,
   };
 }
 
