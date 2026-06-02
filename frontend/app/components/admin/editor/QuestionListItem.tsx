@@ -583,8 +583,10 @@ function SliderSection({ questionIndex }: { questionIndex: number }) {
           </div>
           {(minLabelStr.trim() || maxLabelStr.trim()) && (
             <div className="flex justify-between gap-2 text-xs font-medium text-[var(--text-muted)]">
-              <span className="truncate">{minLabelStr.trim()}</span>
-              <span className="truncate text-right">{maxLabelStr.trim()}</span>
+              <span className="min-w-0 truncate">{minLabelStr.trim()}</span>
+              <span className="min-w-0 truncate text-right">
+                {maxLabelStr.trim()}
+              </span>
             </div>
           )}
         </div>

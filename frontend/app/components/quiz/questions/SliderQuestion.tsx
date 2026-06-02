@@ -94,8 +94,12 @@ function SliderBody({
 
         {(minLabel?.trim() || maxLabel?.trim()) && (
           <div className="mt-1 flex w-full justify-between gap-3 px-1 text-xs font-medium text-[var(--text-muted)]">
-            <span className="max-w-[45%] text-left">{minLabel?.trim()}</span>
-            <span className="max-w-[45%] text-right">{maxLabel?.trim()}</span>
+            <span className="max-w-[45%] min-w-0 truncate text-left">
+              {minLabel?.trim()}
+            </span>
+            <span className="max-w-[45%] min-w-0 truncate text-right">
+              {maxLabel?.trim()}
+            </span>
           </div>
         )}
       </div>
