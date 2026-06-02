@@ -37,7 +37,18 @@ export default function QuizResults({
     if (!ranking) return [];
     return [...ranking]
       .sort((a, b) => parseScore(b.score) - parseScore(a.score))
-      .map((entry, idx) => ({ ...entry, position: idx + 1 }));
+      .map((entry, idx) => ({
+        ...entry,
+        position: idx + 1,
+        medal:
+          idx === 0
+            ? ('gold' as const)
+            : idx === 1
+              ? ('silver' as const)
+              : idx === 2
+                ? ('bronze' as const)
+                : undefined,
+      }));
   }, [ranking]);
 
   return (

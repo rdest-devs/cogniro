@@ -32,6 +32,48 @@ import {
 type SortKey = 'name' | 'score' | 'time' | 'date';
 type SortDir = 'asc' | 'desc';
 
+/** Polish month abbreviations used in the demo result rows (e.g. "12 mar 2026"). */
+const PL_MONTHS: Record<string, number> = {
+  sty: 0,
+  lut: 1,
+  mar: 2,
+  kwi: 3,
+  maj: 4,
+  cze: 5,
+  lip: 6,
+  sie: 7,
+  wrz: 8,
+  paź: 9,
+  paz: 9,
+  lis: 10,
+  gru: 11,
+};
+
+/** Parses a "M:SS" / "MM:SS" / "H:MM:SS" duration into total seconds. */
+function parseTimeSeconds(value: string): number {
+  const parts = value.split(':').map((p) => Number(p.trim()));
+  if (parts.some((n) => Number.isNaN(n))) {
+    return Number.NaN;
+  }
+  return parts.reduce((acc, n) => acc * 60 + n, 0);
+}
+
+/** Parses a "D mon YYYY" Polish date (e.g. "6 mar 2026") into a timestamp. */
+function parseResultDate(value: string): number {
+  const match = /^(\d{1,2})\s+([^\s]+)\s+(\d{4})$/.exec(value.trim());
+  if (!match) {
+    const fallback = Date.parse(value);
+    return Number.isNaN(fallback) ? Number.NaN : fallback;
+  }
+  const day = Number(match[1]);
+  const month = PL_MONTHS[match[2].toLowerCase()];
+  const year = Number(match[3]);
+  if (month === undefined) {
+    return Number.NaN;
+  }
+  return new Date(year, month, day).getTime();
+}
+
 interface QuizDetailProps {
   quizzes: QuizInfo[];
   selectedQuizId?: string | null;
@@ -138,9 +180,9 @@ export default function QuizDetail({
       } else if (sortKey === 'name') {
         cmp = a.name.localeCompare(b.name, 'pl');
       } else if (sortKey === 'time') {
-        cmp = a.time.localeCompare(b.time);
+        cmp = parseTimeSeconds(a.time) - parseTimeSeconds(b.time);
       } else if (sortKey === 'date') {
-        cmp = a.date.localeCompare(b.date);
+        cmp = parseResultDate(a.date) - parseResultDate(b.date);
       }
       return sortDir === 'asc' ? cmp : -cmp;
     });
