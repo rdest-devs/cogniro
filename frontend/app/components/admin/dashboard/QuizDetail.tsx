@@ -18,6 +18,7 @@ import { AdminQuizApiError, deleteAdminQuiz } from '@/lib/admin-quiz';
 import { downloadExport } from '@/lib/import-export/client';
 
 import AdminLayout from '../layout/AdminLayout';
+import { Breadcrumbs } from '../layout/Breadcrumbs';
 import {
   adminBlueHeadTableClass,
   adminBlueHeadTableTdClass,
@@ -130,7 +131,13 @@ export default function QuizDetail({
       onLogout={onLogout}
     >
       <div className="flex flex-col gap-6">
-        <header className="flex items-center justify-between">
+        <header className="flex flex-col gap-1.5">
+          <Breadcrumbs
+            items={[
+              { label: 'Moje Quizy', href: adminBase },
+              { label: 'Szczegóły quizów' },
+            ]}
+          />
           <h1 className="text-[28px] font-bold text-[var(--text-dark)]">
             Szczegóły quizów
           </h1>
