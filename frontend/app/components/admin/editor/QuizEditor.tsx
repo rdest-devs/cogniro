@@ -262,7 +262,7 @@ export default function QuizEditor({
     >
       <FormProvider {...formMethods}>
         <form onSubmit={onSubmit} className="flex min-h-0 w-full flex-1">
-          <div className="flex min-h-0 flex-1 flex-col gap-5">
+          <div className="relative flex min-h-0 flex-1 flex-col gap-5">
             <header className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-[var(--text-dark)]">
