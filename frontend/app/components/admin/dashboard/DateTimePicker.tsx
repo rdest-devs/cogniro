@@ -73,6 +73,14 @@ export function DateTimePicker({
       const rect = triggerRef.current.getBoundingClientRect();
       setOpenUp(window.innerHeight - rect.bottom < 320);
     }
+    if (!value) {
+      const now = new Date();
+      const h = now.getHours();
+      const m = Math.min(Math.round(now.getMinutes() / 5) * 5, 55);
+      setHour(h);
+      setMinute(m);
+      setSelectedDay(now);
+    }
     setOpen((o) => !o);
   };
 
@@ -88,15 +96,12 @@ export function DateTimePicker({
 
   const handleDaySelect = (day: Date | undefined) => {
     setSelectedDay(day);
-    emit(day, hour, minute);
   };
   const handleHour = (h: number) => {
     setHour(h);
-    emit(selectedDay, h, minute);
   };
   const handleMinute = (m: number) => {
     setMinute(m);
-    emit(selectedDay, hour, m);
   };
 
   const clear = (e: React.MouseEvent) => {
@@ -253,7 +258,10 @@ export function DateTimePicker({
             </div>
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                if (selectedDay) emit(selectedDay, hour, minute);
+                setOpen(false);
+              }}
               className="mt-2 w-full rounded-lg bg-[var(--primary-blue)] py-1 text-xs font-semibold text-white hover:opacity-90"
             >
               Gotowe
