@@ -10,6 +10,8 @@ import {
   adminPrimaryOutlineButtonClass,
   adminToolbarButtonClass,
 } from '@/app/components/admin/shared/constants';
+import { SortableTh } from '@/app/components/common/SortableTh';
+import { useSortableColumns } from '@/hooks/useSortableColumns';
 import { formatAdminDate } from '@/lib/admin-date-time';
 import {
   formatArchivedScore,
@@ -18,6 +20,14 @@ import {
   resultFileDisplayName,
 } from '@/lib/results/archivePayload';
 import { deleteResult, readResult } from '@/lib/results/client';
+
+type SortKey = 'nickname' | 'score' | 'submitted_at';
+
+const SORT_COLUMNS = [
+  { key: 'nickname', label: 'Pseudonim' },
+  { key: 'score', label: 'Wynik (zdobyte / maks.)' },
+  { key: 'submitted_at', label: 'Wysłano' },
+] satisfies { key: SortKey; label: string }[];
 
 type Props = {
   adminBase: string;
@@ -42,6 +52,7 @@ export function ResultDetailView({
 }: Props) {
   const [payload, setPayload] = useState<unknown>(null);
   const [err, setErr] = useState<string | null>(null);
+  const sort = useSortableColumns<SortKey>({ initialKey: 'score' });
 
   /* Clear stale archive UI before each date/file fetch. */
   /* eslint-disable react-hooks/set-state-in-effect -- reset payload/err when inputs change */
@@ -76,6 +87,21 @@ export function ResultDetailView({
     const r = resultArchivePayloadSchema.safeParse(payload);
     return r.success ? r.data : null;
   }, [payload]);
+
+  const sortedScores = useMemo(() => {
+    if (!parsed) return [];
+    return [...parsed.scores].sort((a, b) => {
+      let cmp = 0;
+      if (sort.sortKey === 'score') {
+        cmp = a.score - b.score;
+      } else if (sort.sortKey === 'nickname') {
+        cmp = a.nickname.localeCompare(b.nickname, 'pl');
+      } else {
+        cmp = a.submitted_at.localeCompare(b.submitted_at);
+      }
+      return sort.sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [parsed, sort.sortKey, sort.sortDir]);
 
   const fileTitle = resultFileDisplayName(file);
 
@@ -193,19 +219,19 @@ export function ResultDetailView({
               <table className="w-full min-w-[320px] text-left text-sm">
                 <thead className="border-b border-[var(--border)] bg-[var(--page-bg)]">
                   <tr>
-                    <th className="px-4 py-3 font-semibold text-[var(--text-dark)]">
-                      Pseudonim
-                    </th>
-                    <th className="px-4 py-3 font-semibold text-[var(--text-dark)]">
-                      Wynik (zdobyte / maks.)
-                    </th>
-                    <th className="px-4 py-3 font-semibold text-[var(--text-dark)]">
-                      Wysłano
-                    </th>
+                    {SORT_COLUMNS.map(({ key, label }) => (
+                      <SortableTh
+                        key={key}
+                        columnKey={key}
+                        label={label}
+                        sort={sort}
+                        className="px-4 py-3 font-semibold text-[var(--text-dark)]"
+                      />
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {parsed.scores.map((row) => (
+                  {sortedScores.map((row) => (
                     <tr
                       key={`${row.nickname}-${row.submitted_at}`}
                       className="border-t border-[var(--border)]"

@@ -1,5 +1,4 @@
 'use client';
-
 import {
   Calendar,
   Download,
@@ -10,11 +9,14 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
+import { SortableTh } from '@/app/components/common/SortableTh';
 import StatusBadge from '@/app/components/common/StatusBadge';
 import type { QuizInfo, ResultRow } from '@/app/types';
+import { useSortableColumns } from '@/hooks/useSortableColumns';
 import { AdminQuizApiError, deleteAdminQuiz } from '@/lib/admin-quiz';
+import { parseResultDate, parseTimeSeconds } from '@/lib/admin-result-sort';
 import { downloadExport } from '@/lib/import-export/client';
 
 import AdminLayout from '../layout/AdminLayout';
@@ -26,6 +28,15 @@ import {
   adminBlueHeadTableTheadClass,
   statusColors,
 } from '../shared/constants';
+
+type SortKey = 'name' | 'score' | 'time' | 'date';
+
+const SORT_COLUMNS = [
+  { key: 'name', label: 'Imię' },
+  { key: 'score', label: 'Wynik' },
+  { key: 'time', label: 'Czas' },
+  { key: 'date', label: 'Data' },
+] satisfies { key: SortKey; label: string }[];
 
 interface QuizDetailProps {
   quizzes: QuizInfo[];
@@ -121,6 +132,32 @@ export default function QuizDetail({
     },
     [router, adminBase, onQuizDeleted],
   );
+
+  const sort = useSortableColumns<SortKey>({ initialKey: 'score' });
+
+  const sortedResults = useMemo(() => {
+    const dir = sort.sortDir === 'asc' ? 1 : -1;
+    /** Compares two numbers, always sorting NaN (invalid) values last regardless of direction. */
+    const compareNumeric = (av: number, bv: number) => {
+      const aNaN = Number.isNaN(av);
+      const bNaN = Number.isNaN(bv);
+      if (aNaN || bNaN) return aNaN === bNaN ? 0 : aNaN ? 1 : -1;
+      return (av - bv) * dir;
+    };
+    return [...resultsForQuiz].sort((a, b) => {
+      if (sort.sortKey === 'score') return (a.score - b.score) * dir;
+      if (sort.sortKey === 'name')
+        return a.name.localeCompare(b.name, 'pl') * dir;
+      if (sort.sortKey === 'time')
+        return compareNumeric(
+          parseTimeSeconds(a.time),
+          parseTimeSeconds(b.time),
+        );
+      if (sort.sortKey === 'date')
+        return compareNumeric(parseResultDate(a.date), parseResultDate(b.date));
+      return 0;
+    });
+  }, [resultsForQuiz, sort.sortKey, sort.sortDir]);
 
   return (
     <AdminLayout
@@ -235,14 +272,19 @@ export default function QuizDetail({
             <table className={adminBlueHeadTableClass}>
               <thead className={adminBlueHeadTableTheadClass}>
                 <tr>
-                  <th className={adminBlueHeadTableThClass}>Imię</th>
-                  <th className={adminBlueHeadTableThClass}>Wynik</th>
-                  <th className={adminBlueHeadTableThClass}>Czas</th>
-                  <th className={adminBlueHeadTableThClass}>Data</th>
+                  {SORT_COLUMNS.map(({ key, label }) => (
+                    <SortableTh
+                      key={key}
+                      columnKey={key}
+                      label={label}
+                      sort={sort}
+                      className={adminBlueHeadTableThClass}
+                    />
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {resultsForQuiz.length === 0 ? (
+                {sortedResults.length === 0 ? (
                   <tr>
                     <td
                       colSpan={4}
@@ -252,7 +294,7 @@ export default function QuizDetail({
                     </td>
                   </tr>
                 ) : (
-                  resultsForQuiz.map((row, index) => (
+                  sortedResults.map((row, index) => (
                     <tr
                       key={`${row.name}-${index}`}
                       className="border-t border-[var(--border)]"

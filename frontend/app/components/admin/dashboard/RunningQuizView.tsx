@@ -8,7 +8,7 @@ import {
   ExternalLink,
   RefreshCcw,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { QrCode } from '@/app/components/admin/dashboard/QrCode';
 import AdminLayout from '@/app/components/admin/layout/AdminLayout';
@@ -21,6 +21,8 @@ import {
   adminDangerOutlineButtonClass,
   adminToolbarButtonClass,
 } from '@/app/components/admin/shared/constants';
+import { SortableTh } from '@/app/components/common/SortableTh';
+import { useSortableColumns } from '@/hooks/useSortableColumns';
 import { formatAdminDate } from '@/lib/admin-date-time';
 import {
   activateQuiz,
@@ -30,6 +32,19 @@ import {
 } from '@/lib/sessions/client';
 
 type Snapshot = Awaited<ReturnType<typeof getSessionSnapshot>>;
+type SortKey = 'nickname' | 'status' | 'score';
+
+const SORT_COLUMNS = [
+  { key: 'nickname', label: 'Pseudonim' },
+  { key: 'status', label: 'Stan' },
+  { key: 'score', label: 'Wynik (zdobyte / maks.)' },
+] satisfies { key: SortKey; label: string }[];
+
+function statusOrder(p: { blocked: boolean; has_submitted: boolean }): number {
+  if (p.blocked) return 0;
+  if (p.has_submitted) return 2;
+  return 1;
+}
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -103,6 +118,22 @@ export function RunningQuizView({
   } | null>(null);
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const sort = useSortableColumns<SortKey>({ initialKey: 'score' });
+
+  const sortedParticipants = useMemo(() => {
+    const list = snap?.participants ?? [];
+    return [...list].sort((a, b) => {
+      let cmp = 0;
+      if (sort.sortKey === 'score') {
+        cmp = (a.score ?? -1) - (b.score ?? -1);
+      } else if (sort.sortKey === 'nickname') {
+        cmp = a.nickname.localeCompare(b.nickname, 'pl');
+      } else {
+        cmp = statusOrder(a) - statusOrder(b);
+      }
+      return sort.sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [snap, sort.sortKey, sort.sortDir]);
 
   const buildPresenterUrl = () => {
     if (!activation) {
@@ -386,16 +417,20 @@ export function RunningQuizView({
           <table className={adminBlueHeadTableClass}>
             <thead className={adminBlueHeadTableTheadClass}>
               <tr>
-                <th className={adminBlueHeadTableThClass}>Pseudonim</th>
-                <th className={adminBlueHeadTableThClass}>Stan</th>
-                <th className={adminBlueHeadTableThClass}>
-                  Wynik (zdobyte / maks.)
-                </th>
+                {SORT_COLUMNS.map(({ key, label }) => (
+                  <SortableTh
+                    key={key}
+                    columnKey={key}
+                    label={label}
+                    sort={sort}
+                    className={adminBlueHeadTableThClass}
+                  />
+                ))}
                 <th className={adminBlueHeadTableThClass}>Akcje</th>
               </tr>
             </thead>
             <tbody>
-              {(snap?.participants ?? []).length === 0 ? (
+              {sortedParticipants.length === 0 ? (
                 <tr>
                   <td
                     colSpan={4}
@@ -405,7 +440,7 @@ export function RunningQuizView({
                   </td>
                 </tr>
               ) : (
-                (snap?.participants ?? []).map((p) => (
+                sortedParticipants.map((p) => (
                   <tr
                     key={p.nickname}
                     className="border-t border-[var(--border)]"
