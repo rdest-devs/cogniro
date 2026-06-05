@@ -1,9 +1,6 @@
 'use client';
 import {
   Calendar,
-  ChevronDown,
-  ChevronsUpDown,
-  ChevronUp,
   Download,
   Eye,
   List,
@@ -14,9 +11,12 @@ import {
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 
+import { SortableTh } from '@/app/components/common/SortableTh';
 import StatusBadge from '@/app/components/common/StatusBadge';
 import type { QuizInfo, ResultRow } from '@/app/types';
+import { useSortableColumns } from '@/hooks/useSortableColumns';
 import { AdminQuizApiError, deleteAdminQuiz } from '@/lib/admin-quiz';
+import { parseResultDate, parseTimeSeconds } from '@/lib/admin-result-sort';
 import { downloadExport } from '@/lib/import-export/client';
 
 import AdminLayout from '../layout/AdminLayout';
@@ -30,58 +30,13 @@ import {
 } from '../shared/constants';
 
 type SortKey = 'name' | 'score' | 'time' | 'date';
-type SortDir = 'asc' | 'desc';
 
-/** Polish month abbreviations used in the demo result rows (e.g. "12 mar 2026"). */
-const PL_MONTHS: Record<string, number> = {
-  sty: 0,
-  lut: 1,
-  mar: 2,
-  kwi: 3,
-  maj: 4,
-  cze: 5,
-  lip: 6,
-  sie: 7,
-  wrz: 8,
-  paź: 9,
-  paz: 9,
-  lis: 10,
-  gru: 11,
-};
-
-/** Parses a "M:SS" / "MM:SS" / "H:MM:SS" duration into total seconds. */
-function parseTimeSeconds(value: string): number {
-  const parts = value.split(':').map((p) => Number(p.trim()));
-  if (parts.some((n) => Number.isNaN(n))) {
-    return Number.NaN;
-  }
-  return parts.reduce((acc, n) => acc * 60 + n, 0);
-}
-
-/** Parses a "D mon YYYY" Polish date (e.g. "6 mar 2026") into a timestamp. */
-function parseResultDate(value: string): number {
-  const match = /^(\d{1,2})\s+([^\s]+)\s+(\d{4})$/.exec(value.trim());
-  if (!match) {
-    const fallback = Date.parse(value);
-    return Number.isNaN(fallback) ? Number.NaN : fallback;
-  }
-  const day = Number(match[1]);
-  const month = PL_MONTHS[match[2].toLowerCase()];
-  const year = Number(match[3]);
-  if (month === undefined) {
-    return Number.NaN;
-  }
-  const date = new Date(year, month, day);
-  // Reject overflowed dates (e.g. "31 kwi") that Date silently normalizes.
-  if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month ||
-    date.getDate() !== day
-  ) {
-    return Number.NaN;
-  }
-  return date.getTime();
-}
+const SORT_COLUMNS = [
+  { key: 'name', label: 'Imię' },
+  { key: 'score', label: 'Wynik' },
+  { key: 'time', label: 'Czas' },
+  { key: 'date', label: 'Data' },
+] satisfies { key: SortKey; label: string }[];
 
 interface QuizDetailProps {
   quizzes: QuizInfo[];
@@ -178,11 +133,10 @@ export default function QuizDetail({
     [router, adminBase, onQuizDeleted],
   );
 
-  const [sortKey, setSortKey] = useState<SortKey>('score');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const sort = useSortableColumns<SortKey>({ initialKey: 'score' });
 
   const sortedResults = useMemo(() => {
-    const dir = sortDir === 'asc' ? 1 : -1;
+    const dir = sort.sortDir === 'asc' ? 1 : -1;
     /** Compares two numbers, always sorting NaN (invalid) values last regardless of direction. */
     const compareNumeric = (av: number, bv: number) => {
       const aNaN = Number.isNaN(av);
@@ -191,37 +145,19 @@ export default function QuizDetail({
       return (av - bv) * dir;
     };
     return [...resultsForQuiz].sort((a, b) => {
-      if (sortKey === 'score') return (a.score - b.score) * dir;
-      if (sortKey === 'name') return a.name.localeCompare(b.name, 'pl') * dir;
-      if (sortKey === 'time')
+      if (sort.sortKey === 'score') return (a.score - b.score) * dir;
+      if (sort.sortKey === 'name')
+        return a.name.localeCompare(b.name, 'pl') * dir;
+      if (sort.sortKey === 'time')
         return compareNumeric(
           parseTimeSeconds(a.time),
           parseTimeSeconds(b.time),
         );
-      if (sortKey === 'date')
+      if (sort.sortKey === 'date')
         return compareNumeric(parseResultDate(a.date), parseResultDate(b.date));
       return 0;
     });
-  }, [resultsForQuiz, sortKey, sortDir]);
-
-  function handleSort(key: SortKey) {
-    if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortKey(key);
-      setSortDir(key === 'score' ? 'desc' : 'asc');
-    }
-  }
-
-  function SortIcon({ col }: { col: SortKey }) {
-    if (sortKey !== col)
-      return <ChevronsUpDown size={13} className="opacity-50" aria-hidden />;
-    return sortDir === 'asc' ? (
-      <ChevronUp size={13} aria-hidden />
-    ) : (
-      <ChevronDown size={13} aria-hidden />
-    );
-  }
+  }, [resultsForQuiz, sort.sortKey, sort.sortDir]);
 
   return (
     <AdminLayout
@@ -336,34 +272,14 @@ export default function QuizDetail({
             <table className={adminBlueHeadTableClass}>
               <thead className={adminBlueHeadTableTheadClass}>
                 <tr>
-                  {(
-                    [
-                      { key: 'name', label: 'Imię' },
-                      { key: 'score', label: 'Wynik' },
-                      { key: 'time', label: 'Czas' },
-                      { key: 'date', label: 'Data' },
-                    ] as { key: SortKey; label: string }[]
-                  ).map(({ key, label }) => (
-                    <th
+                  {SORT_COLUMNS.map(({ key, label }) => (
+                    <SortableTh
                       key={key}
-                      aria-sort={
-                        sortKey === key
-                          ? sortDir === 'asc'
-                            ? 'ascending'
-                            : 'descending'
-                          : 'none'
-                      }
+                      columnKey={key}
+                      label={label}
+                      sort={sort}
                       className={adminBlueHeadTableThClass}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => handleSort(key)}
-                        className="flex cursor-pointer items-center gap-1 hover:opacity-80"
-                      >
-                        {label}
-                        <SortIcon col={key} />
-                      </button>
-                    </th>
+                    />
                   ))}
                 </tr>
               </thead>
