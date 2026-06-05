@@ -3,9 +3,6 @@
 import {
   ArrowLeft,
   Ban,
-  ChevronDown,
-  ChevronsUpDown,
-  ChevronUp,
   CircleStop,
   Download,
   ExternalLink,
@@ -24,6 +21,8 @@ import {
   adminDangerOutlineButtonClass,
   adminToolbarButtonClass,
 } from '@/app/components/admin/shared/constants';
+import { SortableTh } from '@/app/components/common/SortableTh';
+import { useSortableColumns } from '@/hooks/useSortableColumns';
 import { formatAdminDate } from '@/lib/admin-date-time';
 import {
   activateQuiz,
@@ -34,7 +33,12 @@ import {
 
 type Snapshot = Awaited<ReturnType<typeof getSessionSnapshot>>;
 type SortKey = 'nickname' | 'status' | 'score';
-type SortDir = 'asc' | 'desc';
+
+const SORT_COLUMNS = [
+  { key: 'nickname', label: 'Pseudonim' },
+  { key: 'status', label: 'Stan' },
+  { key: 'score', label: 'Wynik (zdobyte / maks.)' },
+] satisfies { key: SortKey; label: string }[];
 
 function statusOrder(p: { blocked: boolean; has_submitted: boolean }): number {
   if (p.blocked) return 0;
@@ -114,42 +118,22 @@ export function RunningQuizView({
   } | null>(null);
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [sortKey, setSortKey] = useState<SortKey>('score');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const sort = useSortableColumns<SortKey>({ initialKey: 'score' });
 
   const sortedParticipants = useMemo(() => {
     const list = snap?.participants ?? [];
     return [...list].sort((a, b) => {
       let cmp = 0;
-      if (sortKey === 'score') {
+      if (sort.sortKey === 'score') {
         cmp = (a.score ?? -1) - (b.score ?? -1);
-      } else if (sortKey === 'nickname') {
+      } else if (sort.sortKey === 'nickname') {
         cmp = a.nickname.localeCompare(b.nickname, 'pl');
       } else {
         cmp = statusOrder(a) - statusOrder(b);
       }
-      return sortDir === 'asc' ? cmp : -cmp;
+      return sort.sortDir === 'asc' ? cmp : -cmp;
     });
-  }, [snap, sortKey, sortDir]);
-
-  function handleSort(key: SortKey) {
-    if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortKey(key);
-      setSortDir(key === 'score' ? 'desc' : 'asc');
-    }
-  }
-
-  function SortIcon({ col }: { col: SortKey }) {
-    if (sortKey !== col)
-      return <ChevronsUpDown size={13} className="opacity-50" aria-hidden />;
-    return sortDir === 'asc' ? (
-      <ChevronUp size={13} aria-hidden />
-    ) : (
-      <ChevronDown size={13} aria-hidden />
-    );
-  }
+  }, [snap, sort.sortKey, sort.sortDir]);
 
   const buildPresenterUrl = () => {
     if (!activation) {
@@ -433,33 +417,14 @@ export function RunningQuizView({
           <table className={adminBlueHeadTableClass}>
             <thead className={adminBlueHeadTableTheadClass}>
               <tr>
-                {(
-                  [
-                    { key: 'nickname', label: 'Pseudonim' },
-                    { key: 'status', label: 'Stan' },
-                    { key: 'score', label: 'Wynik (zdobyte / maks.)' },
-                  ] as { key: SortKey; label: string }[]
-                ).map(({ key, label }) => (
-                  <th
+                {SORT_COLUMNS.map(({ key, label }) => (
+                  <SortableTh
                     key={key}
-                    aria-sort={
-                      sortKey === key
-                        ? sortDir === 'asc'
-                          ? 'ascending'
-                          : 'descending'
-                        : 'none'
-                    }
+                    columnKey={key}
+                    label={label}
+                    sort={sort}
                     className={adminBlueHeadTableThClass}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => handleSort(key)}
-                      className="flex cursor-pointer items-center gap-1 hover:opacity-80"
-                    >
-                      {label}
-                      <SortIcon col={key} />
-                    </button>
-                  </th>
+                  />
                 ))}
                 <th className={adminBlueHeadTableThClass}>Akcje</th>
               </tr>
