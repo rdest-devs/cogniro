@@ -94,7 +94,7 @@ export default function QuizResults({
             <div className="h-px bg-[var(--border)]" />
             {sortedRanking.map((entry, idx) => (
               <RankingRow
-                key={entry.position}
+                key={`${entry.name}-${entry.score}`}
                 entry={entry}
                 isLast={idx === sortedRanking.length - 1}
               />
