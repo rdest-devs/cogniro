@@ -10,6 +10,7 @@ import {
   adminPrimaryOutlineButtonClass,
   adminToolbarButtonClass,
 } from '@/app/components/admin/shared/constants';
+import { formatAdminDate } from '@/lib/admin-date-time';
 import { resultFileDisplayName } from '@/lib/results/archivePayload';
 import { deleteResult, listDay } from '@/lib/results/client';
 
@@ -114,7 +115,9 @@ export function ResultsDayView({
         </button>
       </div>
       <section>
-        <h2 className="text-xl font-semibold">Wyniki — {date}</h2>
+        <h2 className="text-xl font-semibold">
+          Wyniki — {formatAdminDate(date, 'folder-date') ?? date}
+        </h2>
         {err && <p className="text-sm text-red-700">{err}</p>}
         <ul className="mt-4 space-y-2">
           {files.map((f) => (

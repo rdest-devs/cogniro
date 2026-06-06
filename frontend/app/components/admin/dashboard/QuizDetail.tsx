@@ -1,5 +1,4 @@
 'use client';
-
 import {
   Calendar,
   Download,
@@ -10,12 +9,17 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
+import { ActivateModal } from '@/app/components/admin/dashboard/ActivateModal';
+import { SortableTh } from '@/app/components/common/SortableTh';
 import StatusBadge from '@/app/components/common/StatusBadge';
 import type { QuizInfo, ResultRow } from '@/app/types';
+import { useSortableColumns } from '@/hooks/useSortableColumns';
 import { AdminQuizApiError, deleteAdminQuiz } from '@/lib/admin-quiz';
+import { parseResultDate, parseTimeSeconds } from '@/lib/admin-result-sort';
 import { downloadExport } from '@/lib/import-export/client';
+import { type ActivateBody, activateQuiz } from '@/lib/sessions/client';
 
 import AdminLayout from '../layout/AdminLayout';
 import { Breadcrumbs } from '../layout/Breadcrumbs';
@@ -27,6 +31,15 @@ import {
   adminBlueHeadTableTheadClass,
   statusColors,
 } from '../shared/constants';
+
+type SortKey = 'name' | 'score' | 'time' | 'date';
+
+const SORT_COLUMNS = [
+  { key: 'name', label: 'Imię' },
+  { key: 'score', label: 'Wynik' },
+  { key: 'time', label: 'Czas' },
+  { key: 'date', label: 'Data' },
+] satisfies { key: SortKey; label: string }[];
 
 interface QuizDetailProps {
   quizzes: QuizInfo[];
@@ -59,6 +72,12 @@ export default function QuizDetail({
   const router = useRouter();
   const [deleteBusy, setDeleteBusy] = useState<string | null>(null);
   const [exportBusy, setExportBusy] = useState<string | null>(null);
+  const [expandedQuizId, setExpandedQuizId] = useState<string | null>(null);
+  const [activatingId, setActivatingId] = useState<string | null>(null);
+  const [panelAnchor, setPanelAnchor] = useState<{
+    top: number;
+    right: number;
+  } | null>(null);
 
   const selectedQuiz = selectedQuizId
     ? quizzes.find((quiz) => quiz.id === selectedQuizId)
@@ -70,6 +89,22 @@ export default function QuizDetail({
       router.push(`${adminBase}?${qs.toString()}`);
     },
     [router, adminBase],
+  );
+
+  const handleActivateConfirm = useCallback(
+    async (quizId: string, body: ActivateBody) => {
+      setActivatingId(quizId);
+      try {
+        await activateQuiz(quizId, body);
+        setExpandedQuizId(null);
+        goRunning(quizId);
+      } catch {
+        window.alert('Nie udało się uruchomić quizu.');
+      } finally {
+        setActivatingId(null);
+      }
+    },
+    [goRunning],
   );
 
   const goResults = useCallback(
@@ -122,6 +157,32 @@ export default function QuizDetail({
     },
     [router, adminBase, onQuizDeleted],
   );
+
+  const sort = useSortableColumns<SortKey>({ initialKey: 'score' });
+
+  const sortedResults = useMemo(() => {
+    const dir = sort.sortDir === 'asc' ? 1 : -1;
+    /** Compares two numbers, always sorting NaN (invalid) values last regardless of direction. */
+    const compareNumeric = (av: number, bv: number) => {
+      const aNaN = Number.isNaN(av);
+      const bNaN = Number.isNaN(bv);
+      if (aNaN || bNaN) return aNaN === bNaN ? 0 : aNaN ? 1 : -1;
+      return (av - bv) * dir;
+    };
+    return [...resultsForQuiz].sort((a, b) => {
+      if (sort.sortKey === 'score') return (a.score - b.score) * dir;
+      if (sort.sortKey === 'name')
+        return a.name.localeCompare(b.name, 'pl') * dir;
+      if (sort.sortKey === 'time')
+        return compareNumeric(
+          parseTimeSeconds(a.time),
+          parseTimeSeconds(b.time),
+        );
+      if (sort.sortKey === 'date')
+        return compareNumeric(parseResultDate(a.date), parseResultDate(b.date));
+      return 0;
+    });
+  }, [resultsForQuiz, sort.sortKey, sort.sortDir]);
 
   return (
     <AdminLayout
@@ -205,7 +266,16 @@ export default function QuizDetail({
                 </button>
                 <button
                   type="button"
-                  onClick={() => goRunning(quiz.id)}
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setPanelAnchor({
+                      top: rect.bottom + 8,
+                      right: window.innerWidth - rect.right,
+                    });
+                    setExpandedQuizId(
+                      expandedQuizId === quiz.id ? null : quiz.id,
+                    );
+                  }}
                   className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--text-dark)] px-3 py-2 text-xs font-semibold text-[var(--text-dark)] hover:bg-[var(--text-dark)] hover:text-white"
                 >
                   <Play size={14} />
@@ -236,20 +306,25 @@ export default function QuizDetail({
         {legacyDemoResultsEnabled && selectedQuiz && (
           <section className="flex flex-col gap-4">
             <h2 className="text-base font-bold text-[var(--text-dark)]">
-              Wyniki (demo) — {selectedQuiz.title}
+              Wyniki (demo) - {selectedQuiz.title}
             </h2>
 
             <table className={adminBlueHeadTableClass}>
               <thead className={adminBlueHeadTableTheadClass}>
                 <tr>
-                  <th className={adminBlueHeadTableThClass}>Imię</th>
-                  <th className={adminBlueHeadTableThClass}>Wynik</th>
-                  <th className={adminBlueHeadTableThClass}>Czas</th>
-                  <th className={adminBlueHeadTableThClass}>Data</th>
+                  {SORT_COLUMNS.map(({ key, label }) => (
+                    <SortableTh
+                      key={key}
+                      columnKey={key}
+                      label={label}
+                      sort={sort}
+                      className={adminBlueHeadTableThClass}
+                    />
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {resultsForQuiz.length === 0 ? (
+                {sortedResults.length === 0 ? (
                   <tr>
                     <td
                       colSpan={4}
@@ -259,7 +334,7 @@ export default function QuizDetail({
                     </td>
                   </tr>
                 ) : (
-                  resultsForQuiz.map((row, index) => (
+                  sortedResults.map((row, index) => (
                     <tr
                       key={`${row.name}-${index}`}
                       className="border-t border-[var(--border)]"
@@ -288,6 +363,27 @@ export default function QuizDetail({
           </section>
         )}
       </div>
+
+      {expandedQuizId && panelAnchor && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setExpandedQuizId(null)}
+          />
+          <div
+            className="fixed z-50 w-[420px]"
+            style={{ top: panelAnchor.top, right: panelAnchor.right }}
+          >
+            <ActivateModal
+              onConfirm={(body) =>
+                void handleActivateConfirm(expandedQuizId, body)
+              }
+              onCancel={() => setExpandedQuizId(null)}
+              busy={activatingId === expandedQuizId}
+            />
+          </div>
+        </>
+      )}
     </AdminLayout>
   );
 }

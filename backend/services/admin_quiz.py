@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import logging
 import os
 import shutil
 import zipfile
@@ -17,9 +18,11 @@ from core.settings import (
     UPLOAD_CHUNK_SIZE,
 )
 from schemas.admin_quiz import (
+    ActivateRequest,
     AdminQuizDetailResponse,
     AdminQuizListItemResponse,
     AdminQuizUpsertPayload,
+    AvailabilityPatchRequest,
 )
 from services.admin_quiz_adapters import (
     kqf_to_admin_detail_payload,
@@ -32,7 +35,8 @@ from services.quiz_files import (
     read_meta_or_rebuild,
     read_quiz_kqf,
     remove_obsolete_quiz_media_files,
-    update_last_activated_at,
+    update_availability,
+    write_meta_json_atomic,
     write_quiz_dir,
     write_text_atomic,
 )
@@ -46,6 +50,8 @@ from services.storage import (
     quiz_dir_for,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def _now_iso() -> str:
     return (
@@ -54,6 +60,31 @@ def _now_iso() -> str:
         .isoformat()
         .replace("+00:00", "Z")
     )
+
+
+def check_availability(meta: QuizMeta) -> tuple[bool, str | None]:
+    if meta.manual_status == "closed":
+        return False, "manually_closed"
+    if meta.manual_status == "open":
+        return True, None
+    now = datetime.now(timezone.utc)
+    if meta.schedule_end:
+        try:
+            end = datetime.fromisoformat(meta.schedule_end)
+            if now > end:
+                return False, "expired"
+        except ValueError:
+            logger.warning("Unparseable schedule_end, skipping: %r", meta.schedule_end)
+    if meta.schedule_start:
+        try:
+            start = datetime.fromisoformat(meta.schedule_start)
+            if now < start:
+                return False, "not_yet"
+        except ValueError:
+            logger.warning(
+                "Unparseable schedule_start, skipping: %r", meta.schedule_start
+            )
+    return True, None
 
 
 def list_quizzes(app: FastAPI) -> list[AdminQuizListItemResponse]:
@@ -102,6 +133,9 @@ def get_quiz(app: FastAPI, quiz_id: str) -> AdminQuizDetailResponse:
         created_at=meta.created_at,
         updated_at=meta.updated_at,
         last_activated_at=meta.last_activated_at,
+        schedule_start=meta.schedule_start,
+        schedule_end=meta.schedule_end,
+        manual_status=meta.manual_status,
     )
 
 
@@ -135,6 +169,9 @@ def update_quiz(
             created_at=meta.created_at,
             updated_at=_now_iso(),
             last_activated_at=meta.last_activated_at,
+            schedule_start=meta.schedule_start,
+            schedule_end=meta.schedule_end,
+            manual_status=meta.manual_status,
         )
         remove_obsolete_quiz_media_files(qd, previous=existing, current=quiz)
     return {"id": quiz_id}
@@ -153,15 +190,38 @@ def delete_quiz(app: FastAPI, quiz_id: str) -> None:
         shutil.rmtree(qd)
 
 
-def _activation_payload(session: sessions.QuizSession) -> dict[str, str]:
+def _activation_payload(session: sessions.QuizSession, meta: QuizMeta) -> dict:
     return {
         "pin": session.pin,
         "join_url": _build_join_url(session.pin),
         "started_at": session.started_at.isoformat().replace("+00:00", "Z"),
+        "schedule_start": meta.schedule_start,
+        "schedule_end": meta.schedule_end,
+        "manual_status": meta.manual_status,
     }
 
 
-def activate_quiz(app: FastAPI, quiz_id: str) -> dict[str, str]:
+def _resolve_availability(
+    meta: QuizMeta, body: ActivateRequest | None
+) -> tuple[str | None, str | None, str | None]:
+    """Return (schedule_start, schedule_end, manual_status) merging body into meta.
+
+    Only fields explicitly present in body.model_fields_set override meta values,
+    so an empty-body ActivateRequest({}) is a no-op rather than a wipe.
+    """
+    if body is None:
+        return meta.schedule_start, meta.schedule_end, meta.manual_status
+    fields = body.model_fields_set
+    return (
+        body.schedule_start if "schedule_start" in fields else meta.schedule_start,
+        body.schedule_end if "schedule_end" in fields else meta.schedule_end,
+        body.manual_status if "manual_status" in fields else meta.manual_status,
+    )
+
+
+def activate_quiz(
+    app: FastAPI, quiz_id: str, body: ActivateRequest | None = None
+) -> dict:
     paths = get_storage(app)
     qd = quiz_dir_for(paths, quiz_id)
     if not qd.is_dir():
@@ -169,9 +229,27 @@ def activate_quiz(app: FastAPI, quiz_id: str) -> dict[str, str]:
     meta = read_meta_or_rebuild(qd, quiz_id)
     existing = sessions.lookup_by_quiz(quiz_id)
     if existing is not None:
-        # Idempotent: admin UI / React Strict Mode may POST activate more than once
-        # while the same in-memory session is already running.
-        return _activation_payload(existing)
+        if not body or not body.model_fields_set:
+            # Idempotent read: no fields sent, nothing to change.
+            return _activation_payload(existing, meta)
+        # Session already live but caller provided explicit schedule fields — apply them.
+        with QUIZ_WRITE_LOCK:
+            meta = read_meta_or_rebuild(qd, quiz_id)
+            s_start, s_end, m_status = _resolve_availability(meta, body)
+            updated = QuizMeta(
+                id=meta.id,
+                title=meta.title,
+                title_slug=meta.title_slug,
+                created_at=meta.created_at,
+                updated_at=meta.updated_at,
+                question_count=meta.question_count,
+                last_activated_at=meta.last_activated_at,
+                schedule_start=s_start,
+                schedule_end=s_end,
+                manual_status=m_status,
+            )
+            write_meta_json_atomic(qd / "meta.json", updated)
+        return _activation_payload(existing, updated)
     try:
         session = sessions.start_session(quiz_id=quiz_id, quiz_title=meta.title)
     except ValueError:
@@ -181,9 +259,25 @@ def activate_quiz(app: FastAPI, quiz_id: str) -> dict[str, str]:
             raise HTTPException(
                 status_code=409, detail="Quiz jest już aktywny."
             ) from None
-        return _activation_payload(raced)
-    update_last_activated_at(qd, _now_iso())
-    return _activation_payload(session)
+        return _activation_payload(raced, meta)
+    now_ts = _now_iso()
+    with QUIZ_WRITE_LOCK:
+        meta = read_meta_or_rebuild(qd, quiz_id)
+        s_start, s_end, m_status = _resolve_availability(meta, body)
+        new_meta = QuizMeta(
+            id=meta.id,
+            title=meta.title,
+            title_slug=meta.title_slug,
+            created_at=meta.created_at,
+            updated_at=meta.updated_at,
+            question_count=meta.question_count,
+            last_activated_at=now_ts,
+            schedule_start=s_start,
+            schedule_end=s_end,
+            manual_status=m_status,
+        )
+        write_meta_json_atomic(qd / "meta.json", new_meta)
+    return _activation_payload(session, new_meta)
 
 
 def _build_join_url(pin: str) -> str:
@@ -256,7 +350,60 @@ def stop_quiz(app: FastAPI, quiz_id: str) -> dict[str, str]:
         entries=entries,
         max_score=max_score,
     )
+    # Best-effort: clear only manual_status (session-scoped override).
+    # schedule_start/schedule_end are configuration and survive across sessions.
+    # Errors here are non-fatal — session is stopped and results are already written.
+    try:
+        with QUIZ_WRITE_LOCK:
+            meta = read_meta_or_rebuild(qd, quiz_id)
+            if meta.manual_status is not None:
+                write_meta_json_atomic(
+                    qd / "meta.json",
+                    QuizMeta(
+                        id=meta.id,
+                        title=meta.title,
+                        title_slug=meta.title_slug,
+                        created_at=meta.created_at,
+                        updated_at=meta.updated_at,
+                        question_count=meta.question_count,
+                        last_activated_at=meta.last_activated_at,
+                        schedule_start=meta.schedule_start,
+                        schedule_end=meta.schedule_end,
+                        manual_status=None,
+                    ),
+                )
+    except OSError as exc:
+        logger.warning(
+            "Could not clear manual_status for quiz %s after stop: %s", quiz_id, exc
+        )
     return {"date": stopped_at.strftime("%Y-%m-%d"), "filename": filename}
+
+
+def patch_availability(
+    app: FastAPI, quiz_id: str, body: AvailabilityPatchRequest
+) -> None:
+    paths = get_storage(app)
+    qd = quiz_dir_for(paths, quiz_id)
+    if not qd.is_dir():
+        raise HTTPException(status_code=404, detail="Nie znaleziono quizu.")
+    with QUIZ_WRITE_LOCK:
+        meta = read_meta_or_rebuild(qd, quiz_id)
+        fields = body.model_fields_set
+        new_schedule_start = (
+            body.schedule_start if "schedule_start" in fields else meta.schedule_start
+        )
+        new_schedule_end = (
+            body.schedule_end if "schedule_end" in fields else meta.schedule_end
+        )
+        new_manual_status = (
+            body.manual_status if "manual_status" in fields else meta.manual_status
+        )
+        update_availability(
+            qd,
+            schedule_start=new_schedule_start,
+            schedule_end=new_schedule_end,
+            manual_status=new_manual_status,
+        )
 
 
 def _safe_import_member_path(quiz_dir: Path, member: str) -> Path | None:
