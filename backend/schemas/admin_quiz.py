@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from datetime import datetime, timezone
+from typing import Annotated, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -121,23 +122,44 @@ class AdminQuizTrueFalsePayload(_AdminQuizPayloadBase):
 
 class AdminQuizSliderPayload(_AdminQuizPayloadBase):
     type: Literal["slider"]
-    correct: float
+    correct: float | None = None
     min: float
     max: float
     step: float = 1
     tolerance: float = 0
     unit: str | None = None
+    score: Literal["range", "scale"] = "range"
+    label_min: str | None = None
+    label_max: str | None = None
 
     @model_validator(mode="after")
     def _validate(self) -> AdminQuizSliderPayload:
         if self.min >= self.max:
             raise ValueError("min must be < max")
-        if not (self.min <= self.correct <= self.max):
-            raise ValueError("correct must be in [min, max]")
         if self.step <= 0:
             raise ValueError("step must be > 0")
         if self.tolerance < 0:
             raise ValueError("tolerance must be >= 0")
+        if self.score == "range":
+            if self.correct is None:
+                raise ValueError("correct is required for score=range")
+            if not (self.min <= self.correct <= self.max):
+                raise ValueError("correct must be in [min, max]")
+        return self
+
+
+class AdminQuizOrderingPayload(_AdminQuizPayloadBase):
+    type: Literal["ordering"]
+    items: list[str] = Field(min_length=2, max_length=8)
+    correct_order: list[int] = Field(min_length=2)
+
+    @model_validator(mode="after")
+    def _validate(self) -> AdminQuizOrderingPayload:
+        n = len(self.items)
+        if len(self.correct_order) != n:
+            raise ValueError(f"correct_order must have exactly {n} indices")
+        if sorted(self.correct_order) != list(range(n)):
+            raise ValueError("correct_order must be a permutation of 0..n-1")
         return self
 
 
@@ -146,6 +168,7 @@ AdminQuizQuestionPayload = Annotated[
     | AdminQuizMultiChoicePayload
     | AdminQuizTrueFalsePayload
     | AdminQuizSliderPayload
+    | AdminQuizOrderingPayload
     | AdminQuizImagePixelatePayload,
     Field(discriminator="type"),
 ]
@@ -157,6 +180,9 @@ class AdminQuizUpsertPayload(BaseModel):
     author: str | None = None
     tags: list[str] = Field(default_factory=list)
     show_answer_review: bool = True
+    time_limit: int | None = Field(default=None, gt=0)
+    shuffle_questions: bool = False
+    shuffle_mode: Literal["per_player", "session"] = "per_player"
     questions: list[AdminQuizQuestionPayload] = Field(min_length=1)
 
     model_config = ConfigDict(extra="ignore")
@@ -185,10 +211,65 @@ class AdminQuizDetailResponse(BaseModel):
     author: str | None = None
     tags: list[str] = Field(default_factory=list)
     show_answer_review: bool = True
+    time_limit: int | None = Field(default=None, gt=0)
+    shuffle_questions: bool = False
+    shuffle_mode: Literal["per_player", "session"] = "per_player"
     status: Literal["idle", "running"] = "idle"
     created_at: str
     updated_at: str
     last_activated_at: str | None = None
+    schedule_start: str | None = None
+    schedule_end: str | None = None
+    manual_status: Optional[Literal["open", "closed"]] = None
     questions: list[AdminQuizQuestionPayload] = Field(min_length=1)
 
     model_config = ConfigDict(extra="ignore")
+
+
+# ---------- Availability ----------
+
+
+def _normalize_utc_datetime(v: str | None) -> str | None:
+    if v is None:
+        return None
+    try:
+        dt = datetime.fromisoformat(v)
+    except ValueError:
+        raise ValueError(
+            "Nieprawidłowy format daty — oczekiwany ISO 8601 (np. 2025-06-01T14:00:00Z)."
+        )
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    return dt.replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+class AvailabilityPatchRequest(BaseModel):
+    schedule_start: str | None = None
+    schedule_end: str | None = None
+    manual_status: Optional[Literal["open", "closed"]] = None
+
+    model_config = ConfigDict(extra="ignore")
+
+    @field_validator("schedule_start", "schedule_end", mode="before")
+    @classmethod
+    def validate_datetime(cls, v: object) -> str | None:
+        if v is None or isinstance(v, str):
+            return _normalize_utc_datetime(v)
+        raise ValueError("Nieprawidłowy format daty.")
+
+
+class ActivateRequest(BaseModel):
+    schedule_start: str | None = None
+    schedule_end: str | None = None
+    manual_status: Optional[Literal["open", "closed"]] = None
+
+    model_config = ConfigDict(extra="ignore")
+
+    @field_validator("schedule_start", "schedule_end", mode="before")
+    @classmethod
+    def validate_datetime(cls, v: object) -> str | None:
+        if v is None or isinstance(v, str):
+            return _normalize_utc_datetime(v)
+        raise ValueError("Nieprawidłowy format daty.")

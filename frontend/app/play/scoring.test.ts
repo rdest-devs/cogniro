@@ -81,6 +81,83 @@ test('imagepixelate scored like singlechoice', () => {
   assert.equal(calculateScore(q as never, { P: 1 }), 0);
 });
 
+test('slider scale always scores 0', () => {
+  const q = {
+    front_matter: { title: 'T', tags: [] },
+    questions: [
+      {
+        id: 'S',
+        type: 'slider',
+        text: '?',
+        points: 100,
+        correct: null,
+        min: 1,
+        max: 10,
+        step: 1,
+        tolerance: 0,
+        score: 'scale',
+        media: {},
+      },
+    ],
+  };
+  assert.equal(calculateScore(q as never, { S: 5 }), 0);
+  assert.equal(calculateScore(q as never, { S: 1 }), 0);
+});
+
+test('ordering fully correct = full points', () => {
+  const q = {
+    front_matter: { title: 'T', tags: [] },
+    questions: [
+      {
+        id: 'O',
+        type: 'ordering',
+        text: '?',
+        points: 100,
+        items: ['B', 'C', 'A'],
+        correct_order: [2, 0, 1],
+        media: {},
+      },
+    ],
+  };
+  assert.equal(calculateScore(q as never, { O: [2, 0, 1] }), 100);
+});
+
+test('ordering wrong = 0', () => {
+  const q = {
+    front_matter: { title: 'T', tags: [] },
+    questions: [
+      {
+        id: 'O',
+        type: 'ordering',
+        text: '?',
+        points: 99,
+        items: ['B', 'C', 'A'],
+        correct_order: [2, 0, 1],
+        media: {},
+      },
+    ],
+  };
+  assert.equal(calculateScore(q as never, { O: [0, 1, 2] }), 0);
+});
+
+test('ordering partially correct = 0 (no partial credit)', () => {
+  const q = {
+    front_matter: { title: 'T', tags: [] },
+    questions: [
+      {
+        id: 'O',
+        type: 'ordering',
+        text: '?',
+        points: 120,
+        items: ['A', 'B', 'C', 'D'],
+        correct_order: [0, 1, 2, 3],
+        media: {},
+      },
+    ],
+  };
+  assert.equal(calculateScore(q as never, { O: [0, 1, 3, 2] }), 0);
+});
+
 test('multichoice exact match', () => {
   const q = {
     front_matter: { title: 'T', tags: [] },

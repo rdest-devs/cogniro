@@ -26,6 +26,7 @@ const legacyTypeMap: Record<string, KqfQuestionType> = {
   truefalse: 'truefalse',
   true_false: 'truefalse',
   slider: 'slider',
+  ordering: 'ordering',
   imagepixelate: 'imagepixelate',
   image_pixelate: 'imagepixelate',
 };
@@ -101,12 +102,27 @@ function mapApiQuestionToForm(q: AdminQuizApiQuestion): QuizEditorQuestionForm {
         image,
         hint,
         type: 'slider',
-        correct: q.correct,
+        correct: q.correct ?? null,
         min: q.min,
         max: q.max,
         step: q.step,
         tolerance: q.tolerance,
         unit: q.unit ?? null,
+        score: q.score ?? 'range',
+        label_min: q.label_min ?? null,
+        label_max: q.label_max ?? null,
+      };
+    case 'ordering':
+      return {
+        id,
+        text,
+        timeS,
+        points,
+        image,
+        hint,
+        type: 'ordering',
+        items: q.items,
+        correct_order: q.correct_order,
       };
     case 'imagepixelate':
       return {
@@ -172,7 +188,6 @@ function coerceApiQuestionLoose(
 
   if (
     type === 'slider' &&
-    typeof raw.correct === 'number' &&
     typeof raw.min === 'number' &&
     typeof raw.max === 'number'
   ) {
@@ -184,12 +199,15 @@ function coerceApiQuestionLoose(
       image,
       hint,
       type: 'slider',
-      correct: raw.correct,
+      correct: typeof raw.correct === 'number' ? raw.correct : null,
       min: raw.min,
       max: raw.max,
       step: typeof raw.step === 'number' ? raw.step : 1,
       tolerance: typeof raw.tolerance === 'number' ? raw.tolerance : 0,
       unit: typeof raw.unit === 'string' ? raw.unit : null,
+      score: (raw.score === 'scale' ? 'scale' : 'range') as 'range' | 'scale',
+      label_min: typeof raw.label_min === 'string' ? raw.label_min : null,
+      label_max: typeof raw.label_max === 'string' ? raw.label_max : null,
     };
   }
 
@@ -281,6 +299,7 @@ function safeParseApiQuestion(
     t === 'multichoice' ||
     t === 'truefalse' ||
     t === 'slider' ||
+    t === 'ordering' ||
     t === 'imagepixelate'
   ) {
     return mapApiQuestionToForm(o as AdminQuizApiQuestion);
@@ -301,6 +320,9 @@ export function toQuizEditorFormValues(
     author: quiz.author ?? null,
     tags: Array.isArray(quiz.tags) ? quiz.tags : [],
     showAnswerReview: quiz.show_answer_review !== false,
+    quizTimeLimit: quiz.time_limit ?? null,
+    shuffleQuestions: quiz.shuffle_questions ?? false,
+    shuffleMode: quiz.shuffle_mode ?? 'per_player',
     questions:
       mappedQuestions.length > 0
         ? mappedQuestions
@@ -363,12 +385,22 @@ function mapQuestionToPayload(
       return {
         ...common,
         type: 'slider',
-        correct: q.correct,
+        correct: q.correct ?? undefined,
         min: q.min,
         max: q.max,
         step: q.step,
         tolerance: q.tolerance,
         unit: q.unit?.trim() ? q.unit.trim() : undefined,
+        score: q.score ?? 'range',
+        label_min: q.label_min?.trim() ? q.label_min.trim() : undefined,
+        label_max: q.label_max?.trim() ? q.label_max.trim() : undefined,
+      };
+    case 'ordering':
+      return {
+        ...common,
+        type: 'ordering',
+        items: q.items,
+        correct_order: q.correct_order,
       };
     case 'imagepixelate':
       return {
@@ -392,6 +424,9 @@ export function toAdminQuizUpsertPayload(
     author: values.author?.trim() ? values.author.trim() : null,
     tags: trimTags(values.tags),
     show_answer_review: values.showAnswerReview,
+    time_limit: values.quizTimeLimit ?? null,
+    shuffle_questions: values.shuffleQuestions,
+    shuffle_mode: values.shuffleMode,
     questions: values.questions.map(mapQuestionToPayload),
   };
 

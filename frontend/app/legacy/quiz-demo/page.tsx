@@ -1,4 +1,4 @@
-// DEPRECATED — remove with /legacy when /play is verified.
+// DEPRECATED - remove with /legacy when /play is verified.
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -68,7 +68,7 @@ type QuizQuestion =
 type SubmittedAnswer = {
   questionId: number;
   selected?: number[];
-  ordering?: string[];
+  ordering?: number[];
   value?: number;
 };
 

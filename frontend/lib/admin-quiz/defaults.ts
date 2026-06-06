@@ -67,6 +67,16 @@ export function createQuestionForType(
         step: 1,
         tolerance: 0,
         unit: null,
+        score: 'range' as const,
+        label_min: null,
+        label_max: null,
+      };
+    case 'ordering':
+      return {
+        ...base,
+        type: 'ordering',
+        items: ['Element 1', 'Element 2', 'Element 3'],
+        correct_order: [0, 1, 2],
       };
     case 'imagepixelate':
       return {
@@ -92,6 +102,9 @@ export function createDefaultQuizFormValues(): QuizEditorFormValues {
     author: null,
     tags: [],
     showAnswerReview: true,
+    quizTimeLimit: null,
+    shuffleQuestions: false,
+    shuffleMode: 'per_player',
     questions: [createEmptyQuestion()],
   };
 }

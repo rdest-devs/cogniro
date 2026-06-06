@@ -7,6 +7,7 @@ from schemas.admin_quiz import (
     AdminQuizDetailResponse,
     AdminQuizImagePixelatePayload,
     AdminQuizMultiChoicePayload,
+    AdminQuizOrderingPayload,
     AdminQuizQuestionPayload,
     AdminQuizSingleChoicePayload,
     AdminQuizSliderPayload,
@@ -19,6 +20,7 @@ from schemas.kqf import (
     KqfImagePixelate,
     KqfMedia,
     KqfMultiChoice,
+    KqfOrdering,
     KqfQuestion,
     KqfQuiz,
     KqfSingleChoice,
@@ -96,6 +98,18 @@ def upsert_payload_to_kqf(
                     step=q.step,
                     tolerance=q.tolerance,
                     unit=q.unit,
+                    score=q.score,
+                    label_min=q.label_min,
+                    label_max=q.label_max,
+                    **common,
+                )
+            )
+        elif isinstance(q, AdminQuizOrderingPayload):
+            questions.append(
+                KqfOrdering(
+                    type="ordering",
+                    items=q.items,
+                    correct_order=q.correct_order,
                     **common,
                 )
             )
@@ -106,6 +120,9 @@ def upsert_payload_to_kqf(
             author=payload.author,
             tags=list(payload.tags),
             show_answer_review=payload.show_answer_review,
+            time_limit=payload.time_limit,
+            shuffle_questions=payload.shuffle_questions,
+            shuffle_mode=payload.shuffle_mode,
         ),
         questions=questions,
     )
@@ -119,6 +136,9 @@ def kqf_to_admin_detail_payload(
     created_at: str,
     updated_at: str,
     last_activated_at: str | None,
+    schedule_start: str | None = None,
+    schedule_end: str | None = None,
+    manual_status: str | None = None,
 ) -> AdminQuizDetailResponse:
     questions: list[AdminQuizQuestionPayload] = []
     for q in quiz.questions:
@@ -183,6 +203,18 @@ def kqf_to_admin_detail_payload(
                     step=q.step,
                     tolerance=q.tolerance,
                     unit=q.unit,
+                    score=q.score,
+                    label_min=q.label_min,
+                    label_max=q.label_max,
+                    **common,
+                )
+            )
+        elif q.type == "ordering":
+            questions.append(
+                AdminQuizOrderingPayload(
+                    type="ordering",
+                    items=q.items,
+                    correct_order=q.correct_order,
                     **common,
                 )
             )
@@ -193,9 +225,15 @@ def kqf_to_admin_detail_payload(
         author=quiz.front_matter.author,
         tags=list(quiz.front_matter.tags),
         show_answer_review=quiz.front_matter.show_answer_review,
+        time_limit=quiz.front_matter.time_limit,
+        shuffle_questions=quiz.front_matter.shuffle_questions,
+        shuffle_mode=quiz.front_matter.shuffle_mode,
         status=status,
         created_at=created_at,
         updated_at=updated_at,
         last_activated_at=last_activated_at,
+        schedule_start=schedule_start,
+        schedule_end=schedule_end,
+        manual_status=manual_status,
         questions=questions,
     )
