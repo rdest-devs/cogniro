@@ -81,6 +81,58 @@ def test_change_password_too_short_returns_422(
     assert r.status_code == 422
 
 
+def test_change_password_too_long_returns_400_and_keeps_old(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    # 73 bytes: passes the schema (max_length=512) but exceeds bcrypt's 72-byte limit.
+    too_long = "a" * 73
+    r = _change(
+        client,
+        admin_token_header,
+        current=TEST_ADMIN_PASSWORD,
+        new=too_long,
+        confirm=too_long,
+    )
+    assert r.status_code == 400
+    assert r.json()["detail"] == "password_too_long"
+    login = client.post("/admin/auth/login", json={"password": TEST_ADMIN_PASSWORD})
+    assert login.status_code == 200
+
+
+def test_change_password_invalidates_existing_sessions(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    r = _change(
+        client,
+        admin_token_header,
+        current=TEST_ADMIN_PASSWORD,
+        new=NEW_PASSWORD,
+        confirm=NEW_PASSWORD,
+    )
+    assert r.status_code == 200
+
+    # The token issued before the change is rejected (password fingerprint rotated).
+    reuse = _change(
+        client,
+        admin_token_header,
+        current=NEW_PASSWORD,
+        new="another-haslo-123",
+        confirm="another-haslo-123",
+    )
+    assert reuse.status_code == 401
+
+    # The change response carries a freshly issued token that still works.
+    fresh_header = {"Authorization": f"Bearer {r.json()['access_token']}"}
+    ok = _change(
+        client,
+        fresh_header,
+        current=NEW_PASSWORD,
+        new="another-haslo-123",
+        confirm="another-haslo-123",
+    )
+    assert ok.status_code == 200
+
+
 def test_change_password_success_allows_login_with_new_password(
     client: TestClient, admin_token_header: dict[str, str]
 ) -> None:

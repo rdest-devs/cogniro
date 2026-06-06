@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import uuid
@@ -171,16 +172,27 @@ def load_admin_password_override(store_path: Path) -> None:
 
 def set_admin_password(new_password: str, *, store_path: Path) -> None:
     """Hash and persist a new admin password, then use it for subsequent logins."""
+    from services.storage import write_text_atomic
+
     new_hash = bcrypt.hashpw(
         new_password.encode("utf-8"),
         bcrypt.gensalt(rounds=_ADMIN_PASSWORD_BCRYPT_ROUNDS),
     )
     store_path.parent.mkdir(parents=True, exist_ok=True)
-    tmp_path = store_path.with_name(f"{store_path.name}.tmp")
-    tmp_path.write_text(new_hash.decode("utf-8"), encoding="utf-8")
-    os.replace(tmp_path, store_path)
+    write_text_atomic(store_path, new_hash.decode("utf-8"))
     global _password_hash
     _password_hash = new_hash
+
+
+def _password_fingerprint() -> str | None:
+    """Short stable fingerprint of the active password hash.
+
+    Embedded in issued tokens so that changing the admin password invalidates every
+    previously issued token (their fingerprint no longer matches the new hash).
+    """
+    if _password_hash is None:
+        return None
+    return hashlib.sha256(_password_hash).hexdigest()[:16]
 
 
 def create_access_token() -> tuple[str, int]:
@@ -197,6 +209,7 @@ def create_access_token() -> tuple[str, int]:
         "sub": "admin",
         "typ": "access",
         "jti": jti,
+        "pwd": _password_fingerprint(),
         "iat": int(now.timestamp()),
         "exp": exp,
     }
@@ -219,6 +232,7 @@ def create_refresh_token() -> tuple[str, int]:
         "sub": "admin",
         "typ": "refresh",
         "jti": jti,
+        "pwd": _password_fingerprint(),
         "iat": int(now.timestamp()),
         "exp": exp,
     }
@@ -278,6 +292,11 @@ def decode_admin_token(token: str, *, expected_type: str = "access") -> dict:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="token_revoked",
+        )
+    if payload.get("pwd") != _password_fingerprint():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="password_changed",
         )
     return payload
 
