@@ -1,4 +1,3 @@
-import ProgressBar from '@/app/components/common/ProgressBar';
 import { cn } from '@/lib/cn';
 
 import QuestionHeader from './QuestionHeader';
@@ -20,7 +19,6 @@ export default function QuizLayout({
 }: QuizLayoutProps) {
   return (
     <article className="flex h-full w-full flex-col bg-[var(--page-bg)]">
-      <ProgressBar current={questionNumber} total={totalQuestions} />
       <QuestionHeader
         current={questionNumber}
         total={totalQuestions}

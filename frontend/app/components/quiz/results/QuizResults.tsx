@@ -1,6 +1,7 @@
 'use client';
 
 import { FileCheck, RotateCcw } from 'lucide-react';
+import { useMemo } from 'react';
 
 import type { RankingEntry } from '@/app/types';
 
@@ -19,6 +20,10 @@ interface QuizResultsProps {
   onReview?: () => void;
 }
 
+function parseScore(score: string): number {
+  return parseFloat(score.replace('%', '')) || 0;
+}
+
 export default function QuizResults({
   scorePercent,
   scorePoints,
@@ -29,6 +34,24 @@ export default function QuizResults({
   onRetry,
   onReview,
 }: QuizResultsProps) {
+  const sortedRanking = useMemo(() => {
+    if (!ranking) return [];
+    return [...ranking]
+      .sort((a, b) => parseScore(b.score) - parseScore(a.score))
+      .map((entry, idx) => ({
+        ...entry,
+        position: idx + 1,
+        medal:
+          idx === 0
+            ? ('gold' as const)
+            : idx === 1
+              ? ('silver' as const)
+              : idx === 2
+                ? ('bronze' as const)
+                : undefined,
+      }));
+  }, [ranking]);
+
   return (
     <div className="flex h-full w-full flex-col bg-[var(--page-bg)]">
       <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 pt-4 pb-8">
@@ -62,7 +85,7 @@ export default function QuizResults({
           </div>
         </section>
 
-        {ranking && ranking.length > 0 && (
+        {sortedRanking.length > 0 && (
           <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card-bg)]">
             <div className="px-4 py-3.5">
               <h2 className="text-[15px] font-bold text-[var(--text-dark)]">
@@ -70,11 +93,11 @@ export default function QuizResults({
               </h2>
             </div>
             <div className="h-px bg-[var(--border)]" />
-            {ranking.map((entry, idx) => (
+            {sortedRanking.map((entry, idx) => (
               <RankingRow
                 key={entry.position}
                 entry={entry}
-                isLast={idx === ranking.length - 1}
+                isLast={idx === sortedRanking.length - 1}
               />
             ))}
           </section>

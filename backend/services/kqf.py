@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import io
 import os
+import random
 import re
 from pathlib import Path
 from urllib.parse import urlparse
@@ -19,6 +20,7 @@ from schemas.kqf import (
     KqfFrontMatter,
     KqfMedia,
     KqfMultiChoice,
+    KqfOrdering,
     KqfQuiz,
     KqfSingleChoice,
     KqfSlider,
@@ -49,14 +51,17 @@ def _normalize_kqf_stored_image_path(value: str) -> str:
 
 
 _HEADER_RE = re.compile(
-    r"^##\s+(?P<id>[A-Za-z0-9_-]+)\s*\|\s*(?P<type>singlechoice|multichoice|truefalse|slider)"
+    r"^##\s+(?P<id>[A-Za-z0-9_-]+)\s*\|\s*(?P<type>singlechoice|multichoice|truefalse|slider|ordering)"
     r"(?:\s*\|\s*(?P<time>\d+)s)?(?:\s*\|\s*(?P<points>\d+)pts)?\s*$"
 )
 _CHOICE_RE = re.compile(r"^-\s*\[(?P<mark>[ xX])\](?:\s+(?P<text>.+?))?\s*$")
+_PLAIN_ITEM_RE = re.compile(r"^-\s+(?!\[)(?P<text>.+?)\s*$")
 _DIRECTIVE_RE = re.compile(r"^@(?P<key>image|video|audio|hint):\s*(?P<value>.+?)\s*$")
+_ORDER_DIRECTIVE_RE = re.compile(r"^@order:\s*(?P<value>.+?)\s*$")
 _SLIDER_FIELD_RE = re.compile(
-    r"^\s{2,}(?P<key>correct|min|max|step|tolerance|unit):\s*(?P<value>.+?)\s*$"
+    r"^\s{2,}(?P<key>correct|min|max|step|tolerance|unit|score|label_min|label_max):\s*(?P<value>.+?)\s*$"
 )
+_ORDER_ITEMS_FIELD_RE = re.compile(r"^\s{2,}(?P<key>\d+):\s*(?P<value>.+?)\s*$")
 
 
 class KqfParseError(Exception):
@@ -161,17 +166,24 @@ def _parse_question_block(block: str, header_line: int):
         "points": int(header.group("points")) if header.group("points") else None,
     }
 
+    qtype = header.group("type")
+
     text_lines: list[str] = []
     raw_choices: list[dict] = []
     last_raw_choice: dict | None = None
     media_kwargs: dict[str, str] = {}
     slider_fields: dict[str, str] = {}
+    plain_items: list[str] = []
+    order_directive: str | None = None
+    in_order_items = False
+    order_items_dict: dict[int, str] = {}
 
     index = 1
     in_slider = False
     while index < len(lines):
         line = lines[index]
         stripped = line.strip()
+
         if stripped == "@slider:":
             in_slider = True
             index += 1
@@ -186,6 +198,28 @@ def _parse_question_block(block: str, header_line: int):
                 index += 1
                 continue
             in_slider = False
+
+        if stripped == "@order_items:":
+            in_order_items = True
+            index += 1
+            continue
+        if in_order_items:
+            if not stripped:
+                index += 1
+                continue
+            oi_match = _ORDER_ITEMS_FIELD_RE.match(line)
+            if oi_match:
+                order_items_dict[int(oi_match.group("key"))] = oi_match.group("value")
+                index += 1
+                continue
+            in_order_items = False
+
+        order_dir_match = _ORDER_DIRECTIVE_RE.match(line)
+        if order_dir_match:
+            order_directive = order_dir_match.group("value")
+            index += 1
+            continue
+
         choice_match = _CHOICE_RE.match(line)
         if choice_match:
             mark = choice_match.group("mark").lower()
@@ -194,6 +228,14 @@ def _parse_question_block(block: str, header_line: int):
             raw_choices.append(last_raw_choice)
             index += 1
             continue
+
+        if qtype == "ordering":
+            plain_match = _PLAIN_ITEM_RE.match(line)
+            if plain_match:
+                plain_items.append(plain_match.group("text"))
+                index += 1
+                continue
+
         directive_match = _DIRECTIVE_RE.match(line)
         if directive_match:
             key = directive_match.group("key")
@@ -212,7 +254,12 @@ def _parse_question_block(block: str, header_line: int):
             last_raw_choice = None
             index += 1
             continue
-        if not raw_choices and not slider_fields:
+        if (
+            not raw_choices
+            and not slider_fields
+            and not plain_items
+            and not order_items_dict
+        ):
             text_lines.append(stripped)
             index += 1
             continue
@@ -222,7 +269,6 @@ def _parse_question_block(block: str, header_line: int):
 
     question_text = " ".join(text_lines).strip()
     media = KqfMedia(**media_kwargs) if media_kwargs else KqfMedia()
-    qtype = header.group("type")
 
     try:
         if qtype == "singlechoice":
@@ -246,6 +292,16 @@ def _parse_question_block(block: str, header_line: int):
         if qtype == "slider":
             return _build_slider(
                 common, question_text, slider_fields, media, header_line
+            )
+        if qtype == "ordering":
+            return _build_ordering(
+                common,
+                question_text,
+                plain_items,
+                order_directive,
+                order_items_dict,
+                media,
+                header_line,
             )
     except ValidationError as exc:
         raise KqfParseError(f"invalid question: {exc}", line=header_line) from exc
@@ -291,13 +347,27 @@ def _build_slider(
     if not fields:
         raise KqfParseError("slider question requires @slider: block", line=header_line)
     try:
-        kwargs: dict[str, object] = {"unit": fields.get("unit")}
-        for key in ("correct", "min", "max"):
+        score_mode = fields.get("score", "range")
+        kwargs: dict[str, object] = {
+            "unit": fields.get("unit"),
+            "score": score_mode,
+            "label_min": fields.get("label_min"),
+            "label_max": fields.get("label_max"),
+        }
+        for key in ("min", "max"):
             if key not in fields:
                 raise KqfParseError(
                     f"slider missing required field: {key}", line=header_line
                 )
             kwargs[key] = float(fields[key])
+        if score_mode == "range":
+            if "correct" not in fields:
+                raise KqfParseError(
+                    "slider with score=range requires correct field", line=header_line
+                )
+            kwargs["correct"] = float(fields["correct"])
+        elif "correct" in fields:
+            kwargs["correct"] = float(fields["correct"])
         for key in ("step", "tolerance"):
             if key in fields:
                 kwargs[key] = float(fields[key])
@@ -311,6 +381,84 @@ def _build_slider(
         media=media,
         **common,
         **kwargs,
+    )
+
+
+def _build_ordering(
+    common: dict,
+    question_text: str,
+    plain_items: list[str],
+    order_directive: str | None,
+    order_items_dict: dict[int, str],
+    media: KqfMedia,
+    header_line: int,
+) -> KqfOrdering:
+    if order_items_dict and order_directive:
+        raise KqfParseError(
+            "@order_items: and @order: cannot both be present", line=header_line
+        )
+    if order_items_dict:
+        keys = sorted(order_items_dict.keys())
+        expected = list(range(1, len(keys) + 1))
+        if keys != expected:
+            raise KqfParseError(
+                f"@order_items: keys must be consecutive integers starting at 1, got {keys}",
+                line=header_line,
+            )
+        correct_items = [order_items_dict[k] for k in keys]
+        n = len(correct_items)
+        if n < 2 or n > 8:
+            raise KqfParseError(
+                f"ordering requires 2-8 items, got {n}", line=header_line
+            )
+        indices = list(range(n))
+        random.shuffle(indices)
+        items = [correct_items[i] for i in indices]
+        inv = [0] * n
+        for shuffled_idx, orig_idx in enumerate(indices):
+            inv[orig_idx] = shuffled_idx
+        correct_order = inv
+    elif plain_items and order_directive is not None:
+        items = plain_items
+        n = len(items)
+        if n < 2 or n > 8:
+            raise KqfParseError(
+                f"ordering requires 2-8 items, got {n}", line=header_line
+            )
+        try:
+            raw = [int(x.strip()) for x in order_directive.split(",")]
+        except ValueError as exc:
+            raise KqfParseError(
+                f"@order: values must be integers: {exc}", line=header_line
+            ) from exc
+        if len(raw) != n:
+            raise KqfParseError(
+                f"@order: must have {n} values (one per item), got {len(raw)}",
+                line=header_line,
+            )
+        correct_order = [v - 1 for v in raw]
+        if sorted(correct_order) != list(range(n)):
+            raise KqfParseError(
+                f"@order: indices must each appear exactly once (1..{n})",
+                line=header_line,
+            )
+    elif plain_items and order_directive is None:
+        raise KqfParseError(
+            "ordering question with plain items requires @order: directive",
+            line=header_line,
+        )
+    else:
+        raise KqfParseError(
+            "ordering question requires items (- text) or @order_items: block",
+            line=header_line,
+        )
+    return KqfOrdering(
+        type="ordering",
+        text=question_text,
+        items=items,
+        correct_order=correct_order,
+        media=media,
+        **common,
     )
 
 
@@ -342,7 +490,8 @@ def _write_question(buf: io.StringIO, question: object) -> None:
         buf.write(f"- [{'x' if not question.correct else ' '}] False\n")
     elif isinstance(question, KqfSlider):
         buf.write("@slider:\n")
-        buf.write(f"  correct: {_fmt_num(question.correct)}\n")
+        if question.correct is not None:
+            buf.write(f"  correct: {_fmt_num(question.correct)}\n")
         buf.write(f"  min: {_fmt_num(question.min)}\n")
         buf.write(f"  max: {_fmt_num(question.max)}\n")
         if question.step != 1:
@@ -351,6 +500,17 @@ def _write_question(buf: io.StringIO, question: object) -> None:
             buf.write(f"  tolerance: {_fmt_num(question.tolerance)}\n")
         if question.unit:
             buf.write(f"  unit: {question.unit}\n")
+        if question.score != "range":
+            buf.write(f"  score: {question.score}\n")
+        if question.label_min:
+            buf.write(f"  label_min: {question.label_min}\n")
+        if question.label_max:
+            buf.write(f"  label_max: {question.label_max}\n")
+    elif isinstance(question, KqfOrdering):
+        for item in question.items:
+            buf.write(f"- {item}\n")
+        order_1based = ", ".join(str(i + 1) for i in question.correct_order)
+        buf.write(f"@order: {order_1based}\n")
 
     media_kwargs = question.media.model_dump(exclude_none=True)
     if media_kwargs:
