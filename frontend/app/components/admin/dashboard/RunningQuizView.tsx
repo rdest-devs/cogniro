@@ -364,24 +364,6 @@ export function RunningQuizView({
                 Pobierz planszę QR
               </button>
             </div>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <button
-                type="button"
-                className={adminToolbarButtonClass}
-                onClick={openPresenterWindow}
-              >
-                <ExternalLink size={14} aria-hidden />
-                Otwórz ekran uczestników
-              </button>
-              <button
-                type="button"
-                className={adminToolbarButtonClass}
-                onClick={() => void downloadPrintableQrBoard()}
-              >
-                <Download size={14} aria-hidden />
-                Pobierz planszę QR
-              </button>
-            </div>
           </div>
         </div>
         {activation.schedule_end && (
