@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import pytest
+
 from services.sessions import (
     block_participant,
     generate_pin,
+    get_or_create_session_shuffle,
     is_quiz_running,
     list_participants,
     lookup_by_pin,
@@ -66,3 +69,37 @@ def test_stop_session_returns_snapshot_and_clears() -> None:
     assert snapshot.participants["ala"].score == 100
     assert not is_quiz_running("q1")
     assert lookup_by_pin(s.pin) is None
+
+
+# --- get_or_create_session_shuffle ---
+
+
+def test_shuffle_bad_pin_raises() -> None:
+    with pytest.raises(LookupError, match="pin_not_active"):
+        get_or_create_session_shuffle("ZZZZZZ", ["q1", "q2"])
+
+
+def test_shuffle_creates_order_on_first_call() -> None:
+    s = start_session(quiz_id="q1", quiz_title="T")
+    ids = ["a", "b", "c", "d"]
+    result = get_or_create_session_shuffle(s.pin, ids)
+    assert sorted(result) == sorted(ids)
+    assert len(result) == len(ids)
+
+
+def test_shuffle_same_ids_returns_same_order() -> None:
+    s = start_session(quiz_id="q1", quiz_title="T")
+    ids = ["a", "b", "c", "d"]
+    first = get_or_create_session_shuffle(s.pin, ids)
+    second = get_or_create_session_shuffle(s.pin, ids)
+    assert first == second
+
+
+def test_shuffle_changed_ids_regenerates() -> None:
+    s = start_session(quiz_id="q1", quiz_title="T")
+    original = get_or_create_session_shuffle(s.pin, ["a", "b", "c"])
+    # Simulate quiz edit: one question replaced
+    updated = get_or_create_session_shuffle(s.pin, ["a", "b", "d"])
+    assert sorted(updated) == ["a", "b", "d"]
+    # The old order must no longer be stored (IDs changed)
+    assert set(updated) != set(original)

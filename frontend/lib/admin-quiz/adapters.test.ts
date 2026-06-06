@@ -12,6 +12,9 @@ it('maps choice image paths through form and payload', () => {
     author: null,
     tags: [],
     showAnswerReview: true,
+    quizTimeLimit: null,
+    shuffleQuestions: false,
+    shuffleMode: 'per_player',
     questions: [
       {
         type: 'singlechoice',
