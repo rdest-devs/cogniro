@@ -21,9 +21,22 @@ export function ChangePasswordForm() {
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState<string | null>(null);
 
+  const handleFieldChange =
+    (setter: (value: string) => void) =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setter(event.target.value);
+      // Clear a lingering "success" banner once the user starts a new edit.
+      if (status === 'success') {
+        setStatus('idle');
+      }
+    };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    if (status === 'success') {
+      setStatus('idle');
+    }
 
     if (newPassword.length < MIN_PASSWORD_LENGTH) {
       setError(
@@ -74,8 +87,9 @@ export function ChangePasswordForm() {
           type="password"
           autoComplete="current-password"
           required
+          disabled={status === 'submitting'}
           value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
+          onChange={handleFieldChange(setCurrentPassword)}
           className={inputClass}
         />
       </div>
@@ -93,8 +107,9 @@ export function ChangePasswordForm() {
           autoComplete="new-password"
           required
           minLength={MIN_PASSWORD_LENGTH}
+          disabled={status === 'submitting'}
           value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
+          onChange={handleFieldChange(setNewPassword)}
           className={inputClass}
         />
       </div>
@@ -112,8 +127,9 @@ export function ChangePasswordForm() {
           autoComplete="new-password"
           required
           minLength={MIN_PASSWORD_LENGTH}
+          disabled={status === 'submitting'}
           value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
+          onChange={handleFieldChange(setConfirmPassword)}
           className={inputClass}
         />
       </div>
