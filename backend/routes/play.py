@@ -11,11 +11,14 @@ from pydantic import BaseModel, Field, StringConstraints
 
 from schemas.kqf import KqfQuestion, KqfQuiz
 from services import sessions
+from services.admin_quiz import check_availability
+from services.kqf import KqfParseError
 from services.play_rate_limit import enforce_play_rate_limit
 from services.profanity import is_nickname_allowed
 from services.quiz_files import (
     kqf_with_absolute_media,
     max_points_from_quiz_dir,
+    read_meta_or_rebuild,
     read_quiz_kqf,
 )
 from services.storage import get_storage, quiz_dir_for
@@ -60,12 +63,43 @@ def _origin_from(request: Request) -> str:
     return f"{request.url.scheme}://{request.url.netloc}"
 
 
-@router.post("/{pin}/join", response_model=KqfQuiz)
-async def play_join(pin: str, body: JoinBody, request: Request) -> KqfQuiz:
-    enforce_play_rate_limit(request)
+async def _resolve_pin_availability(pin: str, request: Request) -> sessions.QuizSession:
+    """Raise HTTPException if pin inactive or quiz unavailable. Return live session."""
     session = sessions.lookup_by_pin(pin)
     if session is None:
         raise HTTPException(status_code=404, detail="pin_not_active")
+    paths = get_storage(request.app)
+    try:
+        meta = await run_in_threadpool(
+            read_meta_or_rebuild, quiz_dir_for(paths, session.quiz_id), session.quiz_id
+        )
+    except OSError, KqfParseError:
+        raise HTTPException(status_code=404, detail="pin_not_active") from None
+    available, reason = check_availability(meta)
+    if not available:
+        if reason == "not_yet":
+            raise HTTPException(
+                status_code=423,
+                detail={"code": "not_yet", "opens_at": meta.schedule_start},
+            )
+        if reason == "expired":
+            raise HTTPException(status_code=410, detail="expired")
+        raise HTTPException(status_code=403, detail="manually_closed")
+    return session
+
+
+@router.get("/{pin}/check")
+async def play_check(pin: str, request: Request) -> dict[str, str]:
+    """Check PIN availability without registering a participant."""
+    enforce_play_rate_limit(request)
+    await _resolve_pin_availability(pin, request)
+    return {"status": "available"}
+
+
+@router.post("/{pin}/join", response_model=KqfQuiz)
+async def play_join(pin: str, body: JoinBody, request: Request) -> KqfQuiz:
+    enforce_play_rate_limit(request)
+    session = await _resolve_pin_availability(pin, request)
     if not is_nickname_allowed(body.nickname):
         raise HTTPException(
             status_code=400,

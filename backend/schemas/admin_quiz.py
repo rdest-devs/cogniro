@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from datetime import datetime, timezone
+from typing import Annotated, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -203,6 +204,58 @@ class AdminQuizDetailResponse(BaseModel):
     created_at: str
     updated_at: str
     last_activated_at: str | None = None
+    schedule_start: str | None = None
+    schedule_end: str | None = None
+    manual_status: Optional[Literal["open", "closed"]] = None
     questions: list[AdminQuizQuestionPayload] = Field(min_length=1)
 
     model_config = ConfigDict(extra="ignore")
+
+
+# ---------- Availability ----------
+
+
+def _normalize_utc_datetime(v: str | None) -> str | None:
+    if v is None:
+        return None
+    try:
+        dt = datetime.fromisoformat(v)
+    except ValueError:
+        raise ValueError(
+            "Nieprawidłowy format daty — oczekiwany ISO 8601 (np. 2025-06-01T14:00:00Z)."
+        )
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    return dt.replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+class AvailabilityPatchRequest(BaseModel):
+    schedule_start: str | None = None
+    schedule_end: str | None = None
+    manual_status: Optional[Literal["open", "closed"]] = None
+
+    model_config = ConfigDict(extra="ignore")
+
+    @field_validator("schedule_start", "schedule_end", mode="before")
+    @classmethod
+    def validate_datetime(cls, v: object) -> str | None:
+        if v is None or isinstance(v, str):
+            return _normalize_utc_datetime(v)
+        raise ValueError("Nieprawidłowy format daty.")
+
+
+class ActivateRequest(BaseModel):
+    schedule_start: str | None = None
+    schedule_end: str | None = None
+    manual_status: Optional[Literal["open", "closed"]] = None
+
+    model_config = ConfigDict(extra="ignore")
+
+    @field_validator("schedule_start", "schedule_end", mode="before")
+    @classmethod
+    def validate_datetime(cls, v: object) -> str | None:
+        if v is None or isinstance(v, str):
+            return _normalize_utc_datetime(v)
+        raise ValueError("Nieprawidłowy format daty.")

@@ -17,7 +17,11 @@ import {
   savePlayState,
 } from '@/app/play/storage';
 import type { KqfQuiz } from '@/lib/kqf';
-import { joinPlay } from '@/lib/play/client';
+import {
+  type AvailabilityResult,
+  checkPlayAvailability,
+  joinPlay,
+} from '@/lib/play/client';
 
 type Stage =
   | { name: 'enter-code' }
@@ -85,7 +89,10 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
       : { name: 'enter-code' },
   );
   const [joinError, setJoinError] = useState<string | null>(null);
-  /** Ustawiane w `onPlayAgain` - kolejne zakończenie nie wywołuje `submitPlay`. */
+  const [availability, setAvailability] = useState<AvailabilityResult | null>(
+    null,
+  );
+  /** Ustawiane w `onPlayAgain` — kolejne zakończenie nie wywołuje `submitPlay`. */
   const skipSubmitAfterLocalReplayRef = useRef(false);
   /** Guards against double-finish when global timer and per-question timer race. */
   const finishedRef = useRef(false);
@@ -119,6 +126,45 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
     timeLimit && globalRemaining !== null
       ? Math.max(0, Math.min(100, (globalRemaining / timeLimit) * 100))
       : null;
+
+  const enterNicknameCode = stage.name === 'enter-nickname' ? stage.code : null;
+
+  useEffect(() => {
+    if (!enterNicknameCode) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const scheduleRecheck = (result: AvailabilityResult) => {
+      if (cancelled || result.available) return;
+      // Only the "not yet open" window flips to available on its own. Re-check
+      // right after the scheduled start so the join unlocks without a reload;
+      // a short retry covers client/server clock skew. 410 (expired) and other
+      // states never reopen by time, so we leave them alone.
+      if (
+        result.status !== 423 ||
+        result.detail !== 'not_yet' ||
+        !result.opensAt
+      )
+        return;
+      const untilOpen = new Date(result.opensAt).getTime() - Date.now();
+      const delay = untilOpen > 0 ? Math.min(untilOpen + 500, 300_000) : 5_000;
+      timer = setTimeout(probe, delay);
+    };
+
+    const probe = () => {
+      void checkPlayAvailability(enterNicknameCode).then((result) => {
+        if (cancelled) return;
+        setAvailability(result);
+        scheduleRecheck(result);
+      });
+    };
+
+    probe();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [enterNicknameCode]);
 
   if (stage.name === 'result') {
     return (
@@ -171,6 +217,7 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
         <EnterNickname
           code={stage.code}
           joinError={joinError}
+          availability={availability}
           onJoin={async (nickname) => {
             setJoinError(null);
             try {
@@ -184,6 +231,24 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
                   setJoinError('Ten pseudonim jest już zajęty.');
                 } else if (r.status === 404) {
                   setJoinError('Ten quiz nie jest już aktywny. Sprawdź kod.');
+                } else if (r.status === 423 && r.detail === 'not_yet') {
+                  const opensAt = r.opensAt
+                    ? new Intl.DateTimeFormat(undefined, {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        day: '2-digit',
+                        month: '2-digit',
+                      }).format(new Date(r.opensAt))
+                    : null;
+                  setJoinError(
+                    opensAt
+                      ? `Quiz jeszcze nie jest dostępny. Otworzy się o ${opensAt}.`
+                      : 'Quiz jeszcze nie jest dostępny.',
+                  );
+                } else if (r.status === 410) {
+                  setJoinError('Czas dostępności quizu minął.');
+                } else if (r.status === 403) {
+                  setJoinError('Quiz jest chwilowo niedostępny.');
                 } else if (r.status === 429) {
                   setJoinError(
                     'Zbyt wiele prób dołączenia. Odczekaj chwilę i spróbuj ponownie.',

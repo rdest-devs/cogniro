@@ -123,6 +123,9 @@ def kqf_to_admin_detail_payload(
     created_at: str,
     updated_at: str,
     last_activated_at: str | None,
+    schedule_start: str | None = None,
+    schedule_end: str | None = None,
+    manual_status: str | None = None,
 ) -> AdminQuizDetailResponse:
     questions: list[AdminQuizQuestionPayload] = []
     for q in quiz.questions:
@@ -203,5 +206,8 @@ def kqf_to_admin_detail_payload(
         created_at=created_at,
         updated_at=updated_at,
         last_activated_at=last_activated_at,
+        schedule_start=schedule_start,
+        schedule_end=schedule_end,
+        manual_status=manual_status,
         questions=questions,
     )

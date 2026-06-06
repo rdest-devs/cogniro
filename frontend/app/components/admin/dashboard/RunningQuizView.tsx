@@ -6,6 +6,8 @@ import {
   CircleStop,
   Download,
   ExternalLink,
+  Lock,
+  LockOpen,
   RefreshCcw,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -26,12 +28,15 @@ import { useSortableColumns } from '@/hooks/useSortableColumns';
 import { formatAdminDate } from '@/lib/admin-date-time';
 import {
   activateQuiz,
+  AdminFetchError,
   blockNickname,
   getSessionSnapshot,
+  patchAvailability,
   stopQuiz,
 } from '@/lib/sessions/client';
 
 type Snapshot = Awaited<ReturnType<typeof getSessionSnapshot>>;
+type Activation = Awaited<ReturnType<typeof activateQuiz>>;
 type SortKey = 'nickname' | 'status' | 'score';
 
 const SORT_COLUMNS = [
@@ -111,13 +116,10 @@ export function RunningQuizView({
   onBack,
   onLogout,
 }: Props) {
-  const [activation, setActivation] = useState<{
-    pin: string;
-    join_url: string;
-    started_at: string;
-  } | null>(null);
+  const [activation, setActivation] = useState<Activation | null>(null);
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [patchErr, setPatchErr] = useState<string | null>(null);
   const sort = useSortableColumns<SortKey>({ initialKey: 'score' });
 
   const sortedParticipants = useMemo(() => {
@@ -362,26 +364,58 @@ export function RunningQuizView({
                 Pobierz planszę QR
               </button>
             </div>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <button
-                type="button"
-                className={adminToolbarButtonClass}
-                onClick={openPresenterWindow}
-              >
-                <ExternalLink size={14} aria-hidden />
-                Otwórz ekran uczestników
-              </button>
-              <button
-                type="button"
-                className={adminToolbarButtonClass}
-                onClick={() => void downloadPrintableQrBoard()}
-              >
-                <Download size={14} aria-hidden />
-                Pobierz planszę QR
-              </button>
-            </div>
           </div>
         </div>
+        {activation.schedule_end && (
+          <div className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--card-bg)] px-4 py-2 text-sm text-[var(--text-muted)]">
+            <span>
+              Dostępny do:{' '}
+              <strong className="text-[var(--text-dark)]">
+                {new Date(activation.schedule_end).toLocaleString('pl-PL', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  day: '2-digit',
+                  month: '2-digit',
+                })}
+              </strong>
+            </span>
+            <button
+              type="button"
+              className="text-xs text-[var(--primary-blue)] hover:underline"
+              onClick={async () => {
+                try {
+                  await patchAvailability(quizId, { schedule_end: null });
+                  setActivation((prev) =>
+                    prev ? { ...prev, schedule_end: null } : prev,
+                  );
+                } catch (e) {
+                  setPatchErr(
+                    e instanceof AdminFetchError
+                      ? e.message
+                      : e instanceof Error
+                        ? e.message
+                        : String(e),
+                  );
+                }
+              }}
+            >
+              Anuluj limit
+            </button>
+          </div>
+        )}
+        {patchErr && (
+          <div className="flex items-center justify-between rounded-xl border border-[var(--wrong-fg)] bg-[var(--wrong-bg)] px-4 py-2 text-sm text-[var(--wrong-fg)]">
+            <span>{patchErr}</span>
+            <button
+              type="button"
+              onClick={() => setPatchErr(null)}
+              className="ml-4 font-semibold hover:opacity-70"
+              aria-label="Zamknij"
+            >
+              ×
+            </button>
+          </div>
+        )}
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
@@ -397,6 +431,55 @@ export function RunningQuizView({
             <RefreshCcw size={14} aria-hidden />
             Odśwież
           </button>
+          {activation.manual_status !== 'closed' ? (
+            <button
+              type="button"
+              className={adminToolbarButtonClass}
+              onClick={async () => {
+                try {
+                  await patchAvailability(quizId, { manual_status: 'closed' });
+                  setActivation((prev) =>
+                    prev ? { ...prev, manual_status: 'closed' } : prev,
+                  );
+                } catch (e) {
+                  setPatchErr(
+                    e instanceof AdminFetchError
+                      ? e.message
+                      : e instanceof Error
+                        ? e.message
+                        : String(e),
+                  );
+                }
+              }}
+            >
+              <Lock size={14} aria-hidden />
+              Zamknij dostęp
+            </button>
+          ) : (
+            <button
+              type="button"
+              className={adminToolbarButtonClass}
+              onClick={async () => {
+                try {
+                  await patchAvailability(quizId, { manual_status: 'open' });
+                  setActivation((prev) =>
+                    prev ? { ...prev, manual_status: 'open' } : prev,
+                  );
+                } catch (e) {
+                  setPatchErr(
+                    e instanceof AdminFetchError
+                      ? e.message
+                      : e instanceof Error
+                        ? e.message
+                        : String(e),
+                  );
+                }
+              }}
+            >
+              <LockOpen size={14} aria-hidden />
+              Otwórz dostęp
+            </button>
+          )}
           <button
             type="button"
             className={adminDangerOutlineButtonClass}
