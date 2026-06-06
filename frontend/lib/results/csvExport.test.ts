@@ -5,6 +5,8 @@ import {
   buildStatsCsv,
   computeScoreStats,
   csvEscape,
+  formatLocalDate,
+  statsCsvFromPayload,
 } from '@/lib/results/csvExport';
 
 test('computeScoreStats aggregates count / average / min / max', () => {
@@ -58,4 +60,47 @@ test('buildStatsCsv leaves stat cells empty for an empty quiz', () => {
   });
   const row = csv.slice(1).trimEnd().split('\r\n')[1];
   assert.equal(row, '2026-06-01 12:00:00,Empty quiz,0,,,');
+});
+
+test('formatLocalDate reformats a valid ISO timestamp and falls back otherwise', () => {
+  // A valid ISO timestamp is reformatted into the pl-PL locale string, so it is
+  // no longer the raw ISO value. The exact string is timezone-dependent, so we
+  // only assert it changed and still carries the year.
+  const formatted = formatLocalDate('2026-06-01T12:00:00Z');
+  assert.notEqual(formatted, '2026-06-01T12:00:00Z');
+  assert.match(formatted, /2026/);
+  // Missing timestamp -> empty cell (the "session never stopped" case).
+  assert.equal(formatLocalDate(undefined), '');
+  // Unparseable timestamp -> passed through verbatim.
+  assert.equal(formatLocalDate('not a date'), 'not a date');
+});
+
+test('statsCsvFromPayload quotes the locale-formatted date and aggregates scores', () => {
+  const csv = statsCsvFromPayload({
+    quiz_id: 'quiz_demo',
+    quiz_title: 'Przykładowy quiz',
+    session_started_at: '2026-06-01T11:30:00Z',
+    session_stopped_at: '2026-06-01T12:00:00Z',
+    max_score: 30,
+    scores: [
+      { nickname: 'Ala', score: 10, submitted_at: '2026-06-01T11:45:00Z' },
+      { nickname: 'Bartek', score: 20, submitted_at: '2026-06-01T11:46:00Z' },
+      { nickname: 'Czarek', score: 30, submitted_at: '2026-06-01T11:47:00Z' },
+    ],
+  });
+  // The pl-PL date (e.g. "1.06.2026, 14:00:00") contains a comma, so the real
+  // production date cell must be RFC-4180 quoted - the path the hand-fed
+  // buildStatsCsv tests never exercise. Derive the expected value from
+  // formatLocalDate so the assertion stays timezone-independent.
+  const expectedDate = formatLocalDate('2026-06-01T12:00:00Z');
+  assert.ok(expectedDate.includes(','), 'sanity: pl-PL date contains a comma');
+  assert.ok(
+    csv.includes(`"${expectedDate}"`),
+    'date cell is quoted in the CSV',
+  );
+  // The aggregated stats land in the summary row: count,average,min,max.
+  assert.ok(
+    csv.trimEnd().endsWith(',3,20,10,30'),
+    'summary row ends with 3,20,10,30',
+  );
 });
