@@ -36,6 +36,9 @@ function PixelatedImage({
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    // Reset stale error state when the source changes (e.g. a retried/new image).
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset error on src change
+    setError(false);
     const canvas = canvasRef.current;
     if (!canvas) {
       return;
