@@ -89,11 +89,16 @@ function ActiveQuestion({
   // Initialized once per mount (component remounts via key={q.id} in parent)
   const [remaining, setRemaining] = useState<number | null>(q.time_s ?? null);
   const onAdvanceRef = useRef(onAdvance);
+  const answersRef = useRef(answers);
   // 0 until effect sets it; only read inside the interval callback
   const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
     onAdvanceRef.current = onAdvance;
+  });
+
+  useEffect(() => {
+    answersRef.current = answers;
   });
 
   useEffect(() => {
@@ -109,7 +114,10 @@ function ActiveQuestion({
       if (rem <= 0 && active) {
         active = false;
         clearInterval(interval);
-        expiryTimeout = setTimeout(() => onAdvanceRef.current(undefined), 0);
+        expiryTimeout = setTimeout(
+          () => onAdvanceRef.current(answersRef.current[q.id]),
+          0,
+        );
       }
     }, 500);
     return () => {
