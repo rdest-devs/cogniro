@@ -8,6 +8,7 @@ import { ResultsBrowserView } from '@/app/components/admin/results/ResultsBrowse
 import { ResultsDayView } from '@/app/components/admin/results/ResultsDayView';
 import { TutorialsView } from '@/app/components/admin/tutorials/TutorialsView';
 import { adminPanelDemo, quizDetailDemo } from '@/app/legacy/data/demo';
+import { formatAdminDate } from '@/lib/admin-date-time';
 import {
   AdminQuizApiError,
   getAllAdminQuizzes,
@@ -37,29 +38,16 @@ const demoQuizIds = new Set(
   [...adminPanelDemo.quizzes, ...quizDetailDemo.quizzes].map((q) => q.id),
 );
 
-function formatDate(dateInput: string): string {
-  const parsedDate = new Date(dateInput);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return dateInput;
-  }
-
-  return new Intl.DateTimeFormat('pl-PL', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(parsedDate);
-}
-
 function mapApiQuizToCard(quiz: AdminQuizApiListItem): QuizCard {
   return {
     id: quiz.id,
     title: quiz.title,
     questionCount: quiz.question_count,
     lastActivatedAt: quiz.last_activated_at
-      ? formatDate(quiz.last_activated_at)
+      ? (formatAdminDate(quiz.last_activated_at, 'datetime') ??
+        quiz.last_activated_at)
       : null,
-    createdAt: formatDate(quiz.created_at),
+    createdAt: formatAdminDate(quiz.created_at, 'datetime') ?? quiz.created_at,
     status: mapApiQuizStatusToLabel(quiz.status) as QuizCard['status'],
   };
 }
@@ -69,10 +57,11 @@ function mapApiQuizToInfo(quiz: AdminQuizApiListItem): QuizInfo {
     id: quiz.id,
     title: quiz.title,
     status: mapApiQuizStatusToLabel(quiz.status) as QuizInfo['status'],
-    date: formatDate(quiz.created_at),
+    date: formatAdminDate(quiz.created_at, 'datetime') ?? quiz.created_at,
     questionCount: quiz.question_count,
     lastActivatedAt: quiz.last_activated_at
-      ? formatDate(quiz.last_activated_at)
+      ? (formatAdminDate(quiz.last_activated_at, 'datetime') ??
+        quiz.last_activated_at)
       : null,
   };
 }

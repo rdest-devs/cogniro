@@ -7,7 +7,7 @@ import logging
 import re
 import shutil
 from urllib.parse import urlparse
-from dataclasses import dataclass
+from dataclasses import dataclass, fields as dataclass_fields
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 
@@ -29,6 +29,9 @@ class QuizMeta:
     updated_at: str
     question_count: int
     last_activated_at: str | None
+    schedule_start: str | None = None
+    schedule_end: str | None = None
+    manual_status: str | None = None
 
 
 def derive_meta_from_kqf(
@@ -38,6 +41,9 @@ def derive_meta_from_kqf(
     created_at: str,
     updated_at: str,
     last_activated_at: str | None,
+    schedule_start: str | None = None,
+    schedule_end: str | None = None,
+    manual_status: str | None = None,
 ) -> QuizMeta:
     title = quiz.front_matter.title
     return QuizMeta(
@@ -48,6 +54,9 @@ def derive_meta_from_kqf(
         updated_at=updated_at,
         question_count=len(quiz.questions),
         last_activated_at=last_activated_at,
+        schedule_start=schedule_start,
+        schedule_end=schedule_end,
+        manual_status=manual_status,
     )
 
 
@@ -60,6 +69,9 @@ def write_meta_json_atomic(path: Path, meta: QuizMeta) -> None:
         "updated_at": meta.updated_at,
         "question_count": meta.question_count,
         "last_activated_at": meta.last_activated_at,
+        "schedule_start": meta.schedule_start,
+        "schedule_end": meta.schedule_end,
+        "manual_status": meta.manual_status,
     }
     write_text_atomic(path, json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
 
@@ -71,8 +83,9 @@ def read_meta_or_rebuild(quiz_dir: Path, quiz_id: str) -> QuizMeta:
             data = json.loads(meta_path.read_text(encoding="utf-8"))
             if data.get("id") != quiz_id:
                 raise ValueError("meta id mismatch")
-            return QuizMeta(**data)
-        except json.JSONDecodeError, KeyError, TypeError, ValueError:
+            known = {f.name for f in dataclass_fields(QuizMeta)}
+            return QuizMeta(**{k: v for k, v in data.items() if k in known})
+        except json.JSONDecodeError, KeyError, ValueError:
             pass
     quiz = read_quiz_kqf(quiz_dir)
     now = (
@@ -99,6 +112,9 @@ def write_quiz_dir(
     created_at: str,
     updated_at: str | None = None,
     last_activated_at: str | None = None,
+    schedule_start: str | None = None,
+    schedule_end: str | None = None,
+    manual_status: str | None = None,
 ) -> QuizMeta:
     quiz_dir.mkdir(parents=True, exist_ok=True)
     (quiz_dir / "media").mkdir(exist_ok=True)
@@ -110,6 +126,9 @@ def write_quiz_dir(
         created_at=created_at,
         updated_at=eff_updated,
         last_activated_at=last_activated_at,
+        schedule_start=schedule_start,
+        schedule_end=schedule_end,
+        manual_status=manual_status,
     )
     write_meta_json_atomic(quiz_dir / "meta.json", meta)
     return meta
@@ -357,8 +376,35 @@ def update_last_activated_at(quiz_dir: Path, ts: str) -> None:
         updated_at=meta.updated_at,
         question_count=meta.question_count,
         last_activated_at=ts,
+        schedule_start=meta.schedule_start,
+        schedule_end=meta.schedule_end,
+        manual_status=meta.manual_status,
     )
     write_meta_json_atomic(quiz_dir / "meta.json", new)
+
+
+def update_availability(
+    quiz_dir: Path,
+    *,
+    schedule_start: str | None,
+    schedule_end: str | None,
+    manual_status: str | None,
+) -> QuizMeta:
+    meta = read_meta_or_rebuild(quiz_dir, quiz_dir.name)
+    new = QuizMeta(
+        id=meta.id,
+        title=meta.title,
+        title_slug=meta.title_slug,
+        created_at=meta.created_at,
+        updated_at=meta.updated_at,
+        question_count=meta.question_count,
+        last_activated_at=meta.last_activated_at,
+        schedule_start=schedule_start,
+        schedule_end=schedule_end,
+        manual_status=manual_status,
+    )
+    write_meta_json_atomic(quiz_dir / "meta.json", new)
+    return new
 
 
 def kqf_with_absolute_media(quiz: KqfQuiz, quiz_id: str, origin: str) -> KqfQuiz:

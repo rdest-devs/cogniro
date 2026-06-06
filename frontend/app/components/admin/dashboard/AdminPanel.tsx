@@ -99,7 +99,7 @@ export default function AdminPanel({
                 }
                 if (skipped.length > 0) {
                   window.alert(
-                    `Quiz zaimportowany, ale pominięto ${skipped.length} plik(ów) przekraczających limit rozmiaru:\n\n${skipped.join('\n')}\n\nW edytorze pojawią się puste pola — wgraj brakujące zasoby ponownie.`,
+                    `Quiz zaimportowany, ale pominięto ${skipped.length} plik(ów) przekraczających limit rozmiaru:\n\n${skipped.join('\n')}\n\nW edytorze pojawią się puste pola - wgraj brakujące zasoby ponownie.`,
                   );
                 }
                 onImportedQuiz(id);

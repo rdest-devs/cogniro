@@ -30,7 +30,7 @@ import QuizSettingsForm from './QuizSettingsForm';
 interface QuizEditorProps {
   mode: 'create' | 'edit';
   quizId?: string | null;
-  /** Admin panel base URL (e.g. `/admin/`) — “My quizzes” link and sidebar. */
+  /** Admin panel base URL (e.g. `/admin/`) - “My quizzes” link and sidebar. */
   logoHref?: string;
   menuActiveItem?: string;
   onMenuNavigate?: (menuItemId: string) => void;
@@ -77,7 +77,7 @@ export default function QuizEditor({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
-  /** Raw tags field text — cannot be derived from `tags[]` (e.g. trailing comma is lost). */
+  /** Raw tags field text - cannot be derived from `tags[]` (e.g. trailing comma is lost). */
   const [tagsRaw, setTagsRaw] = useState('');
 
   const formMethods = useForm<QuizEditorFormValues>({
@@ -172,6 +172,9 @@ export default function QuizEditor({
   const watchedDescription = watch('description') ?? '';
   const watchedAuthor = watch('author') ?? '';
   const watchedShowAnswerReview = watch('showAnswerReview');
+  const watchedQuizTimeLimit = watch('quizTimeLimit') ?? null;
+  const watchedShuffleQuestions = watch('shuffleQuestions') ?? false;
+  const watchedShuffleMode = watch('shuffleMode') ?? 'per_player';
   const isMissingQuizId = mode === 'edit' && !quizId;
   const hasBlockingLoadError =
     mode === 'edit' && (isMissingQuizId || Boolean(loadError));
@@ -262,7 +265,7 @@ export default function QuizEditor({
     >
       <FormProvider {...formMethods}>
         <form onSubmit={onSubmit} className="flex min-h-0 w-full flex-1">
-          <div className="flex min-h-0 flex-1 flex-col gap-5">
+          <div className="relative flex min-h-0 flex-1 flex-col gap-5">
             <header className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-[var(--text-dark)]">
@@ -369,6 +372,27 @@ export default function QuizEditor({
               showAnswerReview={watchedShowAnswerReview}
               onShowAnswerReviewChange={(value) =>
                 setValue('showAnswerReview', value, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              quizTimeLimit={watchedQuizTimeLimit}
+              onQuizTimeLimitChange={(value) =>
+                setValue('quizTimeLimit', value, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              shuffleQuestions={watchedShuffleQuestions}
+              onShuffleQuestionsChange={(value) =>
+                setValue('shuffleQuestions', value, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              shuffleMode={watchedShuffleMode}
+              onShuffleModeChange={(value) =>
+                setValue('shuffleMode', value, {
                   shouldDirty: true,
                   shouldValidate: true,
                 })
