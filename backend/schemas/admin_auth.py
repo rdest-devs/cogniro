@@ -24,4 +24,7 @@ class AdminChangePasswordRequest(BaseModel):
 
 
 class AdminChangePasswordResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
     ok: bool = True

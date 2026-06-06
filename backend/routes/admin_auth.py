@@ -133,4 +133,14 @@ async def admin_auth_change_password(
     await asyncio.to_thread(
         set_admin_password, body.new_password, store_path=store_path
     )
-    return AdminChangePasswordResponse(ok=True)
+    # The new hash rotates the password fingerprint embedded in every token, so all
+    # previously issued sessions (other devices, leaked tokens) are now invalid. Re-issue
+    # a fresh session for the current admin so this session stays logged in.
+    access_token, expires_in = create_access_token()
+    refresh_token, refresh_max_age = create_refresh_token()
+    response.set_cookie(**set_refresh_cookie(refresh_token, refresh_max_age))
+    return AdminChangePasswordResponse(
+        access_token=access_token,
+        token_type="bearer",
+        expires_in=expires_in,
+    )

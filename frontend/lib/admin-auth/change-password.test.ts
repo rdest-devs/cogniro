@@ -5,6 +5,7 @@ import { BACKEND_BASE_URL, joinApiUrl } from '../backend-url';
 import {
   changeAdminPassword,
   clearStoredAdminToken,
+  getStoredAdminToken,
   setStoredAdminToken,
 } from './client';
 import { getChangePasswordErrorMessage } from './error-message';
@@ -42,6 +43,28 @@ test('changeAdminPassword posts snake_case body with the bearer token', async ()
       new_password: 'new-password',
       confirm_password: 'new-password',
     });
+  } finally {
+    globalThis.fetch = originalFetch;
+    clearStoredAdminToken();
+  }
+});
+
+test('changeAdminPassword stores the rotated access token from the response', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () =>
+    new Response(
+      '{"ok":true,"access_token":"rotated-token","token_type":"bearer","expires_in":900}',
+      { status: 200 },
+    );
+
+  try {
+    setStoredAdminToken('old-token');
+    await changeAdminPassword({
+      currentPassword: 'old-pass',
+      newPassword: 'new-password',
+      confirmPassword: 'new-password',
+    });
+    assert.equal(getStoredAdminToken(), 'rotated-token');
   } finally {
     globalThis.fetch = originalFetch;
     clearStoredAdminToken();
