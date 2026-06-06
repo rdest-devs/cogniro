@@ -238,6 +238,16 @@ export const quizEditorFormSchema = z.object({
     }),
   tags: z.array(z.string().trim().min(1)),
   showAnswerReview: z.boolean().default(true),
+  quizTimeLimit: z
+    .number()
+    .int()
+    .positive()
+    .nullable()
+    .optional()
+    .transform((v) => v ?? null)
+    .default(null),
+  shuffleQuestions: z.boolean().default(false),
+  shuffleMode: z.enum(['per_player', 'session']).default('per_player'),
   questions: z
     .array(quizEditorQuestionFormSchema)
     .min(1, 'Dodaj co najmniej 1 pytanie'),
@@ -335,6 +345,12 @@ export const adminQuizApiDetailsSchema = z
     author: optionalNullableString,
     tags: z.array(z.string()).optional().default([]),
     show_answer_review: z.boolean().optional().default(true),
+    time_limit: z.number().int().positive().nullable().optional().default(null),
+    shuffle_questions: z.boolean().optional().default(false),
+    shuffle_mode: z
+      .enum(['per_player', 'session'])
+      .optional()
+      .default('per_player'),
     status: z.enum(['idle', 'running']).optional(),
     created_at: z.string(),
     updated_at: z.string().optional(),
@@ -566,6 +582,12 @@ export const adminQuizUpsertPayloadSchema = z.object({
     }),
   tags: z.array(z.string().trim().min(1)),
   show_answer_review: z.boolean().optional().default(true),
+  time_limit: z.number().int().positive().nullable().optional().default(null),
+  shuffle_questions: z.boolean().optional().default(false),
+  shuffle_mode: z
+    .enum(['per_player', 'session'])
+    .optional()
+    .default('per_player'),
   questions: z.array(adminQuizUpsertQuestionSchema).min(1),
 });
 

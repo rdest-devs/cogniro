@@ -79,6 +79,10 @@ export interface QuizEditorFormValues {
   tags: string[];
   /** After the quiz: whether the player may open the answer review screen. */
   showAnswerReview: boolean;
+  /** Global quiz time limit in seconds; null means no limit. */
+  quizTimeLimit: number | null;
+  shuffleQuestions: boolean;
+  shuffleMode: 'per_player' | 'session';
   questions: QuizEditorQuestionForm[];
 }
 
@@ -158,6 +162,9 @@ export interface AdminQuizApiDetails {
   tags?: string[];
   /** Defaults to true; stored in KQF front matter. */
   show_answer_review?: boolean;
+  time_limit?: number | null;
+  shuffle_questions?: boolean;
+  shuffle_mode?: 'per_player' | 'session';
   status?: 'idle' | 'running';
   created_at: string;
   updated_at?: string;
@@ -249,6 +256,9 @@ export interface AdminQuizUpsertPayload {
   author?: string | null;
   tags: string[];
   show_answer_review?: boolean;
+  time_limit?: number | null;
+  shuffle_questions?: boolean;
+  shuffle_mode?: 'per_player' | 'session';
   questions: AdminQuizUpsertQuestionPayload[];
 }
 

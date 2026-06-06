@@ -293,6 +293,9 @@ export function toQuizEditorFormValues(
     author: quiz.author ?? null,
     tags: Array.isArray(quiz.tags) ? quiz.tags : [],
     showAnswerReview: quiz.show_answer_review !== false,
+    quizTimeLimit: quiz.time_limit ?? null,
+    shuffleQuestions: quiz.shuffle_questions ?? false,
+    shuffleMode: quiz.shuffle_mode ?? 'per_player',
     questions:
       mappedQuestions.length > 0
         ? mappedQuestions
@@ -388,6 +391,9 @@ export function toAdminQuizUpsertPayload(
     author: values.author?.trim() ? values.author.trim() : null,
     tags: trimTags(values.tags),
     show_answer_review: values.showAnswerReview,
+    time_limit: values.quizTimeLimit ?? null,
+    shuffle_questions: values.shuffleQuestions,
+    shuffle_mode: values.shuffleMode,
     questions: values.questions.map(mapQuestionToPayload),
   };
 

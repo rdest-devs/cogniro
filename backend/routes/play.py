@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field, StringConstraints
 
-from schemas.kqf import KqfQuiz
+from schemas.kqf import KqfQuestion, KqfQuiz
 from services import sessions
 from services.play_rate_limit import enforce_play_rate_limit
 from services.profanity import is_nickname_allowed
@@ -34,6 +34,18 @@ class JoinBody(BaseModel):
 class SubmitBody(BaseModel):
     nickname: Nickname
     score: int = Field(ge=0)
+
+
+def _apply_session_shuffle(quiz: KqfQuiz, pin: str) -> KqfQuiz:
+    """Reorder quiz questions according to the session shuffle (thread-pool only)."""
+    shuffled_ids = sessions.get_or_create_session_shuffle(
+        pin, [q.id for q in quiz.questions]
+    )
+    order = {qid: i for i, qid in enumerate(shuffled_ids)}
+    sorted_questions: list[KqfQuestion] = sorted(
+        quiz.questions, key=lambda q: order.get(q.id, 999)
+    )
+    return quiz.model_copy(update={"questions": sorted_questions})
 
 
 def _origin_from(request: Request) -> str:
@@ -75,6 +87,14 @@ async def play_join(pin: str, body: JoinBody, request: Request) -> KqfQuiz:
 
     paths = get_storage(request.app)
     quiz = await run_in_threadpool(read_quiz_kqf, quiz_dir_for(paths, session.quiz_id))
+
+    fm = quiz.front_matter
+    if fm.shuffle_questions and fm.shuffle_mode == "session":
+        try:
+            quiz = await run_in_threadpool(_apply_session_shuffle, quiz, pin)
+        except LookupError:
+            raise HTTPException(status_code=404, detail="pin_not_active") from None
+
     return kqf_with_absolute_media(quiz, session.quiz_id, _origin_from(request))
 
 

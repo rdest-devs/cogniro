@@ -183,7 +183,7 @@ export default function QuestionPreview({
       </p>
       {rawImage && !imageUrls && (
         <p className="text-xs text-[var(--text-muted)]">
-          Obraz z katalogu quizu — zapisz quiz, aby znać identyfikator i
+          Obraz z katalogu quizu - zapisz quiz, aby znać identyfikator i
           zbudować adres podglądu.
         </p>
       )}

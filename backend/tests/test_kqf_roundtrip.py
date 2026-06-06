@@ -80,6 +80,61 @@ def _assert_roundtrip(quiz: KqfQuiz) -> None:
     assert serialize_kqf(parsed) == text
 
 
+def test_roundtrip_front_matter_time_and_shuffle() -> None:
+    quiz = KqfQuiz(
+        front_matter=KqfFrontMatter(
+            title="Timed Shuffled Quiz",
+            time_limit=120,
+            shuffle_questions=True,
+            shuffle_mode="session",
+        ),
+        questions=[
+            KqfTrueFalse(
+                id="Q1",
+                type="truefalse",
+                text="Is Python interpreted?",
+                correct=True,
+                points=500,
+            )
+        ],
+    )
+    _assert_roundtrip(quiz)
+
+
+def test_roundtrip_front_matter_shuffle_per_player() -> None:
+    quiz = KqfQuiz(
+        front_matter=KqfFrontMatter(
+            title="Per-Player Shuffle",
+            shuffle_questions=True,
+            shuffle_mode="per_player",
+        ),
+        questions=[
+            KqfTrueFalse(
+                id="Q1",
+                type="truefalse",
+                text="True or false?",
+                correct=False,
+                points=500,
+            )
+        ],
+    )
+    _assert_roundtrip(quiz)
+
+
+def test_roundtrip_front_matter_defaults_not_written() -> None:
+    """shuffle_questions=False and shuffle_mode='per_player' are defaults — they must not appear in serialized text."""
+    quiz = KqfQuiz(
+        front_matter=KqfFrontMatter(title="Clean"),
+        questions=[
+            KqfTrueFalse(id="Q1", type="truefalse", text="T?", correct=True, points=100)
+        ],
+    )
+    text = serialize_kqf(quiz)
+    assert "shuffle_questions" not in text
+    assert "shuffle_mode" not in text
+    assert "time_limit" not in text
+
+
 def test_roundtrip_full_kqf_example() -> None:
     quiz = KqfQuiz(
         front_matter=KqfFrontMatter(title="Science", author="Bot", tags=["science"]),

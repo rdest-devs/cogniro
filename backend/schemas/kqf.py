@@ -15,6 +15,9 @@ class KqfFrontMatter(BaseModel):
     language: str | None = None
     tags: list[str] = Field(default_factory=list)
     show_answer_review: bool = True
+    time_limit: int | None = Field(default=None, gt=0)
+    shuffle_questions: bool = False
+    shuffle_mode: Literal["per_player", "session"] = "per_player"
 
     model_config = ConfigDict(extra="ignore")
 

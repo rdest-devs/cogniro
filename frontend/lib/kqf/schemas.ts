@@ -14,6 +14,12 @@ export const kqfFrontMatterSchema = z.object({
   language: nullableJsonString,
   tags: z.array(z.string()).default([]),
   show_answer_review: z.boolean().optional().default(true),
+  time_limit: z.number().int().positive().nullable().optional().default(null),
+  shuffle_questions: z.boolean().optional().default(false),
+  shuffle_mode: z
+    .enum(['per_player', 'session'])
+    .optional()
+    .default('per_player'),
 });
 
 export const kqfMediaSchema = z.object({

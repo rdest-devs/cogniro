@@ -266,7 +266,7 @@ export default function QuizDetail({
         {legacyDemoResultsEnabled && selectedQuiz && (
           <section className="flex flex-col gap-4">
             <h2 className="text-base font-bold text-[var(--text-dark)]">
-              Wyniki (demo) — {selectedQuiz.title}
+              Wyniki (demo) - {selectedQuiz.title}
             </h2>
 
             <table className={adminBlueHeadTableClass}>
