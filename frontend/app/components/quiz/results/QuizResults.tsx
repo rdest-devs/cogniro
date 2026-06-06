@@ -16,6 +16,13 @@ interface QuizResultsProps {
   ranking?: RankingEntry[];
   /** Heading shown above the ranking list. */
   rankingTitle?: string;
+  /**
+   * When true, `ranking` is already sorted with final positions/medals (e.g. the
+   * play leaderboard, which pins the current participant at their real position).
+   * It is then rendered as-is. When false (default), raw `ranking` is sorted by
+   * score and positions/medals are assigned by index (used by the demos).
+   */
+  preSortedRanking?: boolean;
   /** Show a celebratory banner when the current participant is on the podium. */
   celebratePodium?: boolean;
   showAnswerReview?: boolean;
@@ -34,13 +41,16 @@ export default function QuizResults({
   message,
   ranking,
   rankingTitle = 'Ranking Wydziałowy',
+  preSortedRanking = false,
   celebratePodium = false,
   showAnswerReview = true,
   onRetry,
   onReview,
 }: QuizResultsProps) {
-  const sortedRanking = useMemo(() => {
+  const displayRanking = useMemo(() => {
     if (!ranking) return [];
+    // Already ranked upstream (positions/medals are final) — render as-is.
+    if (preSortedRanking) return ranking;
     return [...ranking]
       .sort((a, b) => parseScore(b.score) - parseScore(a.score))
       .map((entry, idx) => ({
@@ -55,7 +65,7 @@ export default function QuizResults({
                 ? ('bronze' as const)
                 : undefined,
       }));
-  }, [ranking]);
+  }, [ranking, preSortedRanking]);
 
   return (
     <div className="flex h-full w-full flex-col bg-[var(--page-bg)]">
@@ -106,7 +116,7 @@ export default function QuizResults({
           </section>
         )}
 
-        {sortedRanking.length > 0 && (
+        {displayRanking.length > 0 && (
           <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card-bg)]">
             <div className="px-4 py-3.5">
               <h2 className="text-[15px] font-bold text-[var(--text-dark)]">
@@ -114,11 +124,11 @@ export default function QuizResults({
               </h2>
             </div>
             <div className="h-px bg-[var(--border)]" />
-            {sortedRanking.map((entry, idx) => (
+            {displayRanking.map((entry, idx) => (
               <RankingRow
                 key={entry.position}
                 entry={entry}
-                isLast={idx === sortedRanking.length - 1}
+                isLast={idx === displayRanking.length - 1}
               />
             ))}
           </section>

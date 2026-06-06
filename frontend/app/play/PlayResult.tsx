@@ -125,6 +125,7 @@ export function PlayResult({
                 message={message}
                 ranking={ranking ?? undefined}
                 rankingTitle="Tablica wyników"
+                preSortedRanking
                 celebratePodium={ranking ? currentOnPodium(ranking) : false}
                 showAnswerReview={allowAnswerReview}
                 onReview={
