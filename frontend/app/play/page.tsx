@@ -132,11 +132,37 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
   useEffect(() => {
     if (!enterNicknameCode) return;
     let cancelled = false;
-    void checkPlayAvailability(enterNicknameCode).then((result) => {
-      if (!cancelled) setAvailability(result);
-    });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const scheduleRecheck = (result: AvailabilityResult) => {
+      if (cancelled || result.available) return;
+      // Only the "not yet open" window flips to available on its own. Re-check
+      // right after the scheduled start so the join unlocks without a reload;
+      // a short retry covers client/server clock skew. 410 (expired) and other
+      // states never reopen by time, so we leave them alone.
+      if (
+        result.status !== 423 ||
+        result.detail !== 'not_yet' ||
+        !result.opensAt
+      )
+        return;
+      const untilOpen = new Date(result.opensAt).getTime() - Date.now();
+      const delay = untilOpen > 0 ? Math.min(untilOpen + 500, 300_000) : 5_000;
+      timer = setTimeout(probe, delay);
+    };
+
+    const probe = () => {
+      void checkPlayAvailability(enterNicknameCode).then((result) => {
+        if (cancelled) return;
+        setAvailability(result);
+        scheduleRecheck(result);
+      });
+    };
+
+    probe();
     return () => {
       cancelled = true;
+      if (timer) clearTimeout(timer);
     };
   }, [enterNicknameCode]);
 
