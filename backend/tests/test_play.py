@@ -114,6 +114,31 @@ def test_join_strips_nickname_whitespace(
     assert r.status_code == 200
 
 
+def test_join_rejects_vulgar_nickname_returns_400(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    quiz_id = _create_quiz(client, admin_token_header)
+    pin = client.post(
+        f"/admin/quiz/{quiz_id}/activate", headers=admin_token_header
+    ).json()["pin"]
+    r = client.post(f"/play/{pin}/join", json={"nickname": "kurwa"})
+    assert r.status_code == 400
+    assert r.json()["detail"]["error"] == "nickname_profanity"
+
+
+def test_join_allows_clean_nickname_after_vulgar_rejected(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    quiz_id = _create_quiz(client, admin_token_header)
+    pin = client.post(
+        f"/admin/quiz/{quiz_id}/activate", headers=admin_token_header
+    ).json()["pin"]
+    assert (
+        client.post(f"/play/{pin}/join", json={"nickname": "chuj"}).status_code == 400
+    )
+    assert client.post(f"/play/{pin}/join", json={"nickname": "Ala"}).status_code == 200
+
+
 def test_duplicate_nickname_returns_409(
     client: TestClient, admin_token_header: dict[str, str]
 ) -> None:

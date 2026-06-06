@@ -23,7 +23,7 @@ type Props = {
   quiz: KqfQuiz;
   score: number;
   answers: AnswerMap;
-  /** After „Spróbuj ponownie” — do not POST score again (local replay only). */
+  /** After „Spróbuj ponownie” - do not POST score again (local replay only). */
   skipServerSubmit?: boolean;
   /** Restart this quiz attempt (same code / nickname); used instead of same-URL navigation. */
   onPlayAgain: () => void;

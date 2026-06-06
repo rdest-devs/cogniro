@@ -9,12 +9,16 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field, StringConstraints
 
-from schemas.kqf import KqfQuiz
+from schemas.kqf import KqfQuestion, KqfQuiz
 from services import sessions
+from services.admin_quiz import check_availability
+from services.kqf import KqfParseError
 from services.play_rate_limit import enforce_play_rate_limit
+from services.profanity import is_nickname_allowed
 from services.quiz_files import (
     kqf_with_absolute_media,
     max_points_from_quiz_dir,
+    read_meta_or_rebuild,
     read_quiz_kqf,
 )
 from services.storage import get_storage, quiz_dir_for
@@ -45,6 +49,18 @@ class LeaderboardResponse(BaseModel):
     entries: list[LeaderboardEntryModel]
 
 
+def _apply_session_shuffle(quiz: KqfQuiz, pin: str) -> KqfQuiz:
+    """Reorder quiz questions according to the session shuffle (thread-pool only)."""
+    shuffled_ids = sessions.get_or_create_session_shuffle(
+        pin, [q.id for q in quiz.questions]
+    )
+    order = {qid: i for i, qid in enumerate(shuffled_ids)}
+    sorted_questions: list[KqfQuestion] = sorted(
+        quiz.questions, key=lambda q: order.get(q.id, 999)
+    )
+    return quiz.model_copy(update={"questions": sorted_questions})
+
+
 def _origin_from(request: Request) -> str:
     """Base URL for rewriting relative quiz media paths on join.
 
@@ -57,12 +73,53 @@ def _origin_from(request: Request) -> str:
     return f"{request.url.scheme}://{request.url.netloc}"
 
 
-@router.post("/{pin}/join", response_model=KqfQuiz)
-async def play_join(pin: str, body: JoinBody, request: Request) -> KqfQuiz:
-    enforce_play_rate_limit(request)
+async def _resolve_pin_availability(pin: str, request: Request) -> sessions.QuizSession:
+    """Raise HTTPException if pin inactive or quiz unavailable. Return live session."""
     session = sessions.lookup_by_pin(pin)
     if session is None:
         raise HTTPException(status_code=404, detail="pin_not_active")
+    paths = get_storage(request.app)
+    try:
+        meta = await run_in_threadpool(
+            read_meta_or_rebuild, quiz_dir_for(paths, session.quiz_id), session.quiz_id
+        )
+    except OSError, KqfParseError:
+        raise HTTPException(status_code=404, detail="pin_not_active") from None
+    available, reason = check_availability(meta)
+    if not available:
+        if reason == "not_yet":
+            raise HTTPException(
+                status_code=423,
+                detail={"code": "not_yet", "opens_at": meta.schedule_start},
+            )
+        if reason == "expired":
+            raise HTTPException(status_code=410, detail="expired")
+        raise HTTPException(status_code=403, detail="manually_closed")
+    return session
+
+
+@router.get("/{pin}/check")
+async def play_check(pin: str, request: Request) -> dict[str, str]:
+    """Check PIN availability without registering a participant."""
+    enforce_play_rate_limit(request)
+    await _resolve_pin_availability(pin, request)
+    return {"status": "available"}
+
+
+@router.post("/{pin}/join", response_model=KqfQuiz)
+async def play_join(pin: str, body: JoinBody, request: Request) -> KqfQuiz:
+    enforce_play_rate_limit(request)
+    session = await _resolve_pin_availability(pin, request)
+    if not is_nickname_allowed(body.nickname):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "nickname_profanity",
+                "detail_pl": (
+                    "Ten pseudonim zawiera niedozwolone słowa. Wybierz inny."
+                ),
+            },
+        )
     try:
         await run_in_threadpool(
             sessions.register_participant, pin=pin, nickname=body.nickname
@@ -74,6 +131,14 @@ async def play_join(pin: str, body: JoinBody, request: Request) -> KqfQuiz:
 
     paths = get_storage(request.app)
     quiz = await run_in_threadpool(read_quiz_kqf, quiz_dir_for(paths, session.quiz_id))
+
+    fm = quiz.front_matter
+    if fm.shuffle_questions and fm.shuffle_mode == "session":
+        try:
+            quiz = await run_in_threadpool(_apply_session_shuffle, quiz, pin)
+        except LookupError:
+            raise HTTPException(status_code=404, detail="pin_not_active") from None
+
     return kqf_with_absolute_media(quiz, session.quiz_id, _origin_from(request))
 
 

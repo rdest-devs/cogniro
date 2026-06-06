@@ -6,9 +6,11 @@ import {
   CircleStop,
   Download,
   ExternalLink,
+  Lock,
+  LockOpen,
   RefreshCcw,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { QrCode } from '@/app/components/admin/dashboard/QrCode';
 import AdminLayout from '@/app/components/admin/layout/AdminLayout';
@@ -21,14 +23,33 @@ import {
   adminDangerOutlineButtonClass,
   adminToolbarButtonClass,
 } from '@/app/components/admin/shared/constants';
+import { SortableTh } from '@/app/components/common/SortableTh';
+import { useSortableColumns } from '@/hooks/useSortableColumns';
+import { formatAdminDate } from '@/lib/admin-date-time';
 import {
   activateQuiz,
+  AdminFetchError,
   blockNickname,
   getSessionSnapshot,
+  patchAvailability,
   stopQuiz,
 } from '@/lib/sessions/client';
 
 type Snapshot = Awaited<ReturnType<typeof getSessionSnapshot>>;
+type Activation = Awaited<ReturnType<typeof activateQuiz>>;
+type SortKey = 'nickname' | 'status' | 'score';
+
+const SORT_COLUMNS = [
+  { key: 'nickname', label: 'Pseudonim' },
+  { key: 'status', label: 'Stan' },
+  { key: 'score', label: 'Wynik (zdobyte / maks.)' },
+] satisfies { key: SortKey; label: string }[];
+
+function statusOrder(p: { blocked: boolean; has_submitted: boolean }): number {
+  if (p.blocked) return 0;
+  if (p.has_submitted) return 2;
+  return 1;
+}
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -68,10 +89,10 @@ function drawWrappedCenteredText(
 
 function formatScoreVsMax(score: number | null, maxScore: number): string {
   if (maxScore <= 0) {
-    return score == null ? '—' : String(score);
+    return score == null ? '-' : String(score);
   }
   if (score == null) {
-    return `— / ${maxScore}`;
+    return `- / ${maxScore}`;
   }
   return `${score} / ${maxScore}`;
 }
@@ -95,13 +116,26 @@ export function RunningQuizView({
   onBack,
   onLogout,
 }: Props) {
-  const [activation, setActivation] = useState<{
-    pin: string;
-    join_url: string;
-    started_at: string;
-  } | null>(null);
+  const [activation, setActivation] = useState<Activation | null>(null);
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [patchErr, setPatchErr] = useState<string | null>(null);
+  const sort = useSortableColumns<SortKey>({ initialKey: 'score' });
+
+  const sortedParticipants = useMemo(() => {
+    const list = snap?.participants ?? [];
+    return [...list].sort((a, b) => {
+      let cmp = 0;
+      if (sort.sortKey === 'score') {
+        cmp = (a.score ?? -1) - (b.score ?? -1);
+      } else if (sort.sortKey === 'nickname') {
+        cmp = a.nickname.localeCompare(b.nickname, 'pl');
+      } else {
+        cmp = statusOrder(a) - statusOrder(b);
+      }
+      return sort.sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [snap, sort.sortKey, sort.sortDir]);
 
   const buildPresenterUrl = () => {
     if (!activation) {
@@ -310,7 +344,7 @@ export function RunningQuizView({
             </div>
             <div className="text-sm text-[var(--text-dark)]">
               Aktywny od:{' '}
-              {new Date(activation.started_at).toLocaleTimeString('pl-PL')}
+              {formatAdminDate(activation.started_at, 'datetime') ?? '—'}
             </div>
             <div className="mt-4 flex flex-wrap gap-3">
               <button
@@ -332,6 +366,56 @@ export function RunningQuizView({
             </div>
           </div>
         </div>
+        {activation.schedule_end && (
+          <div className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--card-bg)] px-4 py-2 text-sm text-[var(--text-muted)]">
+            <span>
+              Dostępny do:{' '}
+              <strong className="text-[var(--text-dark)]">
+                {new Date(activation.schedule_end).toLocaleString('pl-PL', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  day: '2-digit',
+                  month: '2-digit',
+                })}
+              </strong>
+            </span>
+            <button
+              type="button"
+              className="text-xs text-[var(--primary-blue)] hover:underline"
+              onClick={async () => {
+                try {
+                  await patchAvailability(quizId, { schedule_end: null });
+                  setActivation((prev) =>
+                    prev ? { ...prev, schedule_end: null } : prev,
+                  );
+                } catch (e) {
+                  setPatchErr(
+                    e instanceof AdminFetchError
+                      ? e.message
+                      : e instanceof Error
+                        ? e.message
+                        : String(e),
+                  );
+                }
+              }}
+            >
+              Anuluj limit
+            </button>
+          </div>
+        )}
+        {patchErr && (
+          <div className="flex items-center justify-between rounded-xl border border-[var(--wrong-fg)] bg-[var(--wrong-bg)] px-4 py-2 text-sm text-[var(--wrong-fg)]">
+            <span>{patchErr}</span>
+            <button
+              type="button"
+              onClick={() => setPatchErr(null)}
+              className="ml-4 font-semibold hover:opacity-70"
+              aria-label="Zamknij"
+            >
+              ×
+            </button>
+          </div>
+        )}
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
@@ -347,6 +431,55 @@ export function RunningQuizView({
             <RefreshCcw size={14} aria-hidden />
             Odśwież
           </button>
+          {activation.manual_status !== 'closed' ? (
+            <button
+              type="button"
+              className={adminToolbarButtonClass}
+              onClick={async () => {
+                try {
+                  await patchAvailability(quizId, { manual_status: 'closed' });
+                  setActivation((prev) =>
+                    prev ? { ...prev, manual_status: 'closed' } : prev,
+                  );
+                } catch (e) {
+                  setPatchErr(
+                    e instanceof AdminFetchError
+                      ? e.message
+                      : e instanceof Error
+                        ? e.message
+                        : String(e),
+                  );
+                }
+              }}
+            >
+              <Lock size={14} aria-hidden />
+              Zamknij dostęp
+            </button>
+          ) : (
+            <button
+              type="button"
+              className={adminToolbarButtonClass}
+              onClick={async () => {
+                try {
+                  await patchAvailability(quizId, { manual_status: 'open' });
+                  setActivation((prev) =>
+                    prev ? { ...prev, manual_status: 'open' } : prev,
+                  );
+                } catch (e) {
+                  setPatchErr(
+                    e instanceof AdminFetchError
+                      ? e.message
+                      : e instanceof Error
+                        ? e.message
+                        : String(e),
+                  );
+                }
+              }}
+            >
+              <LockOpen size={14} aria-hidden />
+              Otwórz dostęp
+            </button>
+          )}
           <button
             type="button"
             className={adminDangerOutlineButtonClass}
@@ -367,16 +500,20 @@ export function RunningQuizView({
           <table className={adminBlueHeadTableClass}>
             <thead className={adminBlueHeadTableTheadClass}>
               <tr>
-                <th className={adminBlueHeadTableThClass}>Pseudonim</th>
-                <th className={adminBlueHeadTableThClass}>Stan</th>
-                <th className={adminBlueHeadTableThClass}>
-                  Wynik (zdobyte / maks.)
-                </th>
+                {SORT_COLUMNS.map(({ key, label }) => (
+                  <SortableTh
+                    key={key}
+                    columnKey={key}
+                    label={label}
+                    sort={sort}
+                    className={adminBlueHeadTableThClass}
+                  />
+                ))}
                 <th className={adminBlueHeadTableThClass}>Akcje</th>
               </tr>
             </thead>
             <tbody>
-              {(snap?.participants ?? []).length === 0 ? (
+              {sortedParticipants.length === 0 ? (
                 <tr>
                   <td
                     colSpan={4}
@@ -386,7 +523,7 @@ export function RunningQuizView({
                   </td>
                 </tr>
               ) : (
-                (snap?.participants ?? []).map((p) => (
+                sortedParticipants.map((p) => (
                   <tr
                     key={p.nickname}
                     className="border-t border-[var(--border)]"

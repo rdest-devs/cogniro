@@ -255,6 +255,149 @@ title: T
         parse_kqf(text)
 
 
+def test_parses_ordering_syntax_a() -> None:
+    text = """---
+title: T
+---
+
+## Q1 | ordering | 45s | 1000pts
+Arrange stages of compilation.
+
+- Analiza leksykalna
+- Generowanie kodu
+- Analiza składniowa
+- Optymalizacja
+
+@order: 1, 3, 4, 2
+"""
+    quiz = parse_kqf(text)
+    q = quiz.questions[0]
+    assert q.type == "ordering"
+    assert q.id == "Q1"
+    assert q.time_s == 45
+    assert q.points == 1000
+    assert q.items == [
+        "Analiza leksykalna",
+        "Generowanie kodu",
+        "Analiza składniowa",
+        "Optymalizacja",
+    ]
+    assert q.correct_order == [0, 2, 3, 1]
+    # Verify items[correct_order[k]] gives the k-th correct item
+    correct_sequence = [q.items[i] for i in q.correct_order]
+    assert correct_sequence == [
+        "Analiza leksykalna",
+        "Analiza składniowa",
+        "Optymalizacja",
+        "Generowanie kodu",
+    ]
+
+
+def test_parses_ordering_syntax_b() -> None:
+    text = """---
+title: T
+---
+
+## Q1 | ordering | 30s | 500pts
+Arrange in correct order.
+
+@order_items:
+  1: First
+  2: Second
+  3: Third
+  4: Fourth
+"""
+    quiz = parse_kqf(text)
+    q = quiz.questions[0]
+    assert q.type == "ordering"
+    assert len(q.items) == 4
+    # items must be a permutation of the authored items
+    assert sorted(q.items) == ["First", "Fourth", "Second", "Third"]
+    # correct_order must be a permutation of 0..3
+    assert sorted(q.correct_order) == [0, 1, 2, 3]
+    # invariant: items[correct_order[k]] == k-th authored item
+    authored = ["First", "Second", "Third", "Fourth"]
+    for k, authored_item in enumerate(authored):
+        assert q.items[q.correct_order[k]] == authored_item
+
+
+def test_rejects_ordering_duplicate_order_index() -> None:
+    text = """---
+title: T
+---
+
+## Q1 | ordering
+Order these.
+
+- A
+- B
+- C
+
+@order: 1, 1, 3
+"""
+    with pytest.raises(KqfParseError, match="exactly once"):
+        parse_kqf(text)
+
+
+def test_rejects_ordering_missing_order_index() -> None:
+    text = """---
+title: T
+---
+
+## Q1 | ordering
+Order these.
+
+- A
+- B
+- C
+
+@order: 1, 2
+"""
+    with pytest.raises(KqfParseError):
+        parse_kqf(text)
+
+
+def test_parses_slider_scale_without_correct() -> None:
+    text = """---
+title: T
+---
+
+## Q1 | slider | 1pts
+Rate your confidence.
+
+@slider:
+  min: 1
+  max: 10
+  step: 1
+  score: scale
+  label_min: Niska pewność
+  label_max: Wysoka pewność
+"""
+    quiz = parse_kqf(text)
+    q = quiz.questions[0]
+    assert q.type == "slider"
+    assert q.score == "scale"
+    assert q.correct is None
+    assert q.label_min == "Niska pewność"
+    assert q.label_max == "Wysoka pewność"
+
+
+def test_rejects_slider_range_without_correct() -> None:
+    text = """---
+title: T
+---
+
+## Q1 | slider
+Year?
+
+@slider:
+  min: 1900
+  max: 2000
+"""
+    with pytest.raises(KqfParseError, match="correct"):
+        parse_kqf(text)
+
+
 def test_parses_choice_image_directive() -> None:
     text = """
 ---
