@@ -1,0 +1,61 @@
+---
+title: KQF v1.1 Sample Quiz
+description: Fixture covering all KQF v1.1 question types
+---
+
+## Q1 | singlechoice | 30s | 1000pts
+What is the capital of Poland?
+
+- [x] Warsaw
+- [ ] Krakow
+- [ ] Gdansk
+
+---
+
+## Q2 | ordering | 45s | 1000pts
+Arrange the stages of program compilation in the correct order.
+
+- Analiza leksykalna
+- Generowanie kodu
+- Analiza składniowa
+- Optymalizacja
+
+@order: 1, 3, 4, 2
+
+---
+
+## Q3 | ordering | 45s | 1000pts
+Arrange in the correct order using @order_items:.
+
+@order_items:
+  1: Analiza leksykalna
+  2: Analiza składniowa
+  3: Optymalizacja
+  4: Generowanie kodu
+
+---
+
+## Q4 | slider | 60s | 1000pts
+In what year did the Berlin Wall fall?
+
+@slider:
+  correct: 1989
+  min: 1950
+  max: 2000
+  step: 1
+  tolerance: 2
+  label_min: Wcześniej
+  label_max: Później
+
+---
+
+## Q5 | slider | 1pts
+Rate your confidence in object-oriented programming.
+
+@slider:
+  min: 1
+  max: 10
+  step: 1
+  score: scale
+  label_min: Niska pewność
+  label_max: Wysoka pewność

@@ -20,6 +20,7 @@ const typeLabel: Record<QuizEditorQuestionForm['type'], string> = {
   multichoice: 'Wielokrotny wybór',
   truefalse: 'Prawda / fałsz',
   slider: 'Suwak',
+  ordering: 'Porządkowanie',
 };
 
 function previewBody(
@@ -72,7 +73,17 @@ function previewBody(
         </p>
       );
     case 'slider': {
-      const { min, max, step, correct, tolerance, unit } = question;
+      const {
+        min,
+        max,
+        step,
+        correct,
+        tolerance,
+        unit,
+        score,
+        label_min,
+        label_max,
+      } = question;
       return (
         <div className="flex flex-col gap-1 text-sm text-[var(--text-dark)]">
           <p>
@@ -80,7 +91,41 @@ function previewBody(
             {unit ? ` ${unit}` : ''}, krok {step}
             {tolerance > 0 ? `, tolerancja ±${tolerance}` : ''}
           </p>
-          <p className="font-semibold">Docelowo: {correct}</p>
+          {score === 'range' && correct !== null && (
+            <p className="font-semibold">Docelowo: {correct}</p>
+          )}
+          {score === 'scale' && (
+            <p className="text-[var(--text-muted)]">Skala opinii (bez oceny)</p>
+          )}
+          {(label_min ?? label_max) && (
+            <p className="text-xs text-[var(--text-muted)]">
+              {label_min && `Min: ${label_min}`}
+              {label_min && label_max && ' · '}
+              {label_max && `Max: ${label_max}`}
+            </p>
+          )}
+        </div>
+      );
+    }
+    case 'ordering': {
+      const { items, correct_order } = question;
+      return (
+        <div className="flex flex-col gap-1.5 text-sm text-[var(--text-dark)]">
+          {items.map((item, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-white px-3 py-1.5"
+            >
+              <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[var(--orange)] text-[11px] font-bold text-white">
+                {i + 1}
+              </span>
+              <span>{item || `Element ${i + 1}`}</span>
+            </div>
+          ))}
+          <p className="text-xs text-[var(--text-muted)]">
+            Prawidłowa kolejność:{' '}
+            {correct_order.map((idx) => idx + 1).join(' → ')}
+          </p>
         </div>
       );
     }
@@ -138,7 +183,7 @@ export default function QuestionPreview({
       </p>
       {rawImage && !imageUrls && (
         <p className="text-xs text-[var(--text-muted)]">
-          Obraz z katalogu quizu — zapisz quiz, aby znać identyfikator i
+          Obraz z katalogu quizu - zapisz quiz, aby znać identyfikator i
           zbudować adres podglądu.
         </p>
       )}

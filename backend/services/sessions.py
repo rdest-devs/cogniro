@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import random
 import secrets
 import threading
 from dataclasses import dataclass, field
@@ -27,6 +28,7 @@ class QuizSession:
     pin: str
     started_at: datetime
     participants: dict[str, Participant] = field(default_factory=dict)
+    shuffled_question_ids: list[str] | None = None
 
 
 _SESSIONS_BY_QUIZ: dict[str, QuizSession] = {}
@@ -136,6 +138,40 @@ def list_participants(quiz_id: str) -> list[Participant]:
         if session is None:
             return []
         return list(session.participants.values())
+
+
+def get_or_create_session_shuffle(pin: str, question_ids: list[str]) -> list[str]:
+    """Return the canonical shuffled question order for a session.
+
+    Fast path (lock-free): shuffle exists and question IDs match current quiz.
+    Slow path (locked): first join, or admin edited the quiz while a session was
+    live — regenerates the shuffle so new/removed questions don't land at 999.
+    Must be called via run_in_threadpool.
+    """
+    session = _SESSIONS_BY_PIN.get(pin)
+    if session is None:
+        raise LookupError("pin_not_active")
+
+    current_ids = set(question_ids)
+
+    # Fast path: shuffle is fresh — no lock needed.
+    # Attribute read and list construction are GIL-atomic; the field is only
+    # ever replaced (never mutated in-place), so the snapshot is consistent.
+    stored = session.shuffled_question_ids
+    if stored is not None and set(stored) == current_ids:
+        return list(stored)
+
+    # Slow path: first join, or quiz was edited (ID set changed).
+    with _LOCK:
+        session = _SESSIONS_BY_PIN.get(pin)
+        if session is None:
+            raise LookupError("pin_not_active")
+        stored = session.shuffled_question_ids
+        if stored is None or set(stored) != current_ids:
+            ids = list(question_ids)
+            random.shuffle(ids)
+            session.shuffled_question_ids = ids
+        return list(session.shuffled_question_ids)
 
 
 def stop_session(quiz_id: str) -> QuizSession | None:

@@ -9,11 +9,13 @@ from pydantic import BaseModel, Field
 
 from core import settings
 from schemas.admin_quiz import (
+    ActivateRequest,
     AdminQuizDetailResponse,
     AdminQuizImportResponse,
     AdminQuizListItemResponse,
     AdminQuizSaveResponse,
     AdminQuizUpsertPayload,
+    AvailabilityPatchRequest,
     QuizAssetUploadResponse,
 )
 from security.admin_auth import require_admin
@@ -32,6 +34,7 @@ from services.admin_quiz import (
     get_session_snapshot,
     import_quiz_zip,
     list_quizzes,
+    patch_availability,
     stop_quiz,
     update_quiz,
 )
@@ -67,6 +70,9 @@ class ActivateResponse(BaseModel):
     pin: str
     join_url: str
     started_at: str
+    schedule_start: str | None = None
+    schedule_end: str | None = None
+    manual_status: str | None = None
 
 
 class BlockBody(BaseModel):
@@ -147,9 +153,20 @@ async def admin_asset_media(
 
 
 @router.post("/quiz/{quiz_id}/activate", response_model=ActivateResponse)
-async def admin_quiz_activate(request: Request, quiz_id: str) -> ActivateResponse:
-    data = await run_in_threadpool(activate_quiz, request.app, quiz_id)
+async def admin_quiz_activate(
+    request: Request,
+    quiz_id: str,
+    body: ActivateRequest | None = None,
+) -> ActivateResponse:
+    data = await run_in_threadpool(activate_quiz, request.app, quiz_id, body)
     return ActivateResponse(**data)
+
+
+@router.patch("/quiz/{quiz_id}/availability", status_code=204)
+async def admin_quiz_patch_availability(
+    request: Request, quiz_id: str, body: AvailabilityPatchRequest
+) -> None:
+    await run_in_threadpool(patch_availability, request.app, quiz_id, body)
 
 
 @router.post("/quiz/{quiz_id}/stop")

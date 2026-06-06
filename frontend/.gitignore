@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+# pnpm-only workspace: an npm lockfile here flips Vercel to npm and breaks the build
+package-lock.json
 /.pnp
 .pnp.*
 .yarn/*

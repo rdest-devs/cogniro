@@ -11,6 +11,8 @@ interface QuizStartProps {
   sessionCode?: string;
   onStart?: (name: string) => void;
   disabled?: boolean;
+  /** When provided, replaces the start button. */
+  footerContent?: React.ReactNode;
 }
 
 export default function QuizStart({
@@ -20,6 +22,7 @@ export default function QuizStart({
   sessionCode,
   onStart,
   disabled = false,
+  footerContent,
 }: QuizStartProps) {
   const [name, setName] = useState('');
 
@@ -73,15 +76,17 @@ export default function QuizStart({
           />
         </div>
 
-        {/* Start Button */}
-        <button
-          type="button"
-          onClick={() => name.trim() && onStart?.(name.trim())}
-          disabled={disabled || !name.trim()}
-          className="w-full cursor-pointer rounded-2xl bg-[var(--orange)] px-6 py-4 text-center text-base font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {sessionCode ? 'Dołącz do quizu' : 'Rozpocznij przygodę'}
-        </button>
+        {/* Start Button or custom footer */}
+        {footerContent ?? (
+          <button
+            type="button"
+            onClick={() => name.trim() && onStart?.(name.trim())}
+            disabled={disabled || !name.trim()}
+            className="w-full cursor-pointer rounded-2xl bg-[var(--orange)] px-6 py-4 text-center text-base font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {sessionCode ? 'Dołącz do quizu' : 'Rozpocznij przygodę'}
+          </button>
+        )}
       </div>
     </div>
   );

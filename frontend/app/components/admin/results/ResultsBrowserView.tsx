@@ -9,6 +9,7 @@ import {
   adminDangerOutlineButtonClass,
   adminToolbarButtonClass,
 } from '@/app/components/admin/shared/constants';
+import { formatAdminDate } from '@/lib/admin-date-time';
 import { deleteResult, listDates, listDay } from '@/lib/results/client';
 
 type Props = {
@@ -30,29 +31,6 @@ type ResultListRow = {
   score_count: number;
 };
 
-function formatListDate(folderDate: string): string {
-  const parsed = new Date(`${folderDate}T12:00:00`);
-  if (Number.isNaN(parsed.getTime())) {
-    return folderDate;
-  }
-  return new Intl.DateTimeFormat('pl-PL', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(parsed);
-}
-
-function formatSessionTime(iso: string): string {
-  const parsed = new Date(iso);
-  if (Number.isNaN(parsed.getTime())) {
-    return '—';
-  }
-  return new Intl.DateTimeFormat('pl-PL', {
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(parsed);
-}
-
 export function ResultsBrowserView({
   adminBase,
   quizFilter,
@@ -68,6 +46,7 @@ export function ResultsBrowserView({
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
     };
@@ -157,7 +136,7 @@ export function ResultsBrowserView({
           Statystyki
         </h2>
         <p className="mt-1 text-sm text-[var(--text-muted)]">
-          Zapisane sesje z wynikami — kliknij wiersz, aby zobaczyć szczegóły.
+          Zapisane sesje z wynikami - kliknij wiersz, aby zobaczyć szczegóły.
         </p>
 
         {err && <p className="mt-4 text-sm text-[var(--wrong-fg)]">{err}</p>}
@@ -187,7 +166,7 @@ export function ResultsBrowserView({
                     key={`${r.date}-${r.filename}`}
                     role="button"
                     tabIndex={0}
-                    aria-label={`Pokaż szczegóły: ${r.quiz_title}, ${formatListDate(r.date)}`}
+                    aria-label={`Pokaż szczegóły: ${r.quiz_title}, ${formatAdminDate(r.date, 'folder-date') ?? r.date}`}
                     className="cursor-pointer border-b border-[var(--border)] last:border-b-0 hover:bg-[var(--selected-bg)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
                     onClick={() => openDetail(r)}
                     onKeyDown={(e) => {
@@ -202,7 +181,7 @@ export function ResultsBrowserView({
                     }}
                   >
                     <td className="py-3 pr-4 text-[var(--text-dark)]">
-                      {formatListDate(r.date)}
+                      {formatAdminDate(r.date, 'folder-date') ?? r.date}
                     </td>
                     <td className="max-w-[220px] truncate py-3 pr-4 font-medium text-[var(--text-dark)]">
                       {r.quiz_title}
@@ -211,7 +190,7 @@ export function ResultsBrowserView({
                       {r.quiz_id}
                     </td>
                     <td className="py-3 pr-4 text-[var(--text-dark)]">
-                      {formatSessionTime(r.session_started_at)}
+                      {formatAdminDate(r.session_started_at, 'time') ?? '—'}
                     </td>
                     <td className="py-3 pr-4 text-right text-[var(--text-muted)] tabular-nums">
                       {r.score_count}

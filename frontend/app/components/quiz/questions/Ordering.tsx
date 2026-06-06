@@ -1,7 +1,7 @@
 'use client';
 
 import { GripVertical } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import SubmitButton from '@/app/components/common/SubmitButton';
 import { cn } from '@/lib/cn';
@@ -16,7 +16,7 @@ interface OrderingProps {
   question: string;
   hint?: string;
   items: string[];
-  onSubmit?: (order: string[]) => void;
+  onSubmit?: (order: number[]) => void;
 }
 
 export default function Ordering({
@@ -28,18 +28,16 @@ export default function Ordering({
   items,
   onSubmit,
 }: OrderingProps) {
-  const [order, setOrder] = useState(items);
+  const [ordered, setOrdered] = useState(() =>
+    items.map((text, origIdx) => ({ text, origIdx })),
+  );
   const [dragging, setDragging] = useState<number | null>(null);
 
-  useEffect(() => {
-    setOrder(items);
-  }, [items]);
-
   const moveItem = (from: number, to: number) => {
-    const next = [...order];
+    const next = [...ordered];
     const [item] = next.splice(from, 1);
     next.splice(to, 0, item);
-    setOrder(next);
+    setOrdered(next);
   };
 
   return (
@@ -51,11 +49,11 @@ export default function Ordering({
       <QuestionCard question={question} hint={hint} />
 
       <div className="flex flex-col gap-2.5">
-        {order.map((item, i) => {
+        {ordered.map(({ text, origIdx }, i) => {
           const isDragging = dragging === i;
           return (
             <div
-              key={item}
+              key={origIdx}
               draggable
               onDragStart={() => setDragging(i)}
               onDragOver={(e) => {
@@ -90,7 +88,7 @@ export default function Ordering({
                   isDragging ? 'font-semibold' : 'font-medium',
                 )}
               >
-                {item}
+                {text}
               </span>
             </div>
           );
@@ -99,7 +97,7 @@ export default function Ordering({
 
       <SubmitButton
         label="Zatwierdź kolejność"
-        onClick={() => onSubmit?.(order)}
+        onClick={() => onSubmit?.(ordered.map((x) => x.origIdx))}
       />
     </QuizLayout>
   );
