@@ -34,6 +34,7 @@ const CHANGE_PASSWORD_FALLBACK_MESSAGE =
 const CHANGE_PASSWORD_MESSAGES: Record<string, string> = {
   invalid_current_password: 'Obecne hasło jest nieprawidłowe.',
   password_mismatch: 'Nowe hasło i potwierdzenie nie są takie same.',
+  password_too_long: 'Nowe hasło jest zbyt długie (maksymalnie 72 bajty).',
 };
 
 export function getChangePasswordErrorMessage(error: unknown): string {

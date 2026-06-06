@@ -78,6 +78,10 @@ test('getChangePasswordErrorMessage maps known codes and falls back', () => {
     'Nowe hasło i potwierdzenie nie są takie same.',
   );
   assert.equal(
+    getChangePasswordErrorMessage(new Error('password_too_long')),
+    'Nowe hasło jest zbyt długie (maksymalnie 72 bajty).',
+  );
+  assert.equal(
     getChangePasswordErrorMessage(new Error('change_password_failed')),
     'Nie udało się zmienić hasła. Spróbuj ponownie później.',
   );

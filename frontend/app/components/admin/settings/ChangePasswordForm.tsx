@@ -6,6 +6,8 @@ import { changeAdminPassword } from '@/lib/admin-auth/client';
 import { getChangePasswordErrorMessage } from '@/lib/admin-auth/error-message';
 
 const MIN_PASSWORD_LENGTH = 8;
+// bcrypt only consumes the first 72 bytes; reject longer inputs client-side too.
+const MAX_PASSWORD_BYTES = 72;
 
 const inputClass =
   'w-full rounded-xl border border-[var(--border)] bg-[var(--card-bg)] px-3 py-2.5 text-sm text-[var(--text-dark)] outline-none focus:border-[var(--primary-blue)]';
@@ -27,6 +29,10 @@ export function ChangePasswordForm() {
       setError(
         `Nowe hasło musi mieć co najmniej ${MIN_PASSWORD_LENGTH} znaków.`,
       );
+      return;
+    }
+    if (new TextEncoder().encode(newPassword).length > MAX_PASSWORD_BYTES) {
+      setError('Nowe hasło jest zbyt długie (maksymalnie 72 bajty).');
       return;
     }
     if (newPassword !== confirmPassword) {

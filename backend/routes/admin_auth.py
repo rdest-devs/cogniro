@@ -27,6 +27,10 @@ from services.storage import admin_password_file, get_storage
 
 router = APIRouter(tags=["admin-auth"])
 
+# bcrypt only consumes the first 72 bytes of a password; reject longer inputs with a
+# clear error instead of letting bcrypt raise (which would surface as a 500).
+_MAX_NEW_PASSWORD_BYTES = 72
+
 
 @router.post("/auth/login", response_model=AdminTokenResponse)
 async def admin_auth_login(
@@ -108,11 +112,17 @@ async def admin_auth_logout(
 async def admin_auth_change_password(
     body: AdminChangePasswordRequest,
     request: Request,
+    response: Response,
 ) -> AdminChangePasswordResponse:
     if body.new_password != body.confirm_password:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="password_mismatch",
+        )
+    if len(body.new_password.encode("utf-8")) > _MAX_NEW_PASSWORD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="password_too_long",
         )
     if not await asyncio.to_thread(verify_password, body.current_password):
         raise HTTPException(
