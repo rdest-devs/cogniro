@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 
 import SubmitButton from '@/app/components/common/SubmitButton';
+import type { QuizChoiceAnswer } from '@/app/types';
 
 import QuestionCard from '../shared/QuestionCard';
 import QuizLayout from '../shared/QuizLayout';
-import RadioAnswer from '../shared/RadioAnswer';
+import SingleSelectAnswers from '../shared/SingleSelectAnswers';
 
 const REVEAL_DURATION_MS = 12000;
 /** Smallest resolution fraction at the start (heavily pixelated). */
@@ -140,7 +141,12 @@ interface ImagePixelateQuestionProps {
   question: string;
   hint?: string;
   imageUrl: string;
-  answers: string[];
+  answers: Array<string | QuizChoiceAnswer>;
+  /**
+   * How long the image takes to fully de-pixelate. Defaults to REVEAL_DURATION_MS;
+   * PlayingShell passes the question's timer so the reveal tracks `time_s`.
+   */
+  durationMs?: number;
   onSubmit?: (selectedIndex: number) => void;
 }
 
@@ -152,6 +158,7 @@ export default function ImagePixelateQuestion({
   hint,
   imageUrl,
   answers,
+  durationMs,
   onSubmit,
 }: ImagePixelateQuestionProps) {
   const [selected, setSelected] = useState<number | null>(null);
@@ -165,25 +172,14 @@ export default function ImagePixelateQuestion({
     >
       <QuestionCard question={question} hint={hint} />
 
-      <PixelatedImage src={imageUrl} />
+      <PixelatedImage src={imageUrl} durationMs={durationMs} />
 
-      <div
-        className="flex flex-col gap-3"
-        role="radiogroup"
-        aria-label={groupAriaLabel}
-      >
-        {answers.map((answer, i) => {
-          const label = answer.trim() || `Odpowiedź ${i + 1}`;
-          return (
-            <RadioAnswer
-              key={`${i}-${label}`}
-              label={label}
-              selected={selected === i}
-              onClick={() => setSelected(i)}
-            />
-          );
-        })}
-      </div>
+      <SingleSelectAnswers
+        answers={answers}
+        selected={selected}
+        onSelect={setSelected}
+        groupAriaLabel={groupAriaLabel}
+      />
 
       <SubmitButton
         label="Zatwierdź odpowiedź"

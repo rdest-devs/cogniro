@@ -221,7 +221,8 @@ function ActiveQuestion({
         question={q.text}
         hint={q.media?.hint}
         imageUrl={qImage.url}
-        answers={q.choices.map((c) => c.text)}
+        answers={q.choices.map(choiceAnswer)}
+        durationMs={q.time_s ? q.time_s * 1000 : undefined}
         onSubmit={(idx) => onAdvance(idx)}
       />
     );
