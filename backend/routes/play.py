@@ -184,14 +184,16 @@ async def play_submit(pin: str, body: SubmitBody, request: Request) -> dict:
 
 
 @router.get("/{pin}/leaderboard", response_model=LeaderboardResponse)
-async def play_leaderboard(pin: str) -> LeaderboardResponse:
+async def play_leaderboard(pin: str, request: Request) -> LeaderboardResponse:
     """Public leaderboard for an active session, ranked by score.
 
     Returns every participant who submitted a score so the player view can show the
     top positions and pin the current participant when they are outside the top.
-    Not rate limited: it is a read-only ranking fetched once on the results screen,
-    and sharing the join+submit budget would risk false 429s in the normal flow.
+    Rate limited like the sibling /play endpoints: the results screen fetches this
+    once, so the shared per-IP join+submit budget is nowhere near hit in normal
+    play, while an unauthenticated scraping loop against a known PIN stays capped.
     """
+    enforce_play_rate_limit(request)
     entries = sessions.leaderboard_for_pin(pin)
     if entries is None:
         raise HTTPException(status_code=404, detail="pin_not_active")
