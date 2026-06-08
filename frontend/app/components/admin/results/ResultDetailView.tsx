@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, List, RefreshCcw, Trash2 } from 'lucide-react';
+import { ArrowLeft, Download, List, RefreshCcw, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -20,6 +20,33 @@ import {
   resultFileDisplayName,
 } from '@/lib/results/archivePayload';
 import { deleteResult, readResult } from '@/lib/results/client';
+import {
+  computeScoreStats,
+  statsCsvFromPayload,
+} from '@/lib/results/csvExport';
+
+/** Trigger a browser download of `text` as a UTF-8 CSV file. */
+function downloadCsv(filename: string, text: string): void {
+  const blob = new Blob([text], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  // Defer cleanup: some browsers resolve the blob lazily, so revoking the URL in
+  // the same tick can cancel the download.
+  setTimeout(() => {
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, 0);
+}
+
+const plNumberFormat = new Intl.NumberFormat('pl-PL');
+
+function formatStat(value: number | null): string {
+  return value === null ? '-' : plNumberFormat.format(value);
+}
 
 type SortKey = 'nickname' | 'score' | 'submitted_at';
 
@@ -105,6 +132,11 @@ export function ResultDetailView({
 
   const fileTitle = resultFileDisplayName(file);
 
+  const stats = useMemo(
+    () => (parsed ? computeScoreStats(parsed.scores) : null),
+    [parsed],
+  );
+
   const qs = () => {
     const p = new URLSearchParams({ view: 'results', date });
     if (quizFilter) {
@@ -154,6 +186,21 @@ export function ResultDetailView({
           <RefreshCcw size={14} aria-hidden />
           Odśwież
         </button>
+        {parsed && !err && (
+          <button
+            type="button"
+            className={adminPrimaryOutlineButtonClass}
+            onClick={() =>
+              downloadCsv(
+                `${resultFileDisplayName(file)}-statystyki.csv`,
+                statsCsvFromPayload(parsed),
+              )
+            }
+          >
+            <Download size={14} aria-hidden />
+            Eksportuj CSV
+          </button>
+        )}
         <button
           type="button"
           className={adminDangerOutlineButtonClass}
@@ -214,6 +261,29 @@ export function ResultDetailView({
                 </p>
               )}
             </div>
+
+            {stats && (
+              <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {[
+                  { label: 'Uczestnicy', value: formatStat(stats.count) },
+                  { label: 'Średni wynik', value: formatStat(stats.average) },
+                  { label: 'Min. wynik', value: formatStat(stats.min) },
+                  { label: 'Maks. wynik', value: formatStat(stats.max) },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="rounded-xl border border-[var(--border)] bg-[var(--card-bg)] px-4 py-3"
+                  >
+                    <dt className="text-xs font-medium text-[var(--text-muted)]">
+                      {item.label}
+                    </dt>
+                    <dd className="mt-1 text-lg font-semibold text-[var(--text-dark)] tabular-nums">
+                      {item.value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            )}
 
             <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
               <table className="w-full min-w-[320px] text-left text-sm">
