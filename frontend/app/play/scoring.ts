@@ -2,8 +2,22 @@ import type { KqfQuestion, KqfQuiz } from '@/lib/kqf';
 
 export type AnswerMap = Record<string, unknown>;
 
-export function calculateScore(quiz: KqfQuiz, answers: AnswerMap): number {
-  return quiz.questions.reduce((sum, q) => sum + scoreOne(q, answers[q.id]), 0);
+/**
+ * Fraction (0..1) of a question's time still left when each answer was
+ * submitted. Only `imagepixelate` uses it (time-based partial credit); other
+ * types ignore it.
+ */
+export type AnswerTimeMap = Record<string, number>;
+
+export function calculateScore(
+  quiz: KqfQuiz,
+  answers: AnswerMap,
+  answerTimes: AnswerTimeMap = {},
+): number {
+  return quiz.questions.reduce(
+    (sum, q) => sum + scoreOne(q, answers[q.id], answerTimes[q.id]),
+    0,
+  );
 }
 
 /** Sum of per-question points (each question has at least 1 in canonical KQF). */
@@ -64,6 +78,34 @@ export function correctAnswerCount(quiz: KqfQuiz, answers: AnswerMap): number {
   );
 }
 
-function scoreOne(q: KqfQuestion, answer: unknown): number {
-  return questionAnswerCorrect(q, answer) ? q.points : 0;
+/**
+ * Time-based partial credit for an imagepixelate answer. Full points until half
+ * the time has elapsed, then a linear drop to 0 at expiry:
+ *   points = floor(min(maxPoints, maxPoints * remainingFraction * 2))
+ * With no recorded timing (e.g. the question has no per-question timer) there is
+ * no time pressure, so a correct answer is worth full points.
+ */
+export function imagePixelatePoints(
+  maxPoints: number,
+  remainingFraction: number | undefined,
+): number {
+  if (remainingFraction === undefined) {
+    return maxPoints;
+  }
+  const f = Math.max(0, Math.min(1, remainingFraction));
+  return Math.floor(Math.min(maxPoints, maxPoints * f * 2));
+}
+
+function scoreOne(
+  q: KqfQuestion,
+  answer: unknown,
+  remainingFraction?: number,
+): number {
+  if (!questionAnswerCorrect(q, answer)) {
+    return 0;
+  }
+  if (q.type === 'imagepixelate') {
+    return imagePixelatePoints(q.points, remainingFraction);
+  }
+  return q.points;
 }

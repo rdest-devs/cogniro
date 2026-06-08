@@ -75,7 +75,7 @@ type ActiveQuestionProps = {
   questionNumber: number;
   total: number;
   answers: Record<string, unknown>;
-  onAdvance: (value: unknown) => void;
+  onAdvance: (value: unknown, timeFraction?: number) => void;
   onAnswerChange: (value: unknown) => void;
 };
 
@@ -132,6 +132,19 @@ function ActiveQuestion({
   const progressPercent =
     q.time_s && remaining !== null ? (remaining / q.time_s) * 100 : 100;
   const qImage = questionImage(q.media);
+
+  // Fraction (0..1) of this question's time still left right now. Computed fresh
+  // from the start timestamp (not the throttled `remaining` state) so the value
+  // recorded at submit is accurate. `undefined` when the question has no timer,
+  // which scoring treats as "no time pressure" (full points).
+  const remainingFraction = (): number | undefined => {
+    const timeS = q.time_s;
+    if (!timeS || !startTimeRef.current) {
+      return undefined;
+    }
+    const elapsed = (Date.now() - startTimeRef.current) / 1000;
+    return Math.max(0, Math.min(1, (timeS - elapsed) / timeS));
+  };
 
   let questionEl: React.ReactNode = null;
   if (q.type === 'singlechoice') {
@@ -223,7 +236,7 @@ function ActiveQuestion({
         imageUrl={qImage.url}
         answers={q.choices.map(choiceAnswer)}
         durationMs={q.time_s ? q.time_s * 1000 : undefined}
-        onSubmit={(idx) => onAdvance(idx)}
+        onSubmit={(idx) => onAdvance(idx, remainingFraction())}
       />
     );
   }
@@ -247,10 +260,13 @@ export function PlayingShell({ state, onChange, onFinish }: Props) {
   const total = state.quiz.questions.length;
   const questionNumber = state.currentQuestionIndex + 1;
 
-  const advance = (value: unknown) => {
+  const advance = (value: unknown, timeFraction?: number) => {
     const nextAnswers = { ...state.answers, [q.id]: value };
     const i = state.currentQuestionIndex + 1;
     const nextBase: PlayState = { ...state, answers: nextAnswers };
+    if (timeFraction !== undefined) {
+      nextBase.answerTimes = { ...state.answerTimes, [q.id]: timeFraction };
+    }
     if (i >= state.quiz.questions.length) {
       onFinish(nextBase);
     } else {

@@ -60,7 +60,7 @@ test('slider outside tolerance', () => {
   assert.equal(calculateScore(quiz as never, { Q3: 80 }), 0);
 });
 
-test('imagepixelate scored like singlechoice', () => {
+test('imagepixelate full points when no timing recorded', () => {
   const q = {
     front_matter: { title: 'T', tags: [] },
     questions: [
@@ -79,6 +79,50 @@ test('imagepixelate scored like singlechoice', () => {
   };
   assert.equal(calculateScore(q as never, { P: 0 }), 80);
   assert.equal(calculateScore(q as never, { P: 1 }), 0);
+});
+
+const pixelateQuiz = {
+  front_matter: { title: 'T', tags: [] },
+  questions: [
+    {
+      id: 'P',
+      type: 'imagepixelate',
+      text: '?',
+      points: 100,
+      media: { image: './media/x.jpg' },
+      choices: [
+        { text: 'a', is_correct: true },
+        { text: 'b', is_correct: false },
+      ],
+    },
+  ],
+} as const;
+
+test('imagepixelate full points through the first half of time', () => {
+  // remainingFraction >= 0.5 → min(100, 100 * f * 2) caps at 100
+  assert.equal(calculateScore(pixelateQuiz as never, { P: 0 }, { P: 1 }), 100);
+  assert.equal(
+    calculateScore(pixelateQuiz as never, { P: 0 }, { P: 0.75 }),
+    100,
+  );
+  assert.equal(
+    calculateScore(pixelateQuiz as never, { P: 0 }, { P: 0.5 }),
+    100,
+  );
+});
+
+test('imagepixelate linear decay over the second half of time', () => {
+  // f < 0.5 → floor(100 * f * 2)
+  assert.equal(
+    calculateScore(pixelateQuiz as never, { P: 0 }, { P: 0.25 }),
+    50,
+  );
+  assert.equal(calculateScore(pixelateQuiz as never, { P: 0 }, { P: 0.1 }), 20);
+  assert.equal(calculateScore(pixelateQuiz as never, { P: 0 }, { P: 0 }), 0);
+});
+
+test('imagepixelate wrong answer = 0 regardless of time left', () => {
+  assert.equal(calculateScore(pixelateQuiz as never, { P: 1 }, { P: 1 }), 0);
 });
 
 test('slider scale always scores 0', () => {
