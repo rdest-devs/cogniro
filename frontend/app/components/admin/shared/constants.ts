@@ -13,7 +13,7 @@ export const menuItems: SidebarMenuItem[] = [
   { id: 'quizy', label: 'Moje Quizy', icon: FileText },
   { id: 'details', label: 'Szczegóły quizów', icon: BookOpen },
   { id: 'statystyki', label: 'Statystyki', icon: BarChart3 },
-  { id: 'ustawienia', label: 'Ustawienia', icon: Settings, disabled: true },
+  { id: 'ustawienia', label: 'Ustawienia', icon: Settings },
 ];
 
 export const statusColors: Record<string, string> = {

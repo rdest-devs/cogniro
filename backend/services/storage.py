@@ -92,6 +92,11 @@ def quiz_dir_for(paths: StoragePaths, quiz_id: str) -> Path:
     return paths.quizzes_dir / quiz_id
 
 
+def admin_password_file(paths: StoragePaths) -> Path:
+    """Path to the persisted admin password hash (overrides ``ADMIN_PASSWORD_HASH``)."""
+    return paths.quizzes_dir.parent / "admin" / "password_hash"
+
+
 def _fsync_directory(directory: Path) -> None:
     try:
         fd = os.open(directory, os.O_RDONLY)
