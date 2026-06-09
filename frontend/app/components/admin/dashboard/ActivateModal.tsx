@@ -59,7 +59,7 @@ export function ActivateModal({ onConfirm, onCancel, busy = false }: Props) {
   };
 
   const modeButtonBase =
-    'flex-1 rounded-xl border px-4 py-2 text-sm font-semibold transition-colors';
+    'flex-1 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors';
   const modeActive =
     'border-[var(--primary-blue)] bg-[var(--primary-blue)] text-white';
   const modeInactive =
@@ -67,11 +67,11 @@ export function ActivateModal({ onConfirm, onCancel, busy = false }: Props) {
 
   return (
     <div className="w-full max-w-lg rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] p-6 shadow-lg">
-      <h2 className="mb-4 text-lg font-bold text-[var(--text-dark)]">
+      <h2 className="mb-3 text-base font-bold text-[var(--text-dark)]">
         Uruchamianie quizu
       </h2>
 
-      <p className="mb-3 text-sm text-[var(--text-muted)]">
+      <p className="mb-3 text-[13px] text-[var(--text-muted)]">
         Kiedy quiz ma być dostępny dla uczestników?
       </p>
 
@@ -123,7 +123,7 @@ export function ActivateModal({ onConfirm, onCancel, busy = false }: Props) {
       {error && (
         <p
           role="alert"
-          className="mt-3 rounded-xl border border-[var(--wrong-fg)] bg-[var(--wrong-bg)] px-3 py-2 text-sm text-[var(--wrong-fg)]"
+          className="mt-3 rounded-xl border border-[var(--wrong-fg)] bg-[var(--wrong-bg)] px-3 py-2 text-[13px] text-[var(--wrong-fg)]"
         >
           {error}
         </p>
@@ -133,7 +133,7 @@ export function ActivateModal({ onConfirm, onCancel, busy = false }: Props) {
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-xl border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--text-muted)] hover:bg-[var(--page-bg)]"
+          className="rounded-xl border border-[var(--border)] px-3 py-2 text-xs font-semibold text-[var(--text-muted)] hover:bg-[var(--page-bg)]"
         >
           Anuluj
         </button>
@@ -141,7 +141,7 @@ export function ActivateModal({ onConfirm, onCancel, busy = false }: Props) {
           type="button"
           onClick={handleConfirm}
           disabled={busy}
-          className="rounded-xl bg-[var(--primary-blue)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-xl bg-[var(--primary-blue)] px-3 py-2 text-xs font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {busy ? 'Uruchamianie…' : 'Uruchom quiz'}
         </button>

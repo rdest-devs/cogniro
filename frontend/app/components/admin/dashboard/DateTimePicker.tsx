@@ -119,7 +119,7 @@ export function DateTimePicker({
   return (
     <div ref={containerRef} className="relative">
       {label && (
-        <p className="mb-1 text-sm font-medium text-[var(--text-dark)]">
+        <p className="mb-1 text-xs font-medium text-[var(--text-dark)]">
           {label}
         </p>
       )}
@@ -130,7 +130,7 @@ export function DateTimePicker({
           ref={triggerRef}
           type="button"
           onClick={handleOpen}
-          className="flex w-full items-center gap-2 rounded-xl border border-dashed border-[var(--border)] px-3 py-2 text-sm text-[var(--text-muted)] transition-colors hover:border-[var(--primary-blue)] hover:text-[var(--primary-blue)]"
+          className="flex w-full items-center gap-2 rounded-xl border border-dashed border-[var(--border)] px-3 py-2 text-xs text-[var(--text-muted)] transition-colors hover:border-[var(--primary-blue)] hover:text-[var(--primary-blue)]"
         >
           <CalendarPlus size={15} />
           Dodaj datę zakończenia
@@ -141,7 +141,7 @@ export function DateTimePicker({
             ref={triggerRef}
             type="button"
             onClick={handleOpen}
-            className="flex flex-1 items-center justify-between rounded-xl border border-[var(--primary-blue)] bg-[var(--card-bg)] px-3 py-2 text-left text-sm text-[var(--text-dark)] focus:ring-2 focus:ring-[var(--primary-blue)] focus:outline-none"
+            className="flex flex-1 items-center justify-between rounded-xl border border-[var(--primary-blue)] bg-[var(--card-bg)] px-3 py-2 text-left text-xs text-[var(--text-dark)] focus:ring-2 focus:ring-[var(--primary-blue)] focus:outline-none"
           >
             <span>
               {value

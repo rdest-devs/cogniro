@@ -6,6 +6,7 @@ import {
   List,
   Pencil,
   Play,
+  QrCode,
   Trash2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -74,7 +75,8 @@ export default function QuizDetail({
   const [expandedQuizId, setExpandedQuizId] = useState<string | null>(null);
   const [activatingId, setActivatingId] = useState<string | null>(null);
   const [panelAnchor, setPanelAnchor] = useState<{
-    top: number;
+    top?: number;
+    bottom?: number;
     right: number;
   } | null>(null);
 
@@ -257,23 +259,42 @@ export default function QuizDetail({
                   <Download size={14} />
                   Eksport (.zip)
                 </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setPanelAnchor({
-                      top: rect.bottom + 8,
-                      right: window.innerWidth - rect.right,
-                    });
-                    setExpandedQuizId(
-                      expandedQuizId === quiz.id ? null : quiz.id,
-                    );
-                  }}
-                  className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--text-dark)] px-3 py-2 text-xs font-semibold text-[var(--text-dark)] hover:bg-[var(--text-dark)] hover:text-white"
-                >
-                  <Play size={14} />
-                  Uruchom quiz
-                </button>
+                {quiz.status === 'Aktywny' ? (
+                  <button
+                    type="button"
+                    onClick={() => goRunning(quiz.id)}
+                    className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--active)] bg-[var(--active)] px-3 py-2 text-xs font-semibold text-white hover:opacity-90"
+                  >
+                    <QrCode size={14} />
+                    Pokaż QR kod
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const spaceBelow = window.innerHeight - rect.bottom;
+                      if (spaceBelow >= 340) {
+                        setPanelAnchor({
+                          top: rect.bottom + 8,
+                          right: window.innerWidth - rect.right,
+                        });
+                      } else {
+                        setPanelAnchor({
+                          bottom: window.innerHeight - rect.top + 8,
+                          right: window.innerWidth - rect.right,
+                        });
+                      }
+                      setExpandedQuizId(
+                        expandedQuizId === quiz.id ? null : quiz.id,
+                      );
+                    }}
+                    className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--text-dark)] px-3 py-2 text-xs font-semibold text-[var(--text-dark)] hover:bg-[var(--text-dark)] hover:text-white"
+                  >
+                    <Play size={14} />
+                    Uruchom quiz
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => goResults(quiz.id)}
@@ -365,7 +386,11 @@ export default function QuizDetail({
           />
           <div
             className="fixed z-50 w-[420px]"
-            style={{ top: panelAnchor.top, right: panelAnchor.right }}
+            style={{
+              top: panelAnchor.top,
+              bottom: panelAnchor.bottom,
+              right: panelAnchor.right,
+            }}
           >
             <ActivateModal
               onConfirm={(body) =>
