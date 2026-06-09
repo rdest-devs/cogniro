@@ -81,6 +81,9 @@ export function createQuestionForType(
     case 'imagepixelate':
       return {
         ...base,
+        // imagepixelate requires a per-question time (drives the reveal + scoring);
+        // seed a sensible default so a new question is born valid.
+        timeS: base.timeS ?? 20,
         type: 'imagepixelate',
         choices: [createEmptyChoice(), createEmptyChoice()],
       };

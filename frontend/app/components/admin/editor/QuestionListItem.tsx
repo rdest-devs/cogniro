@@ -859,6 +859,10 @@ export default function QuestionListItem({
     | string
     | null
     | undefined;
+  const questionTimeS = watch(`${questionPath}.timeS` as const) as
+    | number
+    | null
+    | undefined;
   const questionErrors = errors.questions?.[index];
 
   const questionForPreview = watch(questionPath) as QuizEditorQuestionForm;
@@ -995,12 +999,14 @@ export default function QuestionListItem({
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <label className="flex flex-col gap-1">
                   <span className="text-[13px] font-medium text-[var(--text-muted)]">
-                    Czas na pytanie (s, opcj.)
+                    {questionType === 'imagepixelate'
+                      ? 'Czas na pytanie (s, wymagany)'
+                      : 'Czas na pytanie (s, opcj.)'}
                   </span>
                   <input
                     type="number"
                     min={1}
-                    placeholder="brak"
+                    placeholder={questionType === 'imagepixelate' ? '' : 'brak'}
                     {...register(`${questionPath}.timeS` as const, {
                       setValueAs: (v) => {
                         if (v === '' || v === null || v === undefined) {
@@ -1012,6 +1018,13 @@ export default function QuestionListItem({
                     })}
                     className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
                   />
+                  {questionType === 'imagepixelate' &&
+                    questionTimeS == null && (
+                      <span className="text-xs text-[var(--wrong-fg)]">
+                        To pytanie wymaga czasu - od niego zależy
+                        odpikselowywanie i punktacja.
+                      </span>
+                    )}
                 </label>
                 <label className="flex flex-col gap-1">
                   <span className="text-[13px] font-medium text-[var(--text-muted)]">

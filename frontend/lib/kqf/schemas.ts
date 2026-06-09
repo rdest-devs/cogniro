@@ -205,6 +205,13 @@ export const kqfImagePixelateSchema = z
         path: ['media', 'image'],
       });
     }
+    if (v.time_s == null) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'imagepixelate requires a per-question time',
+        path: ['time_s'],
+      });
+    }
   });
 
 export const kqfQuestionSchema = z.discriminatedUnion('type', [

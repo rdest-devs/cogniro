@@ -112,6 +112,8 @@ class AdminQuizImagePixelatePayload(_AdminQuizPayloadBase):
             raise ValueError("imagepixelate musi mieć dokładnie 1 poprawną odpowiedź")
         if not (self.image and self.image.strip()):
             raise ValueError("imagepixelate wymaga obrazu")
+        if self.time_s is None:
+            raise ValueError("imagepixelate wymaga ustawienia czasu na pytanie")
         return self
 
 

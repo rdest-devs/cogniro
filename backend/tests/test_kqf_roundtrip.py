@@ -226,6 +226,21 @@ def test_imagepixelate_requires_an_image() -> None:
             id="Q1",
             type="imagepixelate",
             text="No image here",
+            time_s=20,
+            choices=[
+                KqfChoice(text="A", is_correct=True),
+                KqfChoice(text="B", is_correct=False),
+            ],
+        )
+
+
+def test_imagepixelate_requires_a_time() -> None:
+    with pytest.raises(ValidationError):
+        KqfImagePixelate(
+            id="Q1",
+            type="imagepixelate",
+            text="Has an image but no time",
+            media=KqfMedia(image="./media/animal.jpg"),
             choices=[
                 KqfChoice(text="A", is_correct=True),
                 KqfChoice(text="B", is_correct=False),

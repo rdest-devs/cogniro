@@ -231,6 +231,13 @@ const editorImagePixelateSchema = questionCommonFormSchema
         path: ['image'],
       });
     }
+    if (q.timeS == null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'To pytanie wymaga ustawienia czasu na pytanie',
+        path: ['timeS'],
+      });
+    }
   });
 
 export const quizEditorQuestionFormSchema = z.discriminatedUnion('type', [
@@ -604,6 +611,13 @@ const upsertImagePixelateSchema = z
         code: z.ZodIssueCode.custom,
         message: 'imagepixelate wymaga obrazu',
         path: ['image'],
+      });
+    }
+    if (q.time_s == null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'imagepixelate wymaga ustawienia czasu na pytanie',
+        path: ['time_s'],
       });
     }
   });

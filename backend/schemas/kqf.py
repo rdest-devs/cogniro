@@ -140,6 +140,8 @@ class KqfImagePixelate(_KqfBaseQuestion):
             raise ValueError("imagepixelate must have exactly one correct choice")
         if not (self.media.image and self.media.image.strip()):
             raise ValueError("imagepixelate requires an image")
+        if self.time_s is None:
+            raise ValueError("imagepixelate requires a per-question time")
         return self
 
 
