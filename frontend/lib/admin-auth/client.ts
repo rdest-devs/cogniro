@@ -121,15 +121,21 @@ export async function changeAdminPassword(input: {
   }
 
   // Changing the password invalidates the old session token; the server returns a
-  // freshly issued one so the current session stays authenticated.
-  try {
-    const payload = (await response.json()) as { access_token?: unknown };
-    if (typeof payload.access_token === 'string') {
-      setStoredAdminToken(payload.access_token);
-    }
-  } catch {
-    // ignore
+  // freshly issued one so the current session stays authenticated. If it is missing
+  // or the body is malformed, the stored token is already dead, so clear it and fail
+  // loudly instead of leaving the session on a token that will immediately 401.
+  const payload = (await response.json().catch(() => null)) as {
+    access_token?: unknown;
+  } | null;
+  if (
+    !payload ||
+    typeof payload.access_token !== 'string' ||
+    payload.access_token.trim().length === 0
+  ) {
+    clearStoredAdminToken();
+    throw new Error('change_password_failed');
   }
+  setStoredAdminToken(payload.access_token);
 }
 
 export async function logoutAdmin(): Promise<void> {

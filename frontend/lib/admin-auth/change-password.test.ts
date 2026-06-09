@@ -17,7 +17,9 @@ test('changeAdminPassword posts snake_case body with the bearer token', async ()
   const calls: FetchArgs[] = [];
   globalThis.fetch = async (...args: FetchArgs) => {
     calls.push(args);
-    return new Response('{"ok":true}', { status: 200 });
+    return new Response('{"ok":true,"access_token":"rotated-token"}', {
+      status: 200,
+    });
   };
 
   try {

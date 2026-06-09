@@ -164,7 +164,15 @@ def load_admin_password_override(store_path: Path) -> None:
     global _password_hash
     try:
         raw = store_path.read_text(encoding="utf-8").strip()
+    except FileNotFoundError:
+        return
     except OSError:
+        logger.warning(
+            "Could not read persisted admin password hash at %s; "
+            "falling back to ADMIN_PASSWORD_HASH.",
+            store_path,
+            exc_info=True,
+        )
         return
     if raw:
         _password_hash = raw.encode("utf-8")
@@ -180,6 +188,11 @@ def set_admin_password(new_password: str, *, store_path: Path) -> None:
     )
     store_path.parent.mkdir(parents=True, exist_ok=True)
     write_text_atomic(store_path, new_hash.decode("utf-8"))
+    # A leaked hash enables offline cracking; keep it owner-only where the OS supports it.
+    try:
+        os.chmod(store_path, 0o600)
+    except OSError:
+        logger.warning("Could not restrict permissions on %s", store_path)
     global _password_hash
     _password_hash = new_hash
 

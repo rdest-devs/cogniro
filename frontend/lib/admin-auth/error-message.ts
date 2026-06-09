@@ -47,7 +47,7 @@ export function getChangePasswordErrorMessage(error: unknown): string {
       ? error.message
       : undefined;
 
-  if (message && message in CHANGE_PASSWORD_MESSAGES) {
+  if (message && Object.hasOwn(CHANGE_PASSWORD_MESSAGES, message)) {
     return CHANGE_PASSWORD_MESSAGES[message];
   }
 
