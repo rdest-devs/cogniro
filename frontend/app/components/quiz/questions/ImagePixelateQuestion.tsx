@@ -23,20 +23,14 @@ function shuffledIndices(n: number): number[] {
   return arr;
 }
 
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  );
-}
-
 /**
  * Draws an image to a canvas as a grid of big mosaic "pixels", then reveals the
  * sharp image one block at a time, linearly over `durationMs`, in a scattered
  * order (Kahoot-style). The coarse base is a down-scale-then-up-scale with image
  * smoothing off and each revealed block is a direct sub-image draw, so there is
- * no pixel readback (no canvas tainting / CORS issues).
+ * no pixel readback (no canvas tainting / CORS issues). The reveal runs the same
+ * for everyone (motion preference is intentionally ignored) so the time-based
+ * score stays fair.
  */
 function PixelatedImage({
   src,
@@ -153,11 +147,6 @@ function PixelatedImage({
       total = cols * rows;
       order = shuffledIndices(total);
       revealed = 0;
-      if (prefersReducedMotion()) {
-        ctx.imageSmoothingEnabled = true;
-        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-        return;
-      }
       drawMosaic();
       rafId = window.requestAnimationFrame(tick);
     };
