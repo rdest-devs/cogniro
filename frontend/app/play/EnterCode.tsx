@@ -3,7 +3,7 @@
 import ExportedImage from 'next-image-export-optimizer';
 import { useState } from 'react';
 
-import { quizStartDemo } from '@/app/legacy/data/demo';
+import { APP_LOGO_URL } from '@/lib/branding';
 
 type Props = { onSubmit: (code: string) => void };
 
@@ -23,7 +23,7 @@ export function EnterCode({ onSubmit }: Props) {
         }}
       >
         <ExportedImage
-          src={quizStartDemo.logoUrl}
+          src={APP_LOGO_URL}
           alt="Logo"
           width={200}
           height={66}

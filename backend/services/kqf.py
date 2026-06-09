@@ -160,11 +160,12 @@ def _parse_question_block(block: str, header_line: int):
     if not header:
         raise KqfParseError(f"invalid question header: {lines[0]!r}", line=header_line)
 
-    common = {
+    common: dict = {
         "id": header.group("id"),
         "time_s": int(header.group("time")) if header.group("time") else None,
-        "points": int(header.group("points")) if header.group("points") else None,
     }
+    if header.group("points"):
+        common["points"] = int(header.group("points"))
 
     qtype = header.group("type")
 
@@ -242,6 +243,11 @@ def _parse_question_block(block: str, header_line: int):
             raw_val = directive_match.group("value").strip()
             if key == "image":
                 raw_val = raw_val.rstrip("/")
+                if re.search(r"/image\.webp$|/thumb\.webp$", raw_val, re.IGNORECASE):
+                    raise KqfParseError(
+                        "@image must be ./media/{asset_id}, not a .../image.webp file path",
+                        line=header_line + index,
+                    )
                 raw_val = _normalize_kqf_stored_image_path(raw_val)
                 if last_raw_choice is not None and not slider_fields:
                     last_raw_choice["image"] = raw_val

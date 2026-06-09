@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import QuizStart from '@/app/components/quiz/shared/QuizStart';
-import { quizStartDemo } from '@/app/legacy/data/demo';
+import { APP_LOGO_URL } from '@/lib/branding';
 import type { AvailabilityResult } from '@/lib/play/client';
 
 type Props = {
@@ -74,7 +74,7 @@ export function EnterNickname({
           <QuizStart
             title="Dołącz do quizu"
             description="Wpisz pseudonim widoczny dla prowadzącego."
-            logoUrl={quizStartDemo.logoUrl}
+            logoUrl={APP_LOGO_URL}
             disabled={busy || !!unavailableMsg}
             sessionCode={code}
             footerContent={footerContent}

@@ -40,6 +40,8 @@ cd backend
 uv sync
 ```
 
+See [backend/README.md](backend/README.md) for details.
+
 ## Git hooks
 
 Managed by [Husky](https://typicode.github.io/husky/):

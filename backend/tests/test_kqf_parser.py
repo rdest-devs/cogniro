@@ -164,7 +164,7 @@ Q?
     assert quiz.questions[0].media.image == "media/asset_x"
 
 
-def test_image_directive_explicit_image_webp_normalized_to_dir() -> None:
+def test_image_directive_explicit_image_webp_rejected() -> None:
     aid = "asset_" + "a" * 32
     text = f"""---
 title: T
@@ -178,8 +178,8 @@ Q?
 
 @image: ./media/{aid}/image.webp
 """
-    quiz = parse_kqf(text)
-    assert quiz.questions[0].media.image == f"./media/{aid}"
+    with pytest.raises(KqfParseError, match="image.webp"):
+        parse_kqf(text)
 
 
 def test_image_directive_absolute_url_unchanged() -> None:

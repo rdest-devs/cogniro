@@ -1,8 +1,3 @@
-export interface ImageAnswerOption {
-  imageUrl: string;
-  label: string;
-}
-
 export interface RankingEntry {
   position: number;
   name: string;

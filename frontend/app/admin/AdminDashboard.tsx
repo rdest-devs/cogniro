@@ -6,7 +6,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResultDetailView } from '@/app/components/admin/results/ResultDetailView';
 import { ResultsBrowserView } from '@/app/components/admin/results/ResultsBrowserView';
 import { ResultsDayView } from '@/app/components/admin/results/ResultsDayView';
-import { adminPanelDemo, quizDetailDemo } from '@/app/legacy/data/demo';
 import { formatAdminDate } from '@/lib/admin-date-time';
 import {
   AdminQuizApiError,
@@ -16,12 +15,7 @@ import {
 
 import { AdminPanel, QuizDetail, QuizEditor } from '../components/admin';
 import { RunningQuizView } from '../components/admin/dashboard/RunningQuizView';
-import type {
-  AdminQuizApiListItem,
-  QuizCard,
-  QuizInfo,
-  ResultRow,
-} from '../types';
+import type { AdminQuizApiListItem, QuizCard, QuizInfo } from '../types';
 
 type AdminView =
   | 'panel'
@@ -31,10 +25,6 @@ type AdminView =
   | 'running'
   | 'results';
 type EditorMode = 'create' | 'edit';
-
-const demoQuizIds = new Set(
-  [...adminPanelDemo.quizzes, ...quizDetailDemo.quizzes].map((q) => q.id),
-);
 
 function mapApiQuizToCard(quiz: AdminQuizApiListItem): QuizCard {
   return {
@@ -170,9 +160,7 @@ export default function AdminDashboard({
     }
 
     if (adminError) {
-      if (!demoQuizIds.has(quizIdFromUrl)) {
-        router.replace(adminBase);
-      }
+      router.replace(adminBase);
       return;
     }
 
@@ -195,42 +183,14 @@ export default function AdminDashboard({
   ]);
 
   const adminCards = useMemo(
-    () =>
-      adminError ? adminPanelDemo.quizzes : adminQuizzes.map(mapApiQuizToCard),
-    [adminError, adminQuizzes],
+    () => adminQuizzes.map(mapApiQuizToCard),
+    [adminQuizzes],
   );
 
   const adminInfos = useMemo(
-    () =>
-      adminError ? quizDetailDemo.quizzes : adminQuizzes.map(mapApiQuizToInfo),
-    [adminError, adminQuizzes],
+    () => adminQuizzes.map(mapApiQuizToInfo),
+    [adminQuizzes],
   );
-
-  const resolvedSelectedQuizId = useMemo(() => {
-    if (
-      adminView === 'detail' ||
-      adminView === 'details' ||
-      (adminView === 'editor' && wantsEdit)
-    ) {
-      if (quizIdFromUrl) {
-        return quizIdFromUrl;
-      }
-    }
-    return adminInfos[0]?.id ?? null;
-  }, [adminView, wantsEdit, quizIdFromUrl, adminInfos]);
-
-  const resultsForSelectedQuiz = useMemo(() => {
-    if (!resolvedSelectedQuizId || !adminError) {
-      return [];
-    }
-
-    const resultsByQuizId = quizDetailDemo.resultsByQuizId as Record<
-      string,
-      ResultRow[]
-    >;
-
-    return resultsByQuizId[resolvedSelectedQuizId] ?? [];
-  }, [resolvedSelectedQuizId, adminError]);
 
   const goDetail = useCallback(
     (quizId: string) => {
@@ -351,9 +311,6 @@ export default function AdminDashboard({
         {(adminView === 'detail' || adminView === 'details') && (
           <QuizDetail
             quizzes={adminInfos}
-            selectedQuizId={resolvedSelectedQuizId}
-            legacyDemoResultsEnabled={Boolean(adminError)}
-            resultsForQuiz={resultsForSelectedQuiz}
             adminBase={adminBase}
             menuActiveItem={menuActiveItem}
             onMenuNavigate={handleMenuNavigate}

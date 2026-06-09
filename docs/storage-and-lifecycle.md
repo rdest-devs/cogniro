@@ -1,6 +1,6 @@
 # Storage and lifecycle
 
-This document describes where quiz and session data live, how live sessions work, and how retention and legacy code paths fit together.
+This document describes where quiz and session data live, how live sessions work, and how retention fits together.
 
 ## On-disk layout
 
@@ -61,7 +61,3 @@ Then it sleeps `PURGE_INTERVAL_SECONDS` (default **3600**, env `PURGE_INTERVAL_S
 ## Decoupled deletion
 
 Deleting a quiz removes its directory under `storage/quizzes/` but does **not** delete historical result JSON files under `storage/results/` (results are keyed by date/filename, not a foreign key).
-
-## Legacy isolation
-
-Deprecated demo scoring and routes live under [backend/legacy/](../backend/legacy/) (`POST /legacy/quiz-demo/results`) and [frontend/app/legacy/](../frontend/app/legacy/). They exist for backward compatibility with the old static demo and should not be extended; remove once `/play` is verified end-to-end.

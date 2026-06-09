@@ -26,6 +26,7 @@ import {
 import { SortableTh } from '@/app/components/common/SortableTh';
 import { useSortableColumns } from '@/hooks/useSortableColumns';
 import { formatAdminDate } from '@/lib/admin-date-time';
+import { APP_LOGO_URL } from '@/lib/branding';
 import {
   activateQuiz,
   AdminFetchError,
@@ -198,7 +199,7 @@ export function RunningQuizView({
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       try {
-        const logo = await loadImage('/images/wi-new-logo.png');
+        const logo = await loadImage(APP_LOGO_URL);
         const logoMaxWidth = 740;
         const logoMaxHeight = 210;
         const logoScale = Math.min(

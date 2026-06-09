@@ -5,8 +5,6 @@ from typing import Annotated, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from schemas.points import normalize_question_points
-
 
 class QuizImage(BaseModel):
     """Image reference returned by /admin/assets and used in question media."""
@@ -61,11 +59,6 @@ class _AdminQuizPayloadBase(BaseModel):
     hint: str | None = None
 
     model_config = ConfigDict(extra="ignore")
-
-    @field_validator("points", mode="before")
-    @classmethod
-    def _validate_points(cls, value: object) -> int:
-        return normalize_question_points(value)
 
 
 class AdminQuizChoicePayload(BaseModel):

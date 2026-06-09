@@ -14,28 +14,13 @@ import { normalizeKqfQuestionImageToDirectoryPath } from '@/lib/media-url';
 import { createDefaultQuizFormValues, createQuestionForType } from './defaults';
 import { adminQuizUpsertPayloadSchema, quizEditorFormSchema } from './schemas';
 
-const legacyTypeMap: Record<string, KqfQuestionType> = {
-  singlechoice: 'singlechoice',
-  single_choice: 'singlechoice',
-  single: 'singlechoice',
-  jednokrotny: 'singlechoice',
-  multichoice: 'multichoice',
-  multiple_choice: 'multichoice',
-  multiple: 'multichoice',
-  wielokrotny: 'multichoice',
-  truefalse: 'truefalse',
-  true_false: 'truefalse',
-  slider: 'slider',
-  ordering: 'ordering',
-};
-
-export function normalizeQuestionType(raw?: string): KqfQuestionType {
-  if (!raw) {
-    return 'singlechoice';
-  }
-  const key = raw.trim().toLowerCase();
-  return legacyTypeMap[key] ?? 'singlechoice';
-}
+const CANONICAL_QUESTION_TYPES = new Set<KqfQuestionType>([
+  'singlechoice',
+  'multichoice',
+  'truefalse',
+  'slider',
+  'ordering',
+]);
 
 function mapApiChoiceToForm(c: AdminQuizApiChoice): QuizEditorChoiceForm {
   return {
@@ -50,10 +35,7 @@ function mapApiQuestionToForm(q: AdminQuizApiQuestion): QuizEditorQuestionForm {
   const id = q.id;
   const text = q.text;
   const timeS = q.time_s ?? null;
-  const points =
-    typeof q.points === 'number' && Number.isFinite(q.points) && q.points >= 1
-      ? Math.trunc(q.points)
-      : 1;
+  const points = q.points ?? 1;
   const image = normalizeKqfQuestionImageToDirectoryPath(q.image ?? undefined);
   const hint = q.hint ?? null;
 
@@ -129,137 +111,6 @@ function mapApiQuestionToForm(q: AdminQuizApiQuestion): QuizEditorQuestionForm {
   }
 }
 
-/** Fallback when API returns an unknown / legacy shape (pre-KQF list in DB). */
-function coerceApiQuestionLoose(
-  raw: Record<string, unknown>,
-): QuizEditorQuestionForm {
-  const type = normalizeQuestionType(
-    typeof raw.type === 'string' ? raw.type : undefined,
-  );
-  const id =
-    raw.id !== undefined && raw.id !== null ? String(raw.id) : undefined;
-  const text =
-    typeof raw.text === 'string'
-      ? raw.text
-      : typeof raw.content === 'string'
-        ? raw.content
-        : '';
-  const timeS =
-    typeof raw.time_s === 'number' && Number.isFinite(raw.time_s)
-      ? raw.time_s
-      : null;
-  const points =
-    typeof raw.points === 'number' &&
-    Number.isFinite(raw.points) &&
-    raw.points >= 1
-      ? Math.trunc(raw.points)
-      : 1;
-  const image = normalizeKqfQuestionImageToDirectoryPath(
-    typeof raw.image === 'string' ? raw.image : undefined,
-  );
-  const hint =
-    typeof raw.hint === 'string' && raw.hint.trim() ? raw.hint : null;
-
-  if (type === 'truefalse' && typeof raw.correct === 'boolean') {
-    return {
-      id,
-      text,
-      timeS,
-      points,
-      image,
-      hint,
-      type: 'truefalse',
-      correct: raw.correct,
-    };
-  }
-
-  if (
-    type === 'slider' &&
-    typeof raw.min === 'number' &&
-    typeof raw.max === 'number'
-  ) {
-    return {
-      id,
-      text,
-      timeS,
-      points,
-      image,
-      hint,
-      type: 'slider',
-      correct: typeof raw.correct === 'number' ? raw.correct : null,
-      min: raw.min,
-      max: raw.max,
-      step: typeof raw.step === 'number' ? raw.step : 1,
-      tolerance: typeof raw.tolerance === 'number' ? raw.tolerance : 0,
-      unit: typeof raw.unit === 'string' ? raw.unit : null,
-      score: (raw.score === 'scale' ? 'scale' : 'range') as 'range' | 'scale',
-      label_min: typeof raw.label_min === 'string' ? raw.label_min : null,
-      label_max: typeof raw.label_max === 'string' ? raw.label_max : null,
-    };
-  }
-
-  const rawChoices = Array.isArray(raw.choices)
-    ? raw.choices
-    : Array.isArray(raw.answers)
-      ? raw.answers
-      : [];
-
-  const choices: QuizEditorChoiceForm[] = rawChoices.map((item) => {
-    if (!item || typeof item !== 'object') {
-      return { text: '', isCorrect: false, image: null };
-    }
-    const o = item as Record<string, unknown>;
-    const choiceText =
-      typeof o.text === 'string'
-        ? o.text
-        : typeof o.content === 'string'
-          ? o.content
-          : '';
-    const isCorrect = Boolean(o.is_correct ?? o.isCorrect);
-    const image =
-      typeof o.image === 'string' && o.image.trim()
-        ? (normalizeKqfQuestionImageToDirectoryPath(o.image) ?? null)
-        : null;
-    return { text: choiceText, isCorrect, image };
-  });
-
-  const padded =
-    choices.length >= 2
-      ? choices
-      : [
-          ...choices,
-          ...Array.from({ length: 2 - choices.length }, () => ({
-            text: '',
-            isCorrect: false,
-            image: null,
-          })),
-        ];
-
-  if (type === 'multichoice') {
-    return {
-      id,
-      text,
-      timeS,
-      points,
-      image,
-      hint,
-      type: 'multichoice',
-      choices: padded,
-    };
-  }
-
-  return {
-    id,
-    text,
-    timeS,
-    points,
-    image,
-    hint,
-    type: 'singlechoice',
-    choices: padded,
-  };
-}
-
 function safeParseApiQuestion(
   raw: unknown,
 ): QuizEditorQuestionForm | undefined {
@@ -268,16 +119,10 @@ function safeParseApiQuestion(
   }
   const o = raw as Record<string, unknown>;
   const t = typeof o.type === 'string' ? o.type : '';
-  if (
-    t === 'singlechoice' ||
-    t === 'multichoice' ||
-    t === 'truefalse' ||
-    t === 'slider' ||
-    t === 'ordering'
-  ) {
-    return mapApiQuestionToForm(o as AdminQuizApiQuestion);
+  if (!CANONICAL_QUESTION_TYPES.has(t as KqfQuestionType)) {
+    return undefined;
   }
-  return coerceApiQuestionLoose(o);
+  return mapApiQuestionToForm(o as AdminQuizApiQuestion);
 }
 
 export function toQuizEditorFormValues(

@@ -5,6 +5,7 @@ import { useState } from 'react';
 
 import { loginAdmin } from '@/lib/admin-auth/client';
 import { getAdminLoginErrorMessage } from '@/lib/admin-auth/error-message';
+import { APP_LOGO_URL } from '@/lib/branding';
 
 interface AdminLoginProps {
   onSuccess: () => void;
@@ -35,7 +36,7 @@ export default function AdminLogin({ onSuccess }: AdminLoginProps) {
       <div className="w-full max-w-sm rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] p-8 shadow-sm">
         <div className="mb-8 flex justify-center">
           <ExportedImage
-            src="/images/wi-new-logo.png"
+            src={APP_LOGO_URL}
             alt="WI"
             width={160}
             height={46}

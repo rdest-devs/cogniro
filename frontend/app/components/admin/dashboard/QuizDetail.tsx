@@ -9,43 +9,20 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { ActivateModal } from '@/app/components/admin/dashboard/ActivateModal';
-import { SortableTh } from '@/app/components/common/SortableTh';
 import StatusBadge from '@/app/components/common/StatusBadge';
-import type { QuizInfo, ResultRow } from '@/app/types';
-import { useSortableColumns } from '@/hooks/useSortableColumns';
+import type { QuizInfo } from '@/app/types';
 import { AdminQuizApiError, deleteAdminQuiz } from '@/lib/admin-quiz';
-import { parseResultDate, parseTimeSeconds } from '@/lib/admin-result-sort';
 import { downloadExport } from '@/lib/import-export/client';
 import { type ActivateBody, activateQuiz } from '@/lib/sessions/client';
 
 import AdminLayout from '../layout/AdminLayout';
-import {
-  adminBlueHeadTableClass,
-  adminBlueHeadTableTdClass,
-  adminBlueHeadTableTdMutedClass,
-  adminBlueHeadTableThClass,
-  adminBlueHeadTableTheadClass,
-  statusColors,
-} from '../shared/constants';
-
-type SortKey = 'name' | 'score' | 'time' | 'date';
-
-const SORT_COLUMNS = [
-  { key: 'name', label: 'Imię' },
-  { key: 'score', label: 'Wynik' },
-  { key: 'time', label: 'Czas' },
-  { key: 'date', label: 'Data' },
-] satisfies { key: SortKey; label: string }[];
+import { statusColors } from '../shared/constants';
 
 interface QuizDetailProps {
   quizzes: QuizInfo[];
-  selectedQuizId?: string | null;
-  /** Only when the admin panel is showing demo data (e.g. API error); otherwise hidden. */
-  legacyDemoResultsEnabled?: boolean;
-  resultsForQuiz: ResultRow[];
   adminBase: string;
   menuActiveItem?: string;
   onMenuNavigate?: (menuItemId: string) => void;
@@ -57,9 +34,6 @@ interface QuizDetailProps {
 
 export default function QuizDetail({
   quizzes,
-  selectedQuizId,
-  legacyDemoResultsEnabled = false,
-  resultsForQuiz,
   adminBase,
   menuActiveItem = '',
   onMenuNavigate,
@@ -77,10 +51,6 @@ export default function QuizDetail({
     top: number;
     right: number;
   } | null>(null);
-
-  const selectedQuiz = selectedQuizId
-    ? quizzes.find((quiz) => quiz.id === selectedQuizId)
-    : quizzes[0];
 
   const goRunning = useCallback(
     (quizId: string) => {
@@ -156,32 +126,6 @@ export default function QuizDetail({
     },
     [router, adminBase, onQuizDeleted],
   );
-
-  const sort = useSortableColumns<SortKey>({ initialKey: 'score' });
-
-  const sortedResults = useMemo(() => {
-    const dir = sort.sortDir === 'asc' ? 1 : -1;
-    /** Compares two numbers, always sorting NaN (invalid) values last regardless of direction. */
-    const compareNumeric = (av: number, bv: number) => {
-      const aNaN = Number.isNaN(av);
-      const bNaN = Number.isNaN(bv);
-      if (aNaN || bNaN) return aNaN === bNaN ? 0 : aNaN ? 1 : -1;
-      return (av - bv) * dir;
-    };
-    return [...resultsForQuiz].sort((a, b) => {
-      if (sort.sortKey === 'score') return (a.score - b.score) * dir;
-      if (sort.sortKey === 'name')
-        return a.name.localeCompare(b.name, 'pl') * dir;
-      if (sort.sortKey === 'time')
-        return compareNumeric(
-          parseTimeSeconds(a.time),
-          parseTimeSeconds(b.time),
-        );
-      if (sort.sortKey === 'date')
-        return compareNumeric(parseResultDate(a.date), parseResultDate(b.date));
-      return 0;
-    });
-  }, [resultsForQuiz, sort.sortKey, sort.sortDir]);
 
   return (
     <AdminLayout
@@ -295,66 +239,6 @@ export default function QuizDetail({
             </article>
           ))}
         </section>
-
-        {legacyDemoResultsEnabled && selectedQuiz && (
-          <section className="flex flex-col gap-4">
-            <h2 className="text-base font-bold text-[var(--text-dark)]">
-              Wyniki (demo) - {selectedQuiz.title}
-            </h2>
-
-            <table className={adminBlueHeadTableClass}>
-              <thead className={adminBlueHeadTableTheadClass}>
-                <tr>
-                  {SORT_COLUMNS.map(({ key, label }) => (
-                    <SortableTh
-                      key={key}
-                      columnKey={key}
-                      label={label}
-                      sort={sort}
-                      className={adminBlueHeadTableThClass}
-                    />
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {sortedResults.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={4}
-                      className="px-4 py-8 text-center text-sm text-[var(--text-muted)]"
-                    >
-                      Brak wpisów demo dla tego quizu w zestawie przykładowym.
-                    </td>
-                  </tr>
-                ) : (
-                  sortedResults.map((row, index) => (
-                    <tr
-                      key={`${row.name}-${index}`}
-                      className="border-t border-[var(--border)]"
-                    >
-                      <td
-                        className={`${adminBlueHeadTableTdClass} font-medium`}
-                      >
-                        {row.name}
-                      </td>
-                      <td className={adminBlueHeadTableTdClass}>
-                        <span className="rounded-md bg-[var(--orange)] px-2 py-0.5 text-xs font-bold text-white">
-                          {row.score}%
-                        </span>
-                      </td>
-                      <td className={adminBlueHeadTableTdMutedClass}>
-                        {row.time}
-                      </td>
-                      <td className={adminBlueHeadTableTdMutedClass}>
-                        {row.date}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </section>
-        )}
       </div>
 
       {expandedQuizId && panelAnchor && (

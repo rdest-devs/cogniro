@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-
-from schemas.points import normalize_question_points
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class KqfFrontMatter(BaseModel):
@@ -51,11 +49,6 @@ class _KqfBaseQuestion(BaseModel):
     media: KqfMedia = Field(default_factory=KqfMedia)
 
     model_config = ConfigDict(extra="ignore")
-
-    @field_validator("points", mode="before")
-    @classmethod
-    def _validate_points(cls, value: object) -> int:
-        return normalize_question_points(value)
 
 
 class KqfSingleChoice(_KqfBaseQuestion):

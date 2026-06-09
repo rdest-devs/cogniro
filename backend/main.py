@@ -13,7 +13,6 @@ from fastapi.middleware.cors import CORSMiddleware
 load_dotenv()
 
 from core.settings import PURGE_INTERVAL_SECONDS, RESULT_RETENTION_DAYS  # noqa: E402
-from legacy.quiz_demo_router import router as legacy_quiz_demo_router  # noqa: E402
 from routes.admin_auth import router as admin_auth_router  # noqa: E402
 from routes.admin_quiz import router as admin_quiz_router  # noqa: E402
 from routes.admin_results import router as admin_results_router  # noqa: E402
@@ -111,7 +110,6 @@ app.include_router(admin_auth_router, prefix="/admin")
 app.include_router(admin_results_router)
 app.include_router(play_router)
 app.include_router(media_router)
-app.include_router(legacy_quiz_demo_router)
 
 
 @app.get("/health")

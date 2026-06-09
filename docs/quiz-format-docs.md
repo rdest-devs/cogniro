@@ -220,7 +220,7 @@ A choice may have text **or** image **or** both — the editor enforces that at 
 @image: ./media/asset_cc0b501288944523b06ae7d26cf078ab/
 ```
 
-``http(s)`` URLs and non-asset paths (e.g. ``dog.jpg``) are stored unchanged. A legacy line ``@image: ./media/{asset_…}/image.webp`` (or ``thumb.webp``) for a canonical ``asset_{32 hex}`` id is **normalized** to ``./media/{asset_…}`` when parsing or serializing.
+``http(s)`` URLs and non-asset paths (e.g. ``dog.jpg``) are stored unchanged. Lines ending in ``/image.webp`` or ``/thumb.webp`` under ``./media/{asset_…}`` are **invalid** in KQF text — use the asset directory form above.
 
 **Play session join:** ``kqf_with_absolute_media`` turns relative ``media/...`` into absolute URLs under ``{origin}/media/{quiz_id}/...``. If the URL’s last path segment has **no** extension, the join result is the **asset base URL** (no trailing ``/image.webp``); the participant app then appends ``/image.webp`` and ``/thumb.webp`` once when building image props (``resolveKqfPlayImageUrls`` in ``frontend/lib/media-url.ts``).
 
