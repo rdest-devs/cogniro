@@ -19,6 +19,12 @@ test('tutorial data is non-empty with unique ids and titled steps', () => {
     for (const tutorial of group.tutorials) {
       assert.ok(tutorial.title.length > 0);
       assert.ok(tutorial.steps.length > 0);
+      for (const step of tutorial.steps) {
+        assert.ok(
+          step.trim().length > 0,
+          `empty step in tutorial: ${tutorial.id}`,
+        );
+      }
       assert.equal(tutorialIds.has(tutorial.id), false);
       tutorialIds.add(tutorial.id);
     }
@@ -39,6 +45,9 @@ test('renders grouped tutorials with titles and steps', () => {
         html.includes(tutorial.title),
         `missing tutorial title: ${tutorial.title}`,
       );
+      for (const step of tutorial.steps) {
+        assert.ok(html.includes(step), `missing step: ${step}`);
+      }
     }
   }
 });
