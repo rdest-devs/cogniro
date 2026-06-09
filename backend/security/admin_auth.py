@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import uuid
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Annotated, Any
 
 import bcrypt
@@ -149,6 +151,63 @@ def verify_password(plain: str) -> bool:
         return False
 
 
+# bcrypt cost factor for admin password changes (matches scripts/hash_admin_password.py).
+_ADMIN_PASSWORD_BCRYPT_ROUNDS = 12
+
+
+def load_admin_password_override(store_path: Path) -> None:
+    """Load a persisted password hash from ``store_path``, overriding the env value.
+
+    Called at startup so an admin password changed at runtime survives restarts.
+    No-op when the file does not exist.
+    """
+    global _password_hash
+    try:
+        raw = store_path.read_text(encoding="utf-8").strip()
+    except FileNotFoundError:
+        return
+    except OSError:
+        logger.warning(
+            "Could not read persisted admin password hash at %s; "
+            "falling back to ADMIN_PASSWORD_HASH.",
+            store_path,
+            exc_info=True,
+        )
+        return
+    if raw:
+        _password_hash = raw.encode("utf-8")
+
+
+def set_admin_password(new_password: str, *, store_path: Path) -> None:
+    """Hash and persist a new admin password, then use it for subsequent logins."""
+    from services.storage import write_text_atomic
+
+    new_hash = bcrypt.hashpw(
+        new_password.encode("utf-8"),
+        bcrypt.gensalt(rounds=_ADMIN_PASSWORD_BCRYPT_ROUNDS),
+    )
+    store_path.parent.mkdir(parents=True, exist_ok=True)
+    write_text_atomic(store_path, new_hash.decode("utf-8"))
+    # A leaked hash enables offline cracking; keep it owner-only where the OS supports it.
+    try:
+        os.chmod(store_path, 0o600)
+    except OSError:
+        logger.warning("Could not restrict permissions on %s", store_path)
+    global _password_hash
+    _password_hash = new_hash
+
+
+def _password_fingerprint() -> str | None:
+    """Short stable fingerprint of the active password hash.
+
+    Embedded in issued tokens so that changing the admin password invalidates every
+    previously issued token (their fingerprint no longer matches the new hash).
+    """
+    if _password_hash is None:
+        return None
+    return hashlib.sha256(_password_hash).hexdigest()[:16]
+
+
 def create_access_token() -> tuple[str, int]:
     """Issue a short-lived admin access token used on protected admin API routes."""
     if not _jwt_secret:
@@ -163,6 +222,7 @@ def create_access_token() -> tuple[str, int]:
         "sub": "admin",
         "typ": "access",
         "jti": jti,
+        "pwd": _password_fingerprint(),
         "iat": int(now.timestamp()),
         "exp": exp,
     }
@@ -185,6 +245,7 @@ def create_refresh_token() -> tuple[str, int]:
         "sub": "admin",
         "typ": "refresh",
         "jti": jti,
+        "pwd": _password_fingerprint(),
         "iat": int(now.timestamp()),
         "exp": exp,
     }
@@ -244,6 +305,11 @@ def decode_admin_token(token: str, *, expected_type: str = "access") -> dict:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="token_revoked",
+        )
+    if payload.get("pwd") != _password_fingerprint():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="password_changed",
         )
     return payload
 

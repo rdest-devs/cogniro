@@ -24,6 +24,7 @@ import {
 } from '@/lib/admin-quiz';
 
 import AdminLayout from '../layout/AdminLayout';
+import { Breadcrumbs } from '../layout/Breadcrumbs';
 import QuestionListItem from './QuestionListItem';
 import QuizSettingsForm from './QuizSettingsForm';
 
@@ -267,7 +268,16 @@ export default function QuizEditor({
         <form onSubmit={onSubmit} className="flex min-h-0 w-full flex-1">
           <div className="relative flex min-h-0 flex-1 flex-col gap-5">
             <header className="flex items-center justify-between">
-              <div>
+              <div className="flex flex-col gap-1.5">
+                <Breadcrumbs
+                  items={[
+                    { label: 'Moje Quizy', href: logoHref },
+                    {
+                      label:
+                        mode === 'edit' ? 'Edycja quizu' : 'Tworzenie quizu',
+                    },
+                  ]}
+                />
                 <h1 className="text-2xl font-bold text-[var(--text-dark)]">
                   {mode === 'edit' ? 'Edycja quizu' : 'Tworzenie quizu'}
                 </h1>
@@ -280,7 +290,7 @@ export default function QuizEditor({
                     onClick={onCancel}
                     className="cursor-pointer rounded-2xl border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--text-dark)]"
                   >
-                    Wróć
+                    Powrót
                   </button>
                 )}
 

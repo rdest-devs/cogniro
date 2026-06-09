@@ -20,7 +20,7 @@ export const menuItems: SidebarMenuItem[] = [
   { id: 'details', label: 'Szczegóły quizów', icon: BookOpen },
   { id: 'statystyki', label: 'Statystyki', icon: BarChart3 },
   { id: 'samouczki', label: 'Samouczki', icon: GraduationCap },
-  { id: 'ustawienia', label: 'Ustawienia', icon: Settings, disabled: true },
+  { id: 'ustawienia', label: 'Ustawienia', icon: Settings },
 ];
 
 export const statusColors: Record<string, string> = {

@@ -84,6 +84,60 @@ export async function refreshAdminToken(): Promise<{
   return payload;
 }
 
+export async function changeAdminPassword(input: {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}): Promise<void> {
+  const token = getStoredAdminToken();
+  const response = await fetch(
+    joinApiUrl(BACKEND_BASE_URL, 'admin/auth/change-password'),
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        current_password: input.currentPassword,
+        new_password: input.newPassword,
+        confirm_password: input.confirmPassword,
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    let detail = 'change_password_failed';
+    try {
+      const body = (await response.json()) as { detail?: unknown };
+      if (typeof body.detail === 'string') {
+        detail = body.detail;
+      }
+    } catch {
+      // ignore
+    }
+    throw new Error(detail);
+  }
+
+  // Changing the password invalidates the old session token; the server returns a
+  // freshly issued one so the current session stays authenticated. If it is missing
+  // or the body is malformed, the stored token is already dead, so clear it and fail
+  // loudly instead of leaving the session on a token that will immediately 401.
+  const payload = (await response.json().catch(() => null)) as {
+    access_token?: unknown;
+  } | null;
+  if (
+    !payload ||
+    typeof payload.access_token !== 'string' ||
+    payload.access_token.trim().length === 0
+  ) {
+    clearStoredAdminToken();
+    throw new Error('change_password_failed');
+  }
+  setStoredAdminToken(payload.access_token);
+}
+
 export async function logoutAdmin(): Promise<void> {
   const token = getStoredAdminToken();
   const init: RequestInit = {
