@@ -7,6 +7,7 @@ import { ResultDetailView } from '@/app/components/admin/results/ResultDetailVie
 import { ResultsBrowserView } from '@/app/components/admin/results/ResultsBrowserView';
 import { ResultsDayView } from '@/app/components/admin/results/ResultsDayView';
 import { SettingsView } from '@/app/components/admin/settings/SettingsView';
+import { TutorialsView } from '@/app/components/admin/tutorials/TutorialsView';
 import { adminPanelDemo, quizDetailDemo } from '@/app/legacy/data/demo';
 import { formatAdminDate } from '@/lib/admin-date-time';
 import {
@@ -31,7 +32,8 @@ type AdminView =
   | 'editor'
   | 'running'
   | 'results'
-  | 'settings';
+  | 'settings'
+  | 'tutorials';
 type EditorMode = 'create' | 'edit';
 
 const demoQuizIds = new Set(
@@ -106,6 +108,9 @@ export default function AdminDashboard({
     }
     if (viewParam === 'details') {
       return 'details';
+    }
+    if (viewParam === 'tutorials') {
+      return 'tutorials';
     }
     if (viewParam === 'settings') {
       return 'settings';
@@ -311,6 +316,9 @@ export default function AdminDashboard({
     if (adminView === 'detail' || adminView === 'details') {
       return 'details';
     }
+    if (adminView === 'tutorials') {
+      return 'samouczki';
+    }
     if (adminView === 'settings') {
       return 'ustawienia';
     }
@@ -325,6 +333,10 @@ export default function AdminDashboard({
       }
       if (itemId === 'details') {
         router.push(`${adminBase}?view=details`);
+        return;
+      }
+      if (itemId === 'samouczki') {
+        router.push(`${adminBase}?view=tutorials`);
         return;
       }
       if (itemId === 'ustawienia') {
@@ -436,6 +448,15 @@ export default function AdminDashboard({
               onLogout={onLogout}
             />
           ))}
+
+        {adminView === 'tutorials' && (
+          <TutorialsView
+            adminBase={adminBase}
+            menuActiveItem={menuActiveItem}
+            onMenuNavigate={handleMenuNavigate}
+            onLogout={onLogout}
+          />
+        )}
 
         {adminView === 'settings' && (
           <SettingsView
