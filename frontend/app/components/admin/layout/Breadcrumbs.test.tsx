@@ -16,7 +16,7 @@ test('renders a link for non-final items and marks the last as current', () => {
     />,
   );
   assert.match(html, /Moje Quizy/);
-  assert.match(html, /href="\/admin"/);
+  assert.match(html, /href="\/admin\/?"/);
   assert.match(html, /Edycja quizu/);
   assert.match(html, /aria-current="page"/);
 });
