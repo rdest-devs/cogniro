@@ -39,3 +39,57 @@ test('without preSortedRanking, raw ranking is sorted by score and re-indexed', 
   // Raw positions (42) are replaced by index-based ones.
   assert.doesNotMatch(html, />42</);
 });
+
+const noop = () => {};
+
+const soloRanking: RankingEntry[] = [
+  { position: 1, name: 'Winner', score: '90', medal: 'gold' },
+];
+
+test('renders the icon-only refresh button when onRefreshRanking is provided', () => {
+  const html = ReactDOMServer.renderToString(
+    <QuizResults
+      {...baseProps}
+      ranking={soloRanking}
+      preSortedRanking
+      onRefreshRanking={noop}
+    />,
+  );
+  assert.match(html, /aria-label="Odśwież ranking"/);
+});
+
+test('omits the refresh button when onRefreshRanking is not provided', () => {
+  const html = ReactDOMServer.renderToString(
+    <QuizResults {...baseProps} ranking={soloRanking} preSortedRanking />,
+  );
+  assert.doesNotMatch(html, /Odśwież ranking/);
+});
+
+test('refresh button is disabled, busy and spinning while refreshing', () => {
+  const html = ReactDOMServer.renderToString(
+    <QuizResults
+      {...baseProps}
+      ranking={soloRanking}
+      preSortedRanking
+      onRefreshRanking={noop}
+      refreshingRanking
+    />,
+  );
+  assert.match(html, /aria-busy="true"/);
+  assert.match(html, /disabled=""/);
+  assert.match(html, /animate-spin/);
+});
+
+test('renders no ranking section or refresh button without ranking data', () => {
+  // Mirrors play replay mode: when no leaderboard is fetched, `ranking` stays
+  // unset, so neither the ranking list nor its refresh button may appear.
+  const html = ReactDOMServer.renderToString(
+    <QuizResults
+      {...baseProps}
+      rankingTitle="Tablica wyników"
+      onRefreshRanking={noop}
+    />,
+  );
+  assert.doesNotMatch(html, /Tablica wyników/);
+  assert.doesNotMatch(html, /Odśwież ranking/);
+});

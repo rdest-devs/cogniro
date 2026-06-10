@@ -134,6 +134,7 @@ export default function QuizResults({
                   onClick={onRefreshRanking}
                   disabled={refreshingRanking}
                   aria-label="Odśwież ranking"
+                  aria-busy={refreshingRanking}
                   className="-m-1.5 cursor-pointer rounded-full p-1.5 text-[var(--text-muted)] transition-opacity hover:opacity-70 disabled:cursor-default disabled:opacity-50"
                 >
                   <RefreshCw
@@ -149,7 +150,7 @@ export default function QuizResults({
             <div className="h-px bg-[var(--border)]" />
             {displayRanking.map((entry, idx) => (
               <RankingRow
-                key={`${entry.position}-${entry.name}`}
+                key={entry.name}
                 entry={entry}
                 isLast={idx === displayRanking.length - 1}
               />
