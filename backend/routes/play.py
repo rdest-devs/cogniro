@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import os
-from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
-from pydantic import BaseModel, Field, StringConstraints
 
 from schemas.kqf import KqfQuestion, KqfQuiz
+from schemas.play import (
+    JoinBody,
+    LeaderboardEntryModel,
+    LeaderboardResponse,
+    SubmitBody,
+)
 from services import sessions
 from services.admin_quiz import check_availability
 from services.kqf import KqfParseError
@@ -24,29 +28,6 @@ from services.quiz_files import (
 from services.storage import get_storage, quiz_dir_for
 
 router = APIRouter(prefix="/play", tags=["play"])
-
-Nickname = Annotated[
-    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=128)
-]
-
-
-class JoinBody(BaseModel):
-    nickname: Nickname
-
-
-class SubmitBody(BaseModel):
-    nickname: Nickname
-    score: int = Field(ge=0)
-
-
-class LeaderboardEntryModel(BaseModel):
-    position: int
-    nickname: str
-    score: int
-
-
-class LeaderboardResponse(BaseModel):
-    entries: list[LeaderboardEntryModel]
 
 
 def _apply_session_shuffle(quiz: KqfQuiz, pin: str) -> KqfQuiz:

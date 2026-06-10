@@ -1,6 +1,12 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import { AttemptReview, QuizResults } from '@/app/components/quiz';
 import { buildReviewQuestions } from '@/app/play/buildReviewQuestions';
@@ -41,6 +47,7 @@ export function PlayResult({
   const [view, setView] = useState<View>('results');
   const [submitNote, setSubmitNote] = useState<string | null>(null);
   const [ranking, setRanking] = useState<RankingEntry[] | null>(null);
+  const [refreshingRanking, setRefreshingRanking] = useState(false);
 
   const acceptedRef = useRef(() => {
     clearPlayState(window.sessionStorage, code, nickname);
@@ -52,48 +59,70 @@ export function PlayResult({
     };
   }, [code, nickname]);
 
+  // Fetch the live leaderboard and map it to display rows (best-effort).
+  // Returns null when the request fails so callers can keep the current rows.
+  const fetchRanking = useCallback(async (): Promise<RankingEntry[] | null> => {
+    const lb = await getLeaderboard(code);
+    return lb.ok ? buildLeaderboardRows(lb.entries, nickname) : null;
+  }, [code, nickname]);
+
+  const refreshRanking = useCallback(async () => {
+    setRefreshingRanking(true);
+    try {
+      const rows = await fetchRanking();
+      if (rows) {
+        setRanking(rows);
+      }
+    } finally {
+      setRefreshingRanking(false);
+    }
+  }, [fetchRanking]);
+
   useEffect(() => {
+    // A local replay (after „Spróbuj ponownie") does not submit a score, so the
+    // live leaderboard would not reflect this attempt — skip it entirely.
+    if (skipServerSubmit) {
+      return;
+    }
     let cancelled = false;
     void (async () => {
-      if (!skipServerSubmit) {
-        try {
-          const r = await submitPlay(code, nickname, score);
-          if (cancelled) {
-            return;
-          }
-          if (r.ok) {
-            acceptedRef.current();
-          } else if (r.nicknameViolation) {
-            setSubmitNote(
-              'Twój pseudonim został odrzucony (naruszenie zasad). Wynik nie został zapisany na serwerze.',
-            );
-          } else {
-            setSubmitNote(
-              'Nie udało się zapisać wyniku na serwerze. Twój wynik powyżej jest liczony lokalnie.',
-            );
-          }
-        } catch {
-          if (cancelled) {
-            return;
-          }
+      try {
+        const r = await submitPlay(code, nickname, score);
+        if (cancelled) {
+          return;
+        }
+        if (r.ok) {
+          acceptedRef.current();
+        } else if (r.nicknameViolation) {
           setSubmitNote(
-            'Błąd sieci. Nie udało się zapisać wyniku na serwerze. Twój wynik powyżej jest liczony lokalnie.',
+            'Twój pseudonim został odrzucony (naruszenie zasad). Wynik nie został zapisany na serwerze.',
+          );
+        } else {
+          setSubmitNote(
+            'Nie udało się zapisać wyniku na serwerze. Twój wynik powyżej jest liczony lokalnie.',
           );
         }
+      } catch {
+        if (cancelled) {
+          return;
+        }
+        setSubmitNote(
+          'Błąd sieci. Nie udało się zapisać wyniku na serwerze. Twój wynik powyżej jest liczony lokalnie.',
+        );
       }
-      // Fetch the live leaderboard once the score has been submitted (best-effort).
-      const lb = await getLeaderboard(code);
+      // Fetch the live leaderboard once the score has been submitted.
+      const rows = await fetchRanking();
       if (cancelled) {
         return;
       }
-      if (lb.ok) {
-        setRanking(buildLeaderboardRows(lb.entries, nickname));
+      if (rows) {
+        setRanking(rows);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [code, nickname, score, skipServerSubmit]);
+  }, [code, nickname, score, skipServerSubmit, fetchRanking]);
 
   const maxPts = maxScoreFromQuiz(quiz);
   const correctCount = correctAnswerCount(quiz, answers);
@@ -126,6 +155,8 @@ export function PlayResult({
                 ranking={ranking ?? undefined}
                 rankingTitle="Tablica wyników"
                 preSortedRanking
+                onRefreshRanking={refreshRanking}
+                refreshingRanking={refreshingRanking}
                 celebratePodium={ranking ? currentOnPodium(ranking) : false}
                 showAnswerReview={allowAnswerReview}
                 onReview={

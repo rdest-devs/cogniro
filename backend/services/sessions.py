@@ -208,9 +208,9 @@ def rank_submitted_participants(
         for p in participants
         if p.submitted_at is not None and p.score is not None and not p.blocked
     ]
-    submitted.sort(key=lambda p: (-int(p.score), p.submitted_at, p.nickname.casefold()))
+    submitted.sort(key=lambda p: (-p.score, p.submitted_at, p.nickname.casefold()))
     return [
-        LeaderboardEntry(position=index + 1, nickname=p.nickname, score=int(p.score))
+        LeaderboardEntry(position=index + 1, nickname=p.nickname, score=p.score)
         for index, p in enumerate(submitted)
     ]
 
