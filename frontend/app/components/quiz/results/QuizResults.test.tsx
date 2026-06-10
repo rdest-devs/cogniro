@@ -56,6 +56,8 @@ test('renders the icon-only refresh button when onRefreshRanking is provided', (
     />,
   );
   assert.match(html, /aria-label="Odśwież ranking"/);
+  // Idle button must not spin — guards against dropping the refreshing ternary.
+  assert.doesNotMatch(html, /animate-spin/);
 });
 
 test('omits the refresh button when onRefreshRanking is not provided', () => {
