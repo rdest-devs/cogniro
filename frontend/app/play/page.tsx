@@ -100,7 +100,11 @@ function PlayExperience({ urlCode }: { urlCode: string }) {
   const finishQuiz = (playState: Extract<Stage, { name: 'playing' }>) => {
     if (finishedRef.current) return;
     finishedRef.current = true;
-    const score = calculateScore(playState.state.quiz, playState.state.answers);
+    const score = calculateScore(
+      playState.state.quiz,
+      playState.state.answers,
+      playState.state.answerTimes,
+    );
     setStage({
       name: 'result',
       code: playState.code,

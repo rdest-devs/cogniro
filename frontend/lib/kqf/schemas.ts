@@ -184,12 +184,43 @@ export const kqfOrderingSchema = z
     }
   });
 
+export const kqfImagePixelateSchema = z
+  .object({
+    ...baseFields,
+    type: z.literal('imagepixelate'),
+    choices: z.array(kqfChoiceSchema).min(2).max(6),
+  })
+  .superRefine((v, ctx) => {
+    if (v.choices.filter((c) => c.is_correct).length !== 1) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'imagepixelate must have exactly 1 correct',
+        path: ['choices'],
+      });
+    }
+    if (!v.media?.image?.trim()) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'imagepixelate requires an image',
+        path: ['media', 'image'],
+      });
+    }
+    if (v.time_s == null) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'imagepixelate requires a per-question time',
+        path: ['time_s'],
+      });
+    }
+  });
+
 export const kqfQuestionSchema = z.discriminatedUnion('type', [
   kqfSingleChoiceSchema,
   kqfMultiChoiceSchema,
   kqfTrueFalseSchema,
   kqfSliderSchema,
   kqfOrderingSchema,
+  kqfImagePixelateSchema,
 ]);
 
 export const kqfQuizSchema = z.object({
@@ -204,5 +235,6 @@ export type KqfMultiChoice = z.infer<typeof kqfMultiChoiceSchema>;
 export type KqfTrueFalse = z.infer<typeof kqfTrueFalseSchema>;
 export type KqfSlider = z.infer<typeof kqfSliderSchema>;
 export type KqfOrdering = z.infer<typeof kqfOrderingSchema>;
+export type KqfImagePixelate = z.infer<typeof kqfImagePixelateSchema>;
 export type KqfMedia = z.infer<typeof kqfMediaSchema>;
 export type KqfChoice = z.infer<typeof kqfChoiceSchema>;

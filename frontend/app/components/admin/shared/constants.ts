@@ -39,6 +39,7 @@ export const typeColors: Record<string, string> = {
   Wielokrotny: 'bg-[var(--primary-blue)] text-white',
   'Prawda / fałsz': 'bg-[var(--orange)] text-white',
   Suwak: 'bg-[var(--wrong-fg)] text-white',
+  'Obraz pikselowany': 'bg-[var(--text-dark)] text-white',
 };
 
 /** Shared admin toolbar button styles (AdminPanel, QuizDetail). */

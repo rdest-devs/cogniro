@@ -21,6 +21,7 @@ const typeLabel: Record<QuizEditorQuestionForm['type'], string> = {
   truefalse: 'Prawda / fałsz',
   slider: 'Suwak',
   ordering: 'Porządkowanie',
+  imagepixelate: 'Obraz pikselowany',
 };
 
 function previewBody(
@@ -30,6 +31,7 @@ function previewBody(
   switch (question.type) {
     case 'singlechoice':
     case 'multichoice':
+    case 'imagepixelate':
       return question.choices.map((choice, i) => {
         const rawChoiceImage =
           typeof choice.image === 'string' && choice.image.trim()
