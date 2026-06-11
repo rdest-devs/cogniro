@@ -55,6 +55,26 @@ def test_play_submit_counts_toward_same_limit(
     assert r.status_code == 429
 
 
+def test_play_leaderboard_is_rate_limited(
+    client: TestClient,
+    admin_token_header: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("core.settings.PLAY_RATE_LIMIT_MAX_REQUESTS", 2)
+    monkeypatch.setattr("core.settings.PLAY_RATE_LIMIT_WINDOW_SEC", 3600)
+
+    quiz_id = _create_quiz(client, admin_token_header)
+    pin = client.post(
+        f"/admin/quiz/{quiz_id}/activate", headers=admin_token_header
+    ).json()["pin"]
+
+    assert client.get(f"/play/{pin}/leaderboard").status_code == 200
+    assert client.get(f"/play/{pin}/leaderboard").status_code == 200
+    r = client.get(f"/play/{pin}/leaderboard")
+    assert r.status_code == 429
+    assert r.json()["detail"] == "rate_limited"
+
+
 def test_separate_ips_tracked_when_trust_forwarded(
     client: TestClient,
     admin_token_header: dict[str, str],

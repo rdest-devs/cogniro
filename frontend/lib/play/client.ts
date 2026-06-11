@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import { BACKEND_BASE_URL, joinApiUrl } from '@/lib/backend-url';
 import { type KqfQuiz, kqfQuizSchema } from '@/lib/kqf';
 
@@ -53,6 +55,26 @@ export type JoinResult =
 export type SubmitResult =
   | { ok: true }
   | { ok: false; nicknameViolation: boolean };
+
+export interface LeaderboardEntry {
+  position: number;
+  nickname: string;
+  score: number;
+}
+
+const leaderboardSchema = z.object({
+  entries: z.array(
+    z.object({
+      position: z.number().int(),
+      nickname: z.string(),
+      score: z.number(),
+    }),
+  ),
+});
+
+export type LeaderboardResult =
+  | { ok: true; entries: LeaderboardEntry[] }
+  | { ok: false };
 
 export async function joinPlay(
   pin: string,
@@ -147,4 +169,29 @@ export async function submitPlay(
     }
   }
   return { ok: false, nicknameViolation: false };
+}
+
+export async function getLeaderboard(pin: string): Promise<LeaderboardResult> {
+  let r: Response;
+  try {
+    r = await fetch(joinApiUrl(BACKEND_BASE_URL, `/play/${pin}/leaderboard`), {
+      method: 'GET',
+    });
+  } catch {
+    return { ok: false };
+  }
+  if (!r.ok) {
+    return { ok: false };
+  }
+  let payload: unknown;
+  try {
+    payload = await r.json();
+  } catch {
+    return { ok: false };
+  }
+  const parsed = leaderboardSchema.safeParse(payload);
+  if (!parsed.success) {
+    return { ok: false };
+  }
+  return { ok: true, entries: parsed.data.entries };
 }
