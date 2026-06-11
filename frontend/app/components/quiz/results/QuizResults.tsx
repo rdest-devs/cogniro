@@ -5,6 +5,8 @@ import { useMemo } from 'react';
 
 import type { RankingEntry } from '@/app/types';
 
+import PromoCard from './PromoCard';
+import { promoContents } from './promoData';
 import RankingRow from './RankingRow';
 import ScoreCircle from './ScoreCircle';
 
@@ -184,16 +186,11 @@ export default function QuizResults({
               </span>
             </button>
           ) : null}
-
-          <a
-            href="https://www.informatyka.agh.edu.pl"
-            target="_blank"
-            rel="noreferrer"
-            className="text-sm font-medium text-[var(--text-muted)] hover:underline"
-          >
-            Zobacz stronę Wydziału Informatyki AGH!
-          </a>
         </nav>
+
+        {promoContents.map((promo) => (
+          <PromoCard key={promo.title} content={promo} />
+        ))}
       </div>
     </div>
   );
