@@ -82,6 +82,42 @@ test('refresh button is disabled, busy and spinning while refreshing', () => {
   assert.match(html, /animate-spin/);
 });
 
+test('notice renders in flow after the action buttons and before promo cards', () => {
+  const html = ReactDOMServer.renderToString(
+    <QuizResults
+      {...baseProps}
+      onRetry={noop}
+      onReview={noop}
+      notice={<p>NOTICE_MARKER</p>}
+    />,
+  );
+  const noticeAt = html.indexOf('NOTICE_MARKER');
+  const reviewAt = html.indexOf('Przejrzyj odpowiedzi');
+  const retryAt = html.indexOf('Spróbuj ponownie');
+  const promoAt = html.indexOf('Wydział Informatyki AGH');
+  assert.ok(noticeAt > -1, 'notice is rendered');
+  // Below both buttons („Przejrzyj odpowiedzi" is the last one)…
+  assert.ok(noticeAt > reviewAt && noticeAt > retryAt);
+  // …and above the promotional materials, pushing them down (no overlay).
+  assert.ok(promoAt > -1 && noticeAt < promoAt);
+});
+
+test('notice still renders below „Spróbuj ponownie" when answer review is hidden', () => {
+  const html = ReactDOMServer.renderToString(
+    <QuizResults
+      {...baseProps}
+      onRetry={noop}
+      showAnswerReview={false}
+      notice={<p>NOTICE_MARKER</p>}
+    />,
+  );
+  const noticeAt = html.indexOf('NOTICE_MARKER');
+  const retryAt = html.indexOf('Spróbuj ponownie');
+  const promoAt = html.indexOf('Wydział Informatyki AGH');
+  assert.doesNotMatch(html, /Przejrzyj odpowiedzi/);
+  assert.ok(noticeAt > retryAt && noticeAt < promoAt);
+});
+
 test('renders no ranking section or refresh button without ranking data', () => {
   // Mirrors play replay mode: when no leaderboard is fetched, `ranking` stays
   // unset, so neither the ranking list nor its refresh button may appear.

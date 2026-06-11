@@ -1,7 +1,7 @@
 'use client';
 
 import { FileCheck, PartyPopper, RefreshCw, RotateCcw } from 'lucide-react';
-import { useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 
 import type { RankingEntry } from '@/app/types';
 
@@ -34,6 +34,11 @@ interface QuizResultsProps {
   showAnswerReview?: boolean;
   onRetry?: () => void;
   onReview?: () => void;
+  /**
+   * Status/error message shown in flow below the action buttons and above the
+   * promotional materials (pushes them down instead of overlaying them).
+   */
+  notice?: ReactNode;
 }
 
 function parseScore(score: string): number {
@@ -54,6 +59,7 @@ export default function QuizResults({
   showAnswerReview = true,
   onRetry,
   onReview,
+  notice,
 }: QuizResultsProps) {
   const displayRanking = useMemo(() => {
     if (!ranking) return [];
@@ -187,6 +193,8 @@ export default function QuizResults({
             </button>
           ) : null}
         </nav>
+
+        {notice}
 
         {promoContents.map((promo) => (
           <PromoCard key={promo.title} content={promo} />
