@@ -1,16 +1,16 @@
 import { ArrowUpRight } from 'lucide-react';
 
-import { type PromoContent, promoContent } from './promoData';
+import type { PromoContent } from './promoData';
 
 interface PromoCardProps {
-  content?: PromoContent;
+  content: PromoContent;
 }
 
 /**
  * Promotional section on the results screen. Renders nothing when there is no
  * title or description, so missing content never breaks the layout.
  */
-export default function PromoCard({ content = promoContent }: PromoCardProps) {
+export default function PromoCard({ content }: PromoCardProps) {
   const title = content.title?.trim() ?? '';
   const description = content.description?.trim() ?? '';
   if (!title && !description) {

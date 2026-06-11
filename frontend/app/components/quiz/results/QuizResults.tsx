@@ -55,13 +55,6 @@ export default function QuizResults({
   onRetry,
   onReview,
 }: QuizResultsProps) {
-  // Lightweight ad engine: rotate the promo entries so different participants
-  // see different materials. The pick is derived from the score (deterministic)
-  // so the markup is identical on the server and client — no hydration mismatch
-  // and no client-only effect needed.
-  const promo =
-    promoContents[scorePercent % promoContents.length] ?? promoContents[0];
-
   const displayRanking = useMemo(() => {
     if (!ranking) return [];
     // Already ranked upstream (positions/medals are final) — render as-is.
@@ -195,7 +188,9 @@ export default function QuizResults({
           ) : null}
         </nav>
 
-        <PromoCard content={promo} />
+        {promoContents.map((promo) => (
+          <PromoCard key={promo.title} content={promo} />
+        ))}
       </div>
     </div>
   );

@@ -15,10 +15,9 @@ export interface PromoContent {
 
 /**
  * Promotional entries shown on the results screen after a quiz. The results
- * view picks one at random (a lightweight "ad engine"), so add or swap entries
- * here to change what participants see. Each entry degrades gracefully: a
- * missing image falls back to a branded gradient header, and a missing CTA is
- * simply omitted.
+ * view renders all of them, so add or swap entries here to change what
+ * participants see. Each entry degrades gracefully: a missing image falls back
+ * to a branded gradient header, and a missing CTA is simply omitted.
  */
 export const promoContents: PromoContent[] = [
   {
@@ -32,26 +31,12 @@ export const promoContents: PromoContent[] = [
     imageBg: 'light',
   },
   {
-    title: 'Koło Naukowe BIT',
-    description:
-      'Studencka przestrzeń do wymiany wiedzy i testowania pomysłów - web, algorytmy, AI i nie tylko. Rozwijaj się z najlepszymi studentami Informatyki AGH.',
-    ctaLabel: 'Poznaj KN BIT',
-    ctaHref: 'https://knbit.edu.pl/',
-    imageUrl: '/images/knbit-logo.svg',
-    imageAlt: 'Logo Koła Naukowego BIT',
-    imageBg: 'light',
-  },
-  {
-    title: 'WRSS Wydziału Informatyki',
-    description:
-      'Wydziałowa Rada Samorządu Studentów reprezentuje studentów WI AGH, dba o jakość kształcenia i organizuje wydarzenia integracyjne dla całej społeczności.',
-    ctaLabel: 'Sprawdź WRSS WI',
-    ctaHref: 'https://wrss.informatyka.agh.edu.pl/',
-    imageUrl: '/images/wrss-wi-logo-white.png',
-    imageAlt: 'Logo WRSS Wydziału Informatyki AGH',
+    title: 'Sylabusy Wydziału Informatyki',
+    description: 'Zobacz sylabusy naszych kierunków!',
+    ctaLabel: 'Zobacz sylabusy WI',
+    ctaHref: 'https://sylabusy.agh.edu.pl/pl/1/2/22/0/0/63',
+    imageUrl: '/images/agh-logo.svg',
+    imageAlt: 'Logo Wydziału Informatyki AGH',
     imageBg: 'brand',
   },
 ];
-
-/** Default promo entry, used when a caller wants a single deterministic card. */
-export const promoContent: PromoContent = promoContents[0];
