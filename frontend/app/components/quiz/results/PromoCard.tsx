@@ -22,12 +22,22 @@ export default function PromoCard({ content = promoContent }: PromoCardProps) {
   return (
     <section className="w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card-bg)]">
       {content.imageUrl ? (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          src={content.imageUrl}
-          alt={content.imageAlt ?? ''}
-          className="h-32 w-full object-cover"
-        />
+        <div
+          className={`flex h-32 w-full items-center justify-center p-5 ${
+            content.imageBg === 'brand'
+              ? 'bg-gradient-to-r from-[var(--primary-blue)] to-[var(--orange)]'
+              : 'border-b border-[var(--border)] bg-[var(--card-bg)]'
+          }`}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={content.imageUrl}
+            alt={content.imageAlt ?? ''}
+            loading="lazy"
+            decoding="async"
+            className="max-h-full max-w-full object-contain"
+          />
+        </div>
       ) : (
         <div
           className="h-20 w-full bg-gradient-to-r from-[var(--primary-blue)] to-[var(--orange)]"

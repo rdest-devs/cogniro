@@ -52,3 +52,43 @@ test('omits the CTA when the link is missing but keeps title and description', (
   assert.match(html, /Opis/);
   assert.doesNotMatch(html, /<a /);
 });
+
+test('omits the CTA when cta fields are not provided at all', () => {
+  const html = ReactDOMServer.renderToString(
+    <PromoCard content={{ title: 'Tytuł', description: 'Opis' }} />,
+  );
+  assert.match(html, /Tytuł/);
+  assert.doesNotMatch(html, /<a /);
+});
+
+test('renders the image with lazy/async hints and object-contain', () => {
+  const html = ReactDOMServer.renderToString(
+    <PromoCard
+      content={{
+        title: 'Tytuł',
+        description: 'Opis',
+        imageUrl: '/images/logo.png',
+        imageAlt: 'Logo',
+      }}
+    />,
+  );
+  assert.match(html, /src="\/images\/logo\.png"/);
+  assert.match(html, /alt="Logo"/);
+  assert.match(html, /loading="lazy"/);
+  assert.match(html, /decoding="async"/);
+  assert.match(html, /object-contain/);
+});
+
+test('uses the brand gradient backdrop for light logos (imageBg=brand)', () => {
+  const html = ReactDOMServer.renderToString(
+    <PromoCard
+      content={{
+        title: 'Tytuł',
+        description: 'Opis',
+        imageUrl: '/images/white-logo.png',
+        imageBg: 'brand',
+      }}
+    />,
+  );
+  assert.match(html, /bg-gradient-to-r/);
+});

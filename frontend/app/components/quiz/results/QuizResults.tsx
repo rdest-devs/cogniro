@@ -6,6 +6,7 @@ import { useMemo } from 'react';
 import type { RankingEntry } from '@/app/types';
 
 import PromoCard from './PromoCard';
+import { promoContents } from './promoData';
 import RankingRow from './RankingRow';
 import ScoreCircle from './ScoreCircle';
 
@@ -34,6 +35,13 @@ export default function QuizResults({
   onRetry,
   onReview,
 }: QuizResultsProps) {
+  // Lightweight ad engine: rotate the promo entries so different participants
+  // see different materials. The pick is derived from the score (deterministic)
+  // so the markup is identical on the server and client — no hydration mismatch
+  // and no client-only effect needed.
+  const promo =
+    promoContents[scorePercent % promoContents.length] ?? promoContents[0];
+
   const sortedRanking = useMemo(() => {
     if (!ranking) return [];
     return [...ranking]
@@ -131,7 +139,7 @@ export default function QuizResults({
           ) : null}
         </nav>
 
-        <PromoCard />
+        <PromoCard content={promo} />
       </div>
     </div>
   );
