@@ -1,4 +1,5 @@
 import { ArrowUpRight } from 'lucide-react';
+import ExportedImage from 'next-image-export-optimizer';
 
 import type { PromoContent } from './promoData';
 
@@ -29,12 +30,11 @@ export default function PromoCard({ content }: PromoCardProps) {
               : 'border-b border-[var(--border)] bg-[var(--card-bg)]'
           }`}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <ExportedImage
             src={content.imageUrl}
             alt={content.imageAlt ?? ''}
-            loading="lazy"
-            decoding="async"
+            width={240}
+            height={88}
             className="max-h-full max-w-full object-contain"
           />
         </div>
