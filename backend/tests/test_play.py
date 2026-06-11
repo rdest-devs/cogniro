@@ -211,3 +211,42 @@ def test_submit_twice_is_idempotent_returns_200(
         f"/admin/quiz/{quiz_id}/session", headers=admin_token_header
     ).json()
     assert snap["participants"][0]["score"] == 1
+
+
+def test_leaderboard_unknown_pin_returns_404(client: TestClient) -> None:
+    r = client.get("/play/AAAAAA/leaderboard")
+    assert r.status_code == 404
+
+
+def test_leaderboard_ranks_submitted_participants(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    payload = _minimal_quiz_payload()
+    payload["questions"][0]["points"] = 1000
+    quiz_id = client.post(
+        "/admin/quiz", json=payload, headers=admin_token_header
+    ).json()["id"]
+    pin = client.post(
+        f"/admin/quiz/{quiz_id}/activate", headers=admin_token_header
+    ).json()["pin"]
+    for nickname, score in [("Ala", 300), ("Bob", 900), ("Cyryl", 600)]:
+        client.post(f"/play/{pin}/join", json={"nickname": nickname})
+        client.post(f"/play/{pin}/submit", json={"nickname": nickname, "score": score})
+    body = client.get(f"/play/{pin}/leaderboard").json()
+    assert [e["nickname"] for e in body["entries"]] == ["Bob", "Cyryl", "Ala"]
+    assert body["entries"][0]["position"] == 1
+    assert body["entries"][0]["score"] == 900
+
+
+def test_leaderboard_excludes_participants_without_submission(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    quiz_id = _create_quiz(client, admin_token_header)
+    pin = client.post(
+        f"/admin/quiz/{quiz_id}/activate", headers=admin_token_header
+    ).json()["pin"]
+    client.post(f"/play/{pin}/join", json={"nickname": "Submitted"})
+    client.post(f"/play/{pin}/submit", json={"nickname": "Submitted", "score": 1})
+    client.post(f"/play/{pin}/join", json={"nickname": "JoinedOnly"})
+    body = client.get(f"/play/{pin}/leaderboard").json()
+    assert [e["nickname"] for e in body["entries"]] == ["Submitted"]

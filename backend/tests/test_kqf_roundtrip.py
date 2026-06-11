@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import pytest
+from pydantic import ValidationError
+
 from schemas.kqf import (
     KqfChoice,
     KqfFrontMatter,
+    KqfImagePixelate,
     KqfMedia,
     KqfMultiChoice,
     KqfOrdering,
@@ -188,3 +192,57 @@ def test_roundtrip_full_kqf_example() -> None:
         ],
     )
     _assert_roundtrip(quiz)
+
+
+def test_roundtrip_imagepixelate_question() -> None:
+    quiz = KqfQuiz(
+        front_matter=KqfFrontMatter(title="Guess the image"),
+        questions=[
+            KqfImagePixelate(
+                id="Q1",
+                type="imagepixelate",
+                text="What is on the picture?",
+                time_s=20,
+                points=500,
+                choices=[
+                    KqfChoice(text="Dog", is_correct=True),
+                    KqfChoice(text="Cat", is_correct=False),
+                    KqfChoice(text="Bird", is_correct=False),
+                ],
+                media=KqfMedia(image="./media/animal.jpg"),
+            ),
+        ],
+    )
+    _assert_roundtrip(quiz)
+    parsed = parse_kqf(serialize_kqf(quiz))
+    question = parsed.questions[0]
+    assert isinstance(question, KqfImagePixelate)
+    assert question.media.image == "./media/animal.jpg"
+
+
+def test_imagepixelate_requires_an_image() -> None:
+    with pytest.raises(ValidationError):
+        KqfImagePixelate(
+            id="Q1",
+            type="imagepixelate",
+            text="No image here",
+            time_s=20,
+            choices=[
+                KqfChoice(text="A", is_correct=True),
+                KqfChoice(text="B", is_correct=False),
+            ],
+        )
+
+
+def test_imagepixelate_requires_a_time() -> None:
+    with pytest.raises(ValidationError):
+        KqfImagePixelate(
+            id="Q1",
+            type="imagepixelate",
+            text="Has an image but no time",
+            media=KqfMedia(image="./media/animal.jpg"),
+            choices=[
+                KqfChoice(text="A", is_correct=True),
+                KqfChoice(text="B", is_correct=False),
+            ],
+        )

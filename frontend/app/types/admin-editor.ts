@@ -20,6 +20,7 @@ export const kqfQuestionTypeValues = [
   'truefalse',
   'slider',
   'ordering',
+  'imagepixelate',
 ] as const;
 
 export type KqfQuestionType = (typeof kqfQuestionTypeValues)[number];
@@ -70,6 +71,10 @@ export type QuizEditorQuestionForm =
       type: 'ordering';
       items: string[];
       correct_order: number[];
+    })
+  | (QuizEditorQuestionFormBase & {
+      type: 'imagepixelate';
+      choices: QuizEditorChoiceForm[];
     });
 
 export interface QuizEditorFormValues {
@@ -152,6 +157,16 @@ export type AdminQuizApiQuestion =
       hint?: string | null;
       items: string[];
       correct_order: number[];
+    }
+  | {
+      id?: string;
+      type: 'imagepixelate';
+      text: string;
+      time_s?: number | null;
+      points?: number | null;
+      image?: string | null;
+      hint?: string | null;
+      choices: AdminQuizApiChoice[];
     };
 
 export interface AdminQuizApiDetails {
@@ -248,6 +263,20 @@ export type AdminQuizUpsertQuestionPayload =
       hint?: string | null;
       items: string[];
       correct_order: number[];
+    }
+  | {
+      id?: string;
+      type: 'imagepixelate';
+      text: string;
+      time_s?: number | null;
+      points: number;
+      image?: string | null;
+      hint?: string | null;
+      choices: Array<{
+        text: string;
+        is_correct: boolean;
+        image?: string | null;
+      }>;
     };
 
 export interface AdminQuizUpsertPayload {

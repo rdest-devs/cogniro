@@ -1,5 +1,11 @@
 import type { LucideIcon } from 'lucide-react';
-import { BarChart3, BookOpen, FileText, Settings } from 'lucide-react';
+import {
+  BarChart3,
+  BookOpen,
+  FileText,
+  GraduationCap,
+  Settings,
+} from 'lucide-react';
 
 export type SidebarMenuItem = {
   id: string;
@@ -13,7 +19,8 @@ export const menuItems: SidebarMenuItem[] = [
   { id: 'quizy', label: 'Moje Quizy', icon: FileText },
   { id: 'details', label: 'Szczegóły quizów', icon: BookOpen },
   { id: 'statystyki', label: 'Statystyki', icon: BarChart3 },
-  { id: 'ustawienia', label: 'Ustawienia', icon: Settings, disabled: true },
+  { id: 'samouczki', label: 'Samouczki', icon: GraduationCap },
+  { id: 'ustawienia', label: 'Ustawienia', icon: Settings },
 ];
 
 export const statusColors: Record<string, string> = {
@@ -32,6 +39,7 @@ export const typeColors: Record<string, string> = {
   Wielokrotny: 'bg-[var(--primary-blue)] text-white',
   'Prawda / fałsz': 'bg-[var(--orange)] text-white',
   Suwak: 'bg-[var(--wrong-fg)] text-white',
+  'Obraz pikselowany': 'bg-[var(--text-dark)] text-white',
 };
 
 /** Shared admin toolbar button styles (AdminPanel, QuizDetail). */

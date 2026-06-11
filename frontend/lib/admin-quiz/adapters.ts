@@ -20,6 +20,7 @@ const CANONICAL_QUESTION_TYPES = new Set<KqfQuestionType>([
   'truefalse',
   'slider',
   'ordering',
+  'imagepixelate',
 ]);
 
 function mapApiChoiceToForm(c: AdminQuizApiChoice): QuizEditorChoiceForm {
@@ -103,6 +104,17 @@ function mapApiQuestionToForm(q: AdminQuizApiQuestion): QuizEditorQuestionForm {
         type: 'ordering',
         items: q.items,
         correct_order: q.correct_order,
+      };
+    case 'imagepixelate':
+      return {
+        id,
+        text,
+        timeS,
+        points,
+        image,
+        hint,
+        type: 'imagepixelate',
+        choices: q.choices.map(mapApiChoiceToForm),
       };
     default: {
       const _exhaustive: never = q;
@@ -219,6 +231,12 @@ function mapQuestionToPayload(
         type: 'ordering',
         items: q.items,
         correct_order: q.correct_order,
+      };
+    case 'imagepixelate':
+      return {
+        ...common,
+        type: 'imagepixelate',
+        choices: q.choices.map(mapFormChoiceToPayload),
       };
     default: {
       const _never: never = q;

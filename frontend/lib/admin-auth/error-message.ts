@@ -27,3 +27,29 @@ export function getAdminLoginErrorMessage(error: unknown): string {
 
   return message ?? ADMIN_LOGIN_FALLBACK_MESSAGE;
 }
+
+const CHANGE_PASSWORD_FALLBACK_MESSAGE =
+  'Nie udało się zmienić hasła. Spróbuj ponownie później.';
+
+const CHANGE_PASSWORD_MESSAGES: Record<string, string> = {
+  invalid_current_password: 'Obecne hasło jest nieprawidłowe.',
+  password_mismatch: 'Nowe hasło i potwierdzenie nie są takie same.',
+  password_too_long: 'Nowe hasło jest zbyt długie (maksymalnie 72 bajty).',
+};
+
+export function getChangePasswordErrorMessage(error: unknown): string {
+  if (!isErrorLike(error)) {
+    return CHANGE_PASSWORD_FALLBACK_MESSAGE;
+  }
+
+  const message =
+    typeof error.message === 'string' && error.message.trim()
+      ? error.message
+      : undefined;
+
+  if (message && Object.hasOwn(CHANGE_PASSWORD_MESSAGES, message)) {
+    return CHANGE_PASSWORD_MESSAGES[message];
+  }
+
+  return CHANGE_PASSWORD_FALLBACK_MESSAGE;
+}

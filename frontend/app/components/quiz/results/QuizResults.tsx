@@ -1,10 +1,12 @@
 'use client';
 
-import { FileCheck, RotateCcw } from 'lucide-react';
+import { FileCheck, PartyPopper, RefreshCw, RotateCcw } from 'lucide-react';
 import { useMemo } from 'react';
 
 import type { RankingEntry } from '@/app/types';
 
+import PromoCard from './PromoCard';
+import { promoContents } from './promoData';
 import RankingRow from './RankingRow';
 import ScoreCircle from './ScoreCircle';
 
@@ -14,6 +16,21 @@ interface QuizResultsProps {
   scoreTotal: number;
   message: string;
   ranking?: RankingEntry[];
+  /** Heading shown above the ranking list. */
+  rankingTitle?: string;
+  /**
+   * When true, `ranking` is already sorted with final positions/medals (e.g. the
+   * play leaderboard, which pins the current participant at their real position).
+   * It is then rendered as-is. When false (default), raw `ranking` is sorted by
+   * score and positions/medals are assigned by index (used by the demos).
+   */
+  preSortedRanking?: boolean;
+  /** Show a celebratory banner when the current participant is on the podium. */
+  celebratePodium?: boolean;
+  /** When set, a small refresh button next to the ranking title re-fetches it. */
+  onRefreshRanking?: () => void;
+  /** Spins the refresh button and blocks repeated taps while a refresh is in flight. */
+  refreshingRanking?: boolean;
   showAnswerReview?: boolean;
   onRetry?: () => void;
   onReview?: () => void;
@@ -29,12 +46,19 @@ export default function QuizResults({
   scoreTotal,
   message,
   ranking,
+  rankingTitle = 'Ranking Wydziałowy',
+  preSortedRanking = false,
+  celebratePodium = false,
+  onRefreshRanking,
+  refreshingRanking = false,
   showAnswerReview = true,
   onRetry,
   onReview,
 }: QuizResultsProps) {
-  const sortedRanking = useMemo(() => {
+  const displayRanking = useMemo(() => {
     if (!ranking) return [];
+    // Already ranked upstream (positions/medals are final) — render as-is.
+    if (preSortedRanking) return ranking;
     return [...ranking]
       .sort((a, b) => parseScore(b.score) - parseScore(a.score))
       .map((entry, idx) => ({
@@ -49,7 +73,7 @@ export default function QuizResults({
                 ? ('bronze' as const)
                 : undefined,
       }));
-  }, [ranking]);
+  }, [ranking, preSortedRanking]);
 
   return (
     <div className="flex h-full w-full flex-col bg-[var(--page-bg)]">
@@ -84,19 +108,53 @@ export default function QuizResults({
           </div>
         </section>
 
-        {sortedRanking.length > 0 && (
+        {celebratePodium && (
+          <section
+            className="flex items-center gap-3 rounded-2xl border border-[var(--orange)] bg-[var(--highlight-bg)] px-4 py-3.5"
+            role="status"
+          >
+            <PartyPopper
+              size={22}
+              className="shrink-0 text-[var(--orange)] motion-safe:animate-bounce"
+              aria-hidden
+            />
+            <p className="text-[15px] font-bold text-[var(--text-dark)]">
+              Brawo! Jesteś na podium!
+            </p>
+          </section>
+        )}
+
+        {displayRanking.length > 0 && (
           <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card-bg)]">
-            <div className="px-4 py-3.5">
+            <div className="flex items-center justify-between gap-2 px-4 py-3.5">
               <h2 className="text-[15px] font-bold text-[var(--text-dark)]">
-                Ranking Wydziałowy
+                {rankingTitle}
               </h2>
+              {onRefreshRanking ? (
+                <button
+                  type="button"
+                  onClick={onRefreshRanking}
+                  disabled={refreshingRanking}
+                  aria-label="Odśwież ranking"
+                  aria-busy={refreshingRanking}
+                  className="-m-1.5 cursor-pointer rounded-full p-1.5 text-[var(--text-muted)] transition-opacity hover:opacity-70 disabled:cursor-default disabled:opacity-50"
+                >
+                  <RefreshCw
+                    size={16}
+                    className={
+                      refreshingRanking ? 'motion-safe:animate-spin' : undefined
+                    }
+                    aria-hidden
+                  />
+                </button>
+              ) : null}
             </div>
             <div className="h-px bg-[var(--border)]" />
-            {sortedRanking.map((entry, idx) => (
+            {displayRanking.map((entry, idx) => (
               <RankingRow
-                key={entry.position}
+                key={entry.name}
                 entry={entry}
-                isLast={idx === sortedRanking.length - 1}
+                isLast={idx === displayRanking.length - 1}
               />
             ))}
           </section>
@@ -128,16 +186,11 @@ export default function QuizResults({
               </span>
             </button>
           ) : null}
-
-          <a
-            href="https://www.informatyka.agh.edu.pl"
-            target="_blank"
-            rel="noreferrer"
-            className="text-sm font-medium text-[var(--text-muted)] hover:underline"
-          >
-            Zobacz stronę Wydziału Informatyki AGH!
-          </a>
         </nav>
+
+        {promoContents.map((promo) => (
+          <PromoCard key={promo.title} content={promo} />
+        ))}
       </div>
     </div>
   );

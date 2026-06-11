@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import os
-from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
-from pydantic import BaseModel, Field, StringConstraints
 
 from schemas.kqf import KqfQuestion, KqfQuiz
+from schemas.play import (
+    JoinBody,
+    LeaderboardEntryModel,
+    LeaderboardResponse,
+    SubmitBody,
+)
 from services import sessions
 from services.admin_quiz import check_availability
 from services.kqf import KqfParseError
@@ -24,19 +28,6 @@ from services.quiz_files import (
 from services.storage import get_storage, quiz_dir_for
 
 router = APIRouter(prefix="/play", tags=["play"])
-
-Nickname = Annotated[
-    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=128)
-]
-
-
-class JoinBody(BaseModel):
-    nickname: Nickname
-
-
-class SubmitBody(BaseModel):
-    nickname: Nickname
-    score: int = Field(ge=0)
 
 
 def _apply_session_shuffle(quiz: KqfQuiz, pin: str) -> KqfQuiz:
@@ -171,3 +162,27 @@ async def play_submit(pin: str, body: SubmitBody, request: Request) -> dict:
             },
         ) from None
     return {"accepted": True}
+
+
+@router.get("/{pin}/leaderboard", response_model=LeaderboardResponse)
+async def play_leaderboard(pin: str, request: Request) -> LeaderboardResponse:
+    """Public leaderboard for an active session, ranked by score.
+
+    Returns every participant who submitted a score so the player view can show the
+    top positions and pin the current participant when they are outside the top.
+    Rate limited like the sibling /play endpoints: the results screen fetches this
+    once, so the shared per-IP join+submit budget is nowhere near hit in normal
+    play, while an unauthenticated scraping loop against a known PIN stays capped.
+    """
+    enforce_play_rate_limit(request)
+    entries = sessions.leaderboard_for_pin(pin)
+    if entries is None:
+        raise HTTPException(status_code=404, detail="pin_not_active")
+    return LeaderboardResponse(
+        entries=[
+            LeaderboardEntryModel(
+                position=entry.position, nickname=entry.nickname, score=entry.score
+            )
+            for entry in entries
+        ]
+    )
