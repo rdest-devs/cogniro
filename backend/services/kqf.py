@@ -245,7 +245,10 @@ def _parse_question_block(block: str, header_line: int):
             raw_val = directive_match.group("value").strip()
             if key == "image":
                 raw_val = raw_val.rstrip("/")
-                if re.search(r"/image\.webp$|/thumb\.webp$", raw_val, re.IGNORECASE):
+                is_external = raw_val.lower().startswith(("http://", "https://"))
+                if not is_external and re.search(
+                    r"/image\.webp$|/thumb\.webp$", raw_val, re.IGNORECASE
+                ):
                     raise KqfParseError(
                         "@image must be ./media/{asset_id}, not a .../image.webp file path",
                         line=header_line + index,
