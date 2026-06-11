@@ -4,6 +4,11 @@ export type PlayState = {
   quiz: KqfQuiz;
   currentQuestionIndex: number;
   answers: Record<string, unknown>;
+  /**
+   * Fraction (0..1) of per-question time left when each answer was submitted.
+   * Used for imagepixelate time-based partial scoring; absent for older states.
+   */
+  answerTimes?: Record<string, number>;
   startedAt: string;
   submitted: boolean;
 };
@@ -39,7 +44,9 @@ function isPlayStateShape(o: unknown): o is PlayState {
     typeof r.startedAt === 'string' &&
     typeof r.submitted === 'boolean' &&
     r.answers !== null &&
-    typeof r.answers === 'object'
+    typeof r.answers === 'object' &&
+    (r.answerTimes === undefined ||
+      (typeof r.answerTimes === 'object' && r.answerTimes !== null))
   );
 }
 

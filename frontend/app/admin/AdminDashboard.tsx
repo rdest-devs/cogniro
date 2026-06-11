@@ -6,6 +6,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResultDetailView } from '@/app/components/admin/results/ResultDetailView';
 import { ResultsBrowserView } from '@/app/components/admin/results/ResultsBrowserView';
 import { ResultsDayView } from '@/app/components/admin/results/ResultsDayView';
+import { SettingsView } from '@/app/components/admin/settings/SettingsView';
+import { TutorialsView } from '@/app/components/admin/tutorials/TutorialsView';
 import { adminPanelDemo, quizDetailDemo } from '@/app/legacy/data/demo';
 import { formatAdminDate } from '@/lib/admin-date-time';
 import {
@@ -29,7 +31,9 @@ type AdminView =
   | 'details'
   | 'editor'
   | 'running'
-  | 'results';
+  | 'results'
+  | 'settings'
+  | 'tutorials';
 type EditorMode = 'create' | 'edit';
 
 const demoQuizIds = new Set(
@@ -104,6 +108,12 @@ export default function AdminDashboard({
     }
     if (viewParam === 'details') {
       return 'details';
+    }
+    if (viewParam === 'tutorials') {
+      return 'tutorials';
+    }
+    if (viewParam === 'settings') {
+      return 'settings';
     }
     if (wantsNew) {
       return 'editor';
@@ -306,6 +316,12 @@ export default function AdminDashboard({
     if (adminView === 'detail' || adminView === 'details') {
       return 'details';
     }
+    if (adminView === 'tutorials') {
+      return 'samouczki';
+    }
+    if (adminView === 'settings') {
+      return 'ustawienia';
+    }
     return '';
   }, [adminView]);
 
@@ -317,6 +333,14 @@ export default function AdminDashboard({
       }
       if (itemId === 'details') {
         router.push(`${adminBase}?view=details`);
+        return;
+      }
+      if (itemId === 'samouczki') {
+        router.push(`${adminBase}?view=tutorials`);
+        return;
+      }
+      if (itemId === 'ustawienia') {
+        router.push(`${adminBase}?view=settings`);
         return;
       }
       if (itemId === 'quizy') {
@@ -424,6 +448,24 @@ export default function AdminDashboard({
               onLogout={onLogout}
             />
           ))}
+
+        {adminView === 'tutorials' && (
+          <TutorialsView
+            adminBase={adminBase}
+            menuActiveItem={menuActiveItem}
+            onMenuNavigate={handleMenuNavigate}
+            onLogout={onLogout}
+          />
+        )}
+
+        {adminView === 'settings' && (
+          <SettingsView
+            adminBase={adminBase}
+            menuActiveItem={menuActiveItem}
+            onMenuNavigate={handleMenuNavigate}
+            onLogout={onLogout}
+          />
+        )}
 
         {adminView === 'editor' && (
           <QuizEditor

@@ -102,6 +102,21 @@ class AdminQuizMultiChoicePayload(_AdminQuizPayloadBase):
         return self
 
 
+class AdminQuizImagePixelatePayload(_AdminQuizPayloadBase):
+    type: Literal["imagepixelate"]
+    choices: list[AdminQuizChoicePayload] = Field(min_length=2, max_length=6)
+
+    @model_validator(mode="after")
+    def _validate(self) -> AdminQuizImagePixelatePayload:
+        if sum(1 for c in self.choices if c.is_correct) != 1:
+            raise ValueError("imagepixelate musi mieć dokładnie 1 poprawną odpowiedź")
+        if not (self.image and self.image.strip()):
+            raise ValueError("imagepixelate wymaga obrazu")
+        if self.time_s is None:
+            raise ValueError("imagepixelate wymaga ustawienia czasu na pytanie")
+        return self
+
+
 class AdminQuizTrueFalsePayload(_AdminQuizPayloadBase):
     type: Literal["truefalse"]
     correct: bool
@@ -155,7 +170,8 @@ AdminQuizQuestionPayload = Annotated[
     | AdminQuizMultiChoicePayload
     | AdminQuizTrueFalsePayload
     | AdminQuizSliderPayload
-    | AdminQuizOrderingPayload,
+    | AdminQuizOrderingPayload
+    | AdminQuizImagePixelatePayload,
     Field(discriminator="type"),
 ]
 

@@ -78,6 +78,15 @@ export function createQuestionForType(
         items: ['Element 1', 'Element 2', 'Element 3'],
         correct_order: [0, 1, 2],
       };
+    case 'imagepixelate':
+      return {
+        ...base,
+        // imagepixelate requires a per-question time (drives the reveal + scoring);
+        // seed a sensible default so a new question is born valid.
+        timeS: base.timeS ?? 20,
+        type: 'imagepixelate',
+        choices: [createEmptyChoice(), createEmptyChoice()],
+      };
     default: {
       const _exhaustive: never = type;
       return _exhaustive;

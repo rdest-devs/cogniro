@@ -2,9 +2,11 @@
 
 import asyncio
 
-from fastapi import APIRouter, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from schemas.admin_auth import (
+    AdminChangePasswordRequest,
+    AdminChangePasswordResponse,
     AdminLoginRequest,
     AdminLogoutResponse,
     AdminTokenResponse,
@@ -15,12 +17,19 @@ from security.admin_auth import (
     create_access_token,
     create_refresh_token,
     decode_admin_token,
+    require_admin,
     revoke_token_jti,
+    set_admin_password,
     set_refresh_cookie,
     verify_password,
 )
+from services.storage import admin_password_file, get_storage
 
 router = APIRouter(tags=["admin-auth"])
+
+# bcrypt only consumes the first 72 bytes of a password; reject longer inputs with a
+# clear error instead of letting bcrypt raise (which would surface as a 500).
+_MAX_NEW_PASSWORD_BYTES = 72
 
 
 @router.post("/auth/login", response_model=AdminTokenResponse)
@@ -93,3 +102,45 @@ async def admin_auth_logout(
 
     response.delete_cookie(**clear_refresh_cookie())
     return AdminLogoutResponse(ok=True)
+
+
+@router.post(
+    "/auth/change-password",
+    response_model=AdminChangePasswordResponse,
+    dependencies=[Depends(require_admin)],
+)
+async def admin_auth_change_password(
+    body: AdminChangePasswordRequest,
+    request: Request,
+    response: Response,
+) -> AdminChangePasswordResponse:
+    if body.new_password != body.confirm_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="password_mismatch",
+        )
+    if len(body.new_password.encode("utf-8")) > _MAX_NEW_PASSWORD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="password_too_long",
+        )
+    if not await asyncio.to_thread(verify_password, body.current_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="invalid_current_password",
+        )
+    store_path = admin_password_file(get_storage(request.app))
+    await asyncio.to_thread(
+        set_admin_password, body.new_password, store_path=store_path
+    )
+    # The new hash rotates the password fingerprint embedded in every token, so all
+    # previously issued sessions (other devices, leaked tokens) are now invalid. Re-issue
+    # a fresh session for the current admin so this session stays logged in.
+    access_token, expires_in = create_access_token()
+    refresh_token, refresh_max_age = create_refresh_token()
+    response.set_cookie(**set_refresh_cookie(refresh_token, refresh_max_age))
+    return AdminChangePasswordResponse(
+        access_token=access_token,
+        token_type="bearer",
+        expires_in=expires_in,
+    )

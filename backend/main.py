@@ -19,10 +19,13 @@ from routes.admin_quiz import router as admin_quiz_router  # noqa: E402
 from routes.admin_results import router as admin_results_router  # noqa: E402
 from routes.media import router as media_router  # noqa: E402
 from routes.play import router as play_router  # noqa: E402
-from security.admin_auth import reload_admin_auth_config  # noqa: E402
+from security.admin_auth import (  # noqa: E402
+    load_admin_password_override,
+    reload_admin_auth_config,
+)
 from services.media_assets import purge_stale_editor_staging  # noqa: E402
 from services.results import purge_results_older_than  # noqa: E402
-from services.storage import initialize_storage  # noqa: E402
+from services.storage import admin_password_file, initialize_storage  # noqa: E402
 
 logger = logging.getLogger("cogniro.purge")
 
@@ -43,6 +46,7 @@ def _cors_allow_origins() -> list[str]:
 async def lifespan(application: FastAPI):
     application.state.storage = initialize_storage()
     reload_admin_auth_config()
+    load_admin_password_override(admin_password_file(application.state.storage))
 
     async def _purge_loop() -> None:
         retention = timedelta(days=RESULT_RETENTION_DAYS)

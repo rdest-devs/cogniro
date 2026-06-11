@@ -129,8 +129,29 @@ class KqfOrdering(_KqfBaseQuestion):
         return self
 
 
+class KqfImagePixelate(_KqfBaseQuestion):
+    type: Literal["imagepixelate"]
+    choices: list[KqfChoice] = Field(min_length=2, max_length=6)
+
+    @model_validator(mode="after")
+    def _validate(self) -> KqfImagePixelate:
+        correct = sum(1 for choice in self.choices if choice.is_correct)
+        if correct != 1:
+            raise ValueError("imagepixelate must have exactly one correct choice")
+        if not (self.media.image and self.media.image.strip()):
+            raise ValueError("imagepixelate requires an image")
+        if self.time_s is None:
+            raise ValueError("imagepixelate requires a per-question time")
+        return self
+
+
 KqfQuestion = Annotated[
-    KqfSingleChoice | KqfMultiChoice | KqfTrueFalse | KqfSlider | KqfOrdering,
+    KqfSingleChoice
+    | KqfMultiChoice
+    | KqfTrueFalse
+    | KqfSlider
+    | KqfOrdering
+    | KqfImagePixelate,
     Field(discriminator="type"),
 ]
 
