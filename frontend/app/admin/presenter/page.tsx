@@ -5,6 +5,7 @@ import ExportedImage from 'next-image-export-optimizer';
 import { Suspense } from 'react';
 
 import { QrCode } from '@/app/components/admin/dashboard/QrCode';
+import { APP_LOGO_URL } from '@/lib/branding';
 
 import { resolvePresenterSession } from './presenter-session';
 
@@ -34,7 +35,7 @@ function PresenterScreen() {
       ) : (
         <div className="flex w-full max-w-3xl flex-col items-center gap-8 rounded-3xl border border-[var(--border)] bg-[var(--card-bg)] p-8">
           <ExportedImage
-            src="/images/wi-new-logo.png"
+            src={APP_LOGO_URL}
             alt="Logo Wydziału Informatyki"
             width={340}
             height={96}

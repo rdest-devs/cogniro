@@ -164,7 +164,7 @@ Q?
     assert quiz.questions[0].media.image == "media/asset_x"
 
 
-def test_image_directive_explicit_image_webp_normalized_to_dir() -> None:
+def test_image_directive_explicit_image_webp_rejected() -> None:
     aid = "asset_" + "a" * 32
     text = f"""---
 title: T
@@ -178,8 +178,8 @@ Q?
 
 @image: ./media/{aid}/image.webp
 """
-    quiz = parse_kqf(text)
-    assert quiz.questions[0].media.image == f"./media/{aid}"
+    with pytest.raises(KqfParseError, match="image.webp"):
+        parse_kqf(text)
 
 
 def test_image_directive_absolute_url_unchanged() -> None:
@@ -197,6 +197,49 @@ Q?
 """
     quiz = parse_kqf(text)
     assert quiz.questions[0].media.image == "https://cdn.example.com/x"
+
+
+def test_image_directive_external_url_with_webp_filename() -> None:
+    text = """---
+title: T
+---
+
+## Q1 | singlechoice
+Q?
+
+- [x] a
+- [ ] b
+
+@image: https://cdn.example.com/photos/scenic_image.webp
+"""
+    quiz = parse_kqf(text)
+    assert (
+        quiz.questions[0].media.image
+        == "https://cdn.example.com/photos/scenic_image.webp"
+    )
+
+
+def test_image_directive_external_url_named_image_webp_allowed() -> None:
+    # The stored-form guard targets local ./media/{asset_id}/image.webp paths,
+    # not external URLs that happen to end in image.webp / thumb.webp.
+    for url in (
+        "https://cdn.example.com/photos/image.webp",
+        "https://cdn.example.com/photos/thumb.webp",
+    ):
+        text = f"""---
+title: T
+---
+
+## Q1 | singlechoice
+Q?
+
+- [x] a
+- [ ] b
+
+@image: {url}
+"""
+        quiz = parse_kqf(text)
+        assert quiz.questions[0].media.image == url
 
 
 def test_parses_multiple_questions() -> None:

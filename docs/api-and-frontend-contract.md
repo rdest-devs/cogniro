@@ -79,14 +79,6 @@ Client: [frontend/lib/play/client.ts](../frontend/lib/play/client.ts). Frontend 
 | GET | `/media/{quiz_id}/{filename:path}` | Serves files under `storage/quizzes/{quiz_id}/media/` (traversal-safe → `404`). **Only while that quiz’s play session is active**; otherwise `403` (`quiz_not_active`). |
 | GET | `{MEDIA_PUBLIC_PREFIX}/{asset_path}` | Default prefix `/media/quiz-assets`; staged uploads from the editor. |
 
-## Legacy (deprecated)
-
-| Method | Path | Notes |
-|--------|------|------|
-| POST | `/legacy/quiz-demo/results` | Old mock scoring for the static quiz demo. |
-
-Frontend demo: [frontend/app/legacy/quiz-demo/page.tsx](../frontend/app/legacy/quiz-demo/page.tsx). Backend: [backend/legacy/quiz_demo_router.py](../backend/legacy/quiz_demo_router.py).
-
 ## Schemas (KQF and editor)
 
 - **Python** — [backend/schemas/kqf.py](../backend/schemas/kqf.py), parser/serializer [backend/services/kqf.py](../backend/services/kqf.py), admin DTOs [backend/schemas/admin_quiz.py](../backend/schemas/admin_quiz.py).

@@ -72,7 +72,8 @@ test('renders the image with lazy/async hints and object-contain', () => {
       }}
     />,
   );
-  assert.match(html, /src="\/images\/logo\.png"/);
+  assert.match(html, /src="\/images\/[^"]*logo[^"]*\.webp"/i);
+  assert.match(html, /srcSet="/);
   assert.match(html, /alt="Logo"/);
   assert.match(html, /loading="lazy"/);
   assert.match(html, /decoding="async"/);

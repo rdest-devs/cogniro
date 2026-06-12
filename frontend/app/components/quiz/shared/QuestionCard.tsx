@@ -1,5 +1,3 @@
-import ExportedImage from 'next-image-export-optimizer';
-
 import type { QuizImage } from '@/app/types';
 
 import ProgressiveQuizImage from './ProgressiveQuizImage';
@@ -7,7 +5,6 @@ import ProgressiveQuizImage from './ProgressiveQuizImage';
 interface QuestionCardProps {
   question: string;
   hint?: string;
-  imageUrl?: string;
   image?: QuizImage;
   imageLoading?: 'eager' | 'lazy';
 }
@@ -15,11 +12,9 @@ interface QuestionCardProps {
 export default function QuestionCard({
   question,
   hint,
-  imageUrl,
   image,
   imageLoading = 'lazy',
 }: QuestionCardProps) {
-  const shouldRenderLegacyImage = Boolean(imageUrl) && !image;
   const normalizedQuestion = question.trim();
   const headingText = normalizedQuestion || (image ? 'Pytanie obrazkowe' : '');
 
@@ -34,16 +29,6 @@ export default function QuestionCard({
         <p className="text-[13px] font-normal text-[var(--text-muted)]">
           {hint}
         </p>
-      )}
-      {shouldRenderLegacyImage && imageUrl && (
-        <div className="relative mt-2 h-[180px] w-full overflow-hidden rounded-xl">
-          <ExportedImage
-            src={imageUrl}
-            alt="Question"
-            fill
-            className="object-cover"
-          />
-        </div>
       )}
       {image && (
         <ProgressiveQuizImage

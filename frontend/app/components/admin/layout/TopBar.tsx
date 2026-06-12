@@ -5,6 +5,8 @@ import Link from 'next/link';
 import ExportedImage from 'next-image-export-optimizer';
 import { useEffect, useId, useRef, useState } from 'react';
 
+import { APP_LOGO_URL } from '@/lib/branding';
+
 interface TopBarProps {
   userName?: string;
   userInitials?: string;
@@ -16,7 +18,7 @@ interface TopBarProps {
 export default function TopBar({
   userName = 'Admin',
   userInitials = 'AB',
-  logoUrl = '/images/wi-new-logo.png',
+  logoUrl = APP_LOGO_URL,
   logoHref = '/admin/',
   onLogout,
 }: TopBarProps) {

@@ -12,6 +12,6 @@ export const PLAY_USER_SHELL_CLASS = `${PLAY_USER_SHELL_LAYOUT} min-h-screen min
 
 /**
  * Same width/border rules as {@link PLAY_USER_SHELL_CLASS}, for a column inside a
- * parent that already owns vertical space (e.g. `/demo` under a full-width nav).
+ * parent that already owns vertical space (e.g. nested layout under a full-width nav).
  */
 export const PLAY_USER_SHELL_EMBEDDED_CLASS = `${PLAY_USER_SHELL_LAYOUT} min-h-0 flex-1`;

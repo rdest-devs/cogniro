@@ -6,7 +6,6 @@ services:
     ports:
       - "8000:8000"
     environment:
-      QUIZ_SHOW_ANSWER_REVIEW: "true"
       WATCHFILES_FORCE_POLLING: "true"
     volumes:
       - ./backend:/app:z

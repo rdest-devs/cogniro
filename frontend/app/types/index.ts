@@ -24,7 +24,6 @@ export type {
 } from './admin-editor';
 export { kqfQuestionTypeValues } from './admin-editor';
 export type {
-  ImageAnswerOption,
   RankingEntry,
   ReviewAnswer,
   ReviewAnswerState,

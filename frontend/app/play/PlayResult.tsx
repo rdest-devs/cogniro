@@ -59,6 +59,16 @@ export function PlayResult({
     };
   }, [code, nickname]);
 
+  // The play shell grows with content (min-h-dvh), so the document is the
+  // scroller and its position survives view switches. Reset it whenever the
+  // results view is entered (after finishing the quiz or returning from the
+  // answer review), so the score is visible instead of a mid-page position.
+  useLayoutEffect(() => {
+    if (view === 'results') {
+      window.scrollTo(0, 0);
+    }
+  }, [view]);
+
   // Fetch the live leaderboard and map it to display rows (best-effort).
   // Returns null when the request fails so callers can keep the current rows.
   const fetchRanking = useCallback(async (): Promise<RankingEntry[] | null> => {
@@ -141,44 +151,45 @@ export function PlayResult({
     quiz.front_matter.description?.trim() ||
     `Dziękujemy za udział w quizie „${quiz.front_matter.title}".`;
 
+  const notice =
+    submitNote != null ? (
+      <p
+        role="status"
+        className="rounded-2xl border border-[var(--wrong-fg)] bg-[var(--wrong-bg)] px-4 py-3 text-center text-sm font-medium text-[var(--wrong-fg)]"
+      >
+        {submitNote}
+      </p>
+    ) : skipServerSubmit ? (
+      <p
+        role="status"
+        className="rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] px-4 py-3 text-center text-sm leading-snug font-medium text-[var(--text-muted)]"
+      >
+        Ta próba nie zmienia wyniku na serwerze.
+      </p>
+    ) : undefined;
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {view === 'results' && (
-        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-            <div className="my-auto min-h-0 w-full">
-              <QuizResults
-                scorePercent={scorePercent}
-                scorePoints={scorePointsDisplay}
-                scoreTotal={scoreTotalDisplay}
-                message={message}
-                ranking={ranking ?? undefined}
-                rankingTitle="Tablica wyników"
-                preSortedRanking
-                onRefreshRanking={refreshRanking}
-                refreshingRanking={refreshingRanking}
-                celebratePodium={ranking ? currentOnPodium(ranking) : false}
-                showAnswerReview={allowAnswerReview}
-                onReview={
-                  allowAnswerReview ? () => setView('review') : undefined
-                }
-                onRetry={onPlayAgain}
-              />
-            </div>
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          <div className="my-auto min-h-0 w-full">
+            <QuizResults
+              scorePercent={scorePercent}
+              scorePoints={scorePointsDisplay}
+              scoreTotal={scoreTotalDisplay}
+              message={message}
+              ranking={ranking ?? undefined}
+              rankingTitle="Tablica wyników"
+              preSortedRanking
+              onRefreshRanking={refreshRanking}
+              refreshingRanking={refreshingRanking}
+              celebratePodium={ranking ? currentOnPodium(ranking) : false}
+              showAnswerReview={allowAnswerReview}
+              onReview={allowAnswerReview ? () => setView('review') : undefined}
+              onRetry={onPlayAgain}
+              notice={notice}
+            />
           </div>
-          {submitNote != null ? (
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-6 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-              <p className="pointer-events-auto rounded-2xl border border-[var(--wrong-fg)] bg-[var(--wrong-bg)] px-4 py-3 text-center text-sm font-medium text-[var(--wrong-fg)] shadow-[0_-10px_28px_rgba(33,44,63,0.08)]">
-                {submitNote}
-              </p>
-            </div>
-          ) : skipServerSubmit ? (
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-6 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-              <p className="pointer-events-auto rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] px-4 py-3 text-center text-sm leading-snug font-medium text-[var(--text-muted)] shadow-[0_-10px_28px_rgba(33,44,63,0.08)]">
-                Ta próba nie zmienia wyniku na serwerze.
-              </p>
-            </div>
-          ) : null}
         </div>
       )}
 
