@@ -250,3 +250,26 @@ def test_leaderboard_excludes_participants_without_submission(
     client.post(f"/play/{pin}/join", json={"nickname": "JoinedOnly"})
     body = client.get(f"/play/{pin}/leaderboard").json()
     assert [e["nickname"] for e in body["entries"]] == ["Submitted"]
+
+
+def test_leaderboard_excludes_participant_blocked_after_submission(
+    client: TestClient, admin_token_header: dict[str, str]
+) -> None:
+    quiz_id = _create_quiz(client, admin_token_header)
+    pin = client.post(
+        f"/admin/quiz/{quiz_id}/activate", headers=admin_token_header
+    ).json()["pin"]
+    client.post(f"/play/{pin}/join", json={"nickname": "Ala"})
+    client.post(f"/play/{pin}/submit", json={"nickname": "Ala", "score": 10})
+    client.post(f"/play/{pin}/join", json={"nickname": "Bob"})
+    client.post(f"/play/{pin}/submit", json={"nickname": "Bob", "score": 5})
+
+    blocked = client.post(
+        f"/admin/quiz/{quiz_id}/session/block",
+        json={"nickname": "Ala"},
+        headers=admin_token_header,
+    )
+    assert blocked.status_code == 200
+
+    body = client.get(f"/play/{pin}/leaderboard").json()
+    assert [e["nickname"] for e in body["entries"]] == ["Bob"]

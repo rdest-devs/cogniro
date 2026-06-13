@@ -27,6 +27,7 @@ import { SortableTh } from '@/app/components/common/SortableTh';
 import { useSortableColumns } from '@/hooks/useSortableColumns';
 import { formatAdminDate } from '@/lib/admin-date-time';
 import { APP_LOGO_URL } from '@/lib/branding';
+import { canAdminBlockParticipant } from '@/lib/sessions/blocking';
 import {
   activateQuiz,
   AdminFetchError,
@@ -543,7 +544,7 @@ export function RunningQuizView({
                       {formatScoreVsMax(p.score, snap?.max_score ?? 0)}
                     </td>
                     <td className={adminBlueHeadTableTdClass}>
-                      {!p.blocked && !p.has_submitted && (
+                      {canAdminBlockParticipant(p) && (
                         <button
                           type="button"
                           className={adminDangerOutlineButtonClass}
