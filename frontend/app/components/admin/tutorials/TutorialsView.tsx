@@ -3,7 +3,7 @@
 import AdminLayout from '@/app/components/admin/layout/AdminLayout';
 
 import { TutorialList } from './TutorialList';
-import { tutorialGroups } from './tutorialsData';
+import { tutorialVideos } from './tutorialsData';
 
 type Props = {
   adminBase: string;
@@ -25,7 +25,7 @@ export function TutorialsView({
       onMenuNavigate={onMenuNavigate}
       onLogout={onLogout}
     >
-      <TutorialList groups={tutorialGroups} />
+      <TutorialList videos={tutorialVideos} />
     </AdminLayout>
   );
 }

@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import 'react-lite-youtube-embed/dist/LiteYouTubeEmbed.css';
 
 @theme inline {
   --color-background: var(--background);
