@@ -5,49 +5,39 @@ import * as React from 'react';
 import * as ReactDOMServer from 'react-dom/server';
 
 import { TutorialList } from './TutorialList';
-import { tutorialGroups } from './tutorialsData';
+import { tutorialVideos } from './tutorialsData';
 
-test('tutorial data is non-empty with unique ids and titled steps', () => {
-  assert.ok(tutorialGroups.length > 0);
-  const groupIds = new Set<string>();
-  const tutorialIds = new Set<string>();
-  for (const group of tutorialGroups) {
-    assert.ok(group.title.length > 0);
-    assert.ok(group.tutorials.length > 0);
-    assert.equal(groupIds.has(group.id), false);
-    groupIds.add(group.id);
-    for (const tutorial of group.tutorials) {
-      assert.ok(tutorial.title.length > 0);
-      assert.ok(tutorial.steps.length > 0);
-      for (const step of tutorial.steps) {
-        assert.ok(
-          step.trim().length > 0,
-          `empty step in tutorial: ${tutorial.id}`,
-        );
-      }
-      assert.equal(tutorialIds.has(tutorial.id), false);
-      tutorialIds.add(tutorial.id);
-    }
+test('tutorial data is non-empty with unique ids, titles and video ids', () => {
+  assert.ok(tutorialVideos.length > 0);
+  const ids = new Set<string>();
+  const videoIds = new Set<string>();
+  for (const video of tutorialVideos) {
+    assert.ok(video.title.trim().length > 0, `empty title: ${video.id}`);
+    assert.match(
+      video.videoId,
+      /^[\w-]{11}$/,
+      `invalid YouTube id: ${video.videoId}`,
+    );
+    assert.equal(ids.has(video.id), false, `duplicate id: ${video.id}`);
+    ids.add(video.id);
+    assert.equal(
+      videoIds.has(video.videoId),
+      false,
+      `duplicate video id: ${video.videoId}`,
+    );
+    videoIds.add(video.videoId);
   }
 });
 
-test('renders grouped tutorials with titles and steps', () => {
+test('renders a titled YouTube embed for each tutorial', () => {
   const html = ReactDOMServer.renderToString(
-    <TutorialList groups={tutorialGroups} />,
+    <TutorialList videos={tutorialVideos} />,
   );
-  for (const group of tutorialGroups) {
+  for (const video of tutorialVideos) {
+    assert.ok(html.includes(video.title), `missing title: ${video.title}`);
     assert.ok(
-      html.includes(group.title),
-      `missing group title: ${group.title}`,
+      html.includes(video.videoId),
+      `missing embed for video: ${video.videoId}`,
     );
-    for (const tutorial of group.tutorials) {
-      assert.ok(
-        html.includes(tutorial.title),
-        `missing tutorial title: ${tutorial.title}`,
-      );
-      for (const step of tutorial.steps) {
-        assert.ok(html.includes(step), `missing step: ${step}`);
-      }
-    }
   }
 });

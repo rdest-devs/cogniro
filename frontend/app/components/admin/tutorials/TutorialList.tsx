@@ -1,13 +1,20 @@
-import { GraduationCap } from 'lucide-react';
+'use client';
 
-import type { TutorialGroup } from './tutorialsData';
+import { GraduationCap } from 'lucide-react';
+import LiteYouTubeEmbed from 'react-lite-youtube-embed';
+
+// Embed styles are imported globally in app/globals.css.
+import type { TutorialVideo } from './tutorialsData';
 
 interface TutorialListProps {
-  groups: TutorialGroup[];
+  videos: TutorialVideo[];
 }
 
-/** Presentational list of grouped tutorials (no layout/routing, easy to render and test). */
-export function TutorialList({ groups }: TutorialListProps) {
+/**
+ * Presentational grid of video tutorials. Each card lazy-loads a lightweight
+ * YouTube embed (only the thumbnail loads until the user clicks play).
+ */
+export function TutorialList({ videos }: TutorialListProps) {
   return (
     <div className="space-y-8">
       <header className="flex items-start gap-3">
@@ -21,35 +28,30 @@ export function TutorialList({ groups }: TutorialListProps) {
             Samouczki
           </h1>
           <p className="mt-1 text-sm text-[var(--text-muted)]">
-            Krótkie instrukcje krok po kroku dla najważniejszych akcji w panelu.
+            Krótkie filmy krok po kroku dla najważniejszych akcji w panelu.
           </p>
         </div>
       </header>
 
-      {groups.map((group) => (
-        <section key={group.id} className="space-y-3">
-          <h2 className="text-lg font-semibold text-[var(--text-dark)]">
-            {group.title}
-          </h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            {group.tutorials.map((tutorial) => (
-              <article
-                key={tutorial.id}
-                className="rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-5"
-              >
-                <h3 className="text-base font-semibold text-[var(--text-dark)]">
-                  {tutorial.title}
-                </h3>
-                <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm text-[var(--text-muted)]">
-                  {tutorial.steps.map((step, index) => (
-                    <li key={index}>{step}</li>
-                  ))}
-                </ol>
-              </article>
-            ))}
-          </div>
-        </section>
-      ))}
+      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+        {videos.map((video) => (
+          <article
+            key={video.id}
+            className="flex flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card-bg)] transition-shadow hover:shadow-md"
+          >
+            <LiteYouTubeEmbed
+              id={video.videoId}
+              title={video.title}
+              lazyLoad={true}
+              webp={true}
+              wrapperClass="yt-lite rounded-none"
+            />
+            <h2 className="px-5 py-4 text-sm font-semibold text-[var(--text-dark)]">
+              {video.title}
+            </h2>
+          </article>
+        ))}
+      </div>
     </div>
   );
 }

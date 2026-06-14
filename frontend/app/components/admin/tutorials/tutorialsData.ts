@@ -1,78 +1,90 @@
-export interface Tutorial {
+export interface TutorialVideo {
   id: string;
+  /** YouTube video id (the 11-character `watch?v=` identifier). */
+  videoId: string;
   title: string;
-  steps: string[];
-}
-
-export interface TutorialGroup {
-  id: string;
-  title: string;
-  tutorials: Tutorial[];
 }
 
 /**
- * Short, text-based tutorials for the admin panel. Grouped by topic and easy to
- * extend: add a tutorial to an existing group or append a new group.
+ * Video tutorials for the admin panel, sourced from the project's YouTube
+ * playlist. Ordered as in the playlist; add a new entry to extend.
+ *
+ * Playlist: https://www.youtube.com/playlist?list=PLbbuoTzR4LrqQLC1Vu6NsKdQ9fWe-zAwt
  */
-export const tutorialGroups: TutorialGroup[] = [
+export const tutorialVideos: TutorialVideo[] = [
   {
-    id: 'quizzes',
-    title: 'Quizy i pytania',
-    tutorials: [
-      {
-        id: 'create-quiz',
-        title: 'Tworzenie quizu',
-        steps: [
-          'W menu po lewej wybierz „Moje Quizy”.',
-          'Kliknij przycisk tworzenia nowego quizu.',
-          'Uzupełnij tytuł i (opcjonalnie) opis quizu.',
-          'Zapisz quiz, aby przejść do dodawania pytań.',
-        ],
-      },
-      {
-        id: 'add-question',
-        title: 'Dodawanie pytania',
-        steps: [
-          'Otwórz quiz w edytorze.',
-          'Dodaj nowe pytanie i wybierz jego typ (jednokrotny, wielokrotny, prawda/fałsz, suwak).',
-          'Wpisz treść pytania oraz odpowiedzi i oznacz poprawne.',
-          'Ustaw liczbę punktów i limit czasu, jeśli są potrzebne, a następnie zapisz.',
-        ],
-      },
-      {
-        id: 'publish-quiz',
-        title: 'Publikowanie quizu',
-        steps: [
-          'Przejdź do szczegółów quizu.',
-          'Uruchom quiz, aby utworzyć aktywną sesję.',
-          'Udostępnij uczestnikom kod PIN lub link do dołączenia.',
-          'Zatrzymaj sesję, gdy quiz dobiegnie końca.',
-        ],
-      },
-    ],
+    id: 'create-quiz',
+    videoId: '_B7ga6-G4M0',
+    title: 'Samouczek 1 - Tworzenie quizu i wszystkich typów pytań',
   },
   {
-    id: 'results',
-    title: 'Wyniki i statystyki',
-    tutorials: [
-      {
-        id: 'check-results',
-        title: 'Sprawdzanie wyników',
-        steps: [
-          'W menu wybierz „Statystyki”.',
-          'Wybierz dzień, w którym odbył się quiz.',
-          'Otwórz wybrany plik wyników, aby zobaczyć wyniki uczestników.',
-        ],
-      },
-      {
-        id: 'export-stats',
-        title: 'Eksport statystyk',
-        steps: [
-          'Otwórz szczegóły wyników wybranego quizu.',
-          'Użyj opcji eksportu, aby pobrać podstawowe statystyki w formacie CSV.',
-          'Otwórz pobrany plik w arkuszu kalkulacyjnym, aby przeanalizować wyniki.',
-        ],
-      },
-    ],
+    id: 'question-time-limit',
+    videoId: 'LzLGSGtA87U',
+    title: 'Samouczek 2 - Limit czasu dla pojedynczego pytania',
+  },
+  {
+    id: 'quiz-time-limit',
+    videoId: 'WIPTi2yt6is',
+    title: 'Samouczek 3 - Globalny limit czasu quizu',
+  },
+  {
+    id: 'shuffle-questions',
+    videoId: 'f2VXcSjLZo4',
+    title: 'Samouczek 4 - Losowa kolejność pytań',
+  },
+  {
+    id: 'feedback',
+    videoId: 'SbWW4775ayA',
+    title: 'Samouczek 5 - Feedback po zakończeniu quizu',
+  },
+  {
+    id: 'question-preview',
+    videoId: 'XlUsTDCibQE',
+    title: 'Samouczek 6 - Podgląd pytania przed publikacją',
+  },
+  {
+    id: 'publish-now',
+    videoId: 'H1JKmAeiO0A',
+    title: 'Samouczek 7 - Publikowanie quizu od razu',
+  },
+  {
+    id: 'schedule-quiz',
+    videoId: 'd4L_GmR0CME',
+    title: 'Samouczek 8 - Planowanie quizu na konkretny termin',
+  },
+  {
+    id: 'leaderboard-stats',
+    videoId: 'D0-hP58u3bE',
+    title: 'Samouczek 9 - Leaderboard i statystyki quizu',
+  },
+  {
+    id: 'export',
+    videoId: 'FplQkRZ0R54',
+    title: 'Samouczek 10 - Eksport quizu i wyników',
+  },
+  {
+    id: 'join-quiz',
+    videoId: '-JNtfvW_bSE',
+    title: 'Samouczek 11 - Dołączanie uczestnika do quizu',
+  },
+  {
+    id: 'availability-states',
+    videoId: 'qGbiZtSOtm8',
+    title: 'Samouczek 12 - Stany dostępności quizu',
+  },
+  {
+    id: 'import-zip',
+    videoId: 'Uj_M7-RjGsM',
+    title: 'Samouczek 13 - Import quizu z pliku zip',
+  },
+  {
+    id: 'ban-participant',
+    videoId: 'adxhZJ_WN-8',
+    title: 'Samouczek 14 - Blokowanie (ban) uczestnika',
+  },
+  {
+    id: 'live-quiz',
+    videoId: 'Ay84meVc9s4',
+    title: 'Samouczek 15 - Prowadzenie quizu na żywo',
   },
 ];
