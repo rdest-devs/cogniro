@@ -1,3 +1,5 @@
+import type { QuizImage } from './admin-editor';
+
 export interface RankingEntry {
   position: number;
   name: string;
@@ -14,6 +16,7 @@ export type ReviewAnswerState =
 
 export interface ReviewAnswer {
   text: string;
+  image?: QuizImage;
   state: ReviewAnswerState;
   yourAnswer?: boolean;
 }
@@ -21,6 +24,7 @@ export interface ReviewAnswer {
 export interface ReviewQuestion {
   number: number;
   text: string;
+  image?: QuizImage;
   isCorrect: boolean;
   answers: ReviewAnswer[];
 }
