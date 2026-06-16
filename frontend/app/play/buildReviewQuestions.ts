@@ -1,7 +1,44 @@
 import type { AnswerMap } from '@/app/play/scoring';
 import { questionAnswerCorrect } from '@/app/play/scoring';
-import type { ReviewAnswer, ReviewQuestion } from '@/app/types';
+import type { QuizImage, ReviewAnswer, ReviewQuestion } from '@/app/types';
 import type { KqfQuestion, KqfQuiz } from '@/lib/kqf';
+import { resolveKqfPlayImageUrls } from '@/lib/media-url';
+
+function reviewQuestionImage(media?: {
+  image?: string;
+}): QuizImage | undefined {
+  const raw = media?.image?.trim();
+  if (!raw) {
+    return undefined;
+  }
+
+  const { fullUrl, thumbUrl } = resolveKqfPlayImageUrls(raw);
+  return {
+    assetId: '',
+    url: fullUrl,
+    thumbUrl,
+    width: 0,
+    height: 0,
+    alt: '',
+  };
+}
+
+function reviewChoiceImage(image?: string): QuizImage | undefined {
+  const raw = image?.trim();
+  if (!raw) {
+    return undefined;
+  }
+
+  const { fullUrl, thumbUrl } = resolveKqfPlayImageUrls(raw);
+  return {
+    assetId: '',
+    url: fullUrl,
+    thumbUrl,
+    width: 0,
+    height: 0,
+    alt: '',
+  };
+}
 
 function reviewAnswersForQuestion(
   q: KqfQuestion,
@@ -14,14 +51,24 @@ function reviewAnswersForQuestion(
       if (c.is_correct) {
         return {
           text: c.text,
+          image: reviewChoiceImage(c.image),
           state: selected ? 'correct-selected' : 'correct',
           yourAnswer: selected,
         };
       }
       if (selected) {
-        return { text: c.text, state: 'wrong-selected', yourAnswer: true };
+        return {
+          text: c.text,
+          image: reviewChoiceImage(c.image),
+          state: 'wrong-selected',
+          yourAnswer: true,
+        };
       }
-      return { text: c.text, state: 'neutral' };
+      return {
+        text: c.text,
+        image: reviewChoiceImage(c.image),
+        state: 'neutral',
+      };
     });
   }
 
@@ -30,15 +77,33 @@ function reviewAnswersForQuestion(
     return q.choices.map((c, i) => {
       const selected = picked.has(i);
       if (c.is_correct && selected) {
-        return { text: c.text, state: 'correct-selected', yourAnswer: true };
+        return {
+          text: c.text,
+          image: reviewChoiceImage(c.image),
+          state: 'correct-selected',
+          yourAnswer: true,
+        };
       }
       if (c.is_correct && !selected) {
-        return { text: c.text, state: 'correct' };
+        return {
+          text: c.text,
+          image: reviewChoiceImage(c.image),
+          state: 'correct',
+        };
       }
       if (!c.is_correct && selected) {
-        return { text: c.text, state: 'wrong-selected', yourAnswer: true };
+        return {
+          text: c.text,
+          image: reviewChoiceImage(c.image),
+          state: 'wrong-selected',
+          yourAnswer: true,
+        };
       }
-      return { text: c.text, state: 'neutral' };
+      return {
+        text: c.text,
+        image: reviewChoiceImage(c.image),
+        state: 'neutral',
+      };
     });
   }
 
@@ -139,6 +204,7 @@ export function buildReviewQuestions(
   return quiz.questions.map((q, index) => ({
     number: index + 1,
     text: q.text,
+    image: reviewQuestionImage(q.media),
     isCorrect: questionAnswerCorrect(q, answers[q.id]),
     answers: reviewAnswersForQuestion(q, answers[q.id]),
   }));

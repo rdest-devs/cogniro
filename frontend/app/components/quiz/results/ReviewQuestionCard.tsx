@@ -3,6 +3,8 @@ import { CircleCheck, CircleX } from 'lucide-react';
 import type { ReviewQuestion } from '@/app/types';
 import { cn } from '@/lib/cn';
 
+import ProgressiveQuizImage from '../shared/ProgressiveQuizImage';
+
 interface ReviewQuestionCardProps {
   question: ReviewQuestion;
 }
@@ -42,82 +44,113 @@ export default function ReviewQuestionCard({
         {q.text}
       </p>
 
+      {q.image && (
+        <ProgressiveQuizImage
+          thumbUrl={q.image.thumbUrl}
+          fullUrl={q.image.url}
+          width={q.image.width}
+          height={q.image.height}
+          alt={q.image.alt ?? ''}
+          className="w-full rounded-2xl object-contain"
+        />
+      )}
+
       <div className="flex flex-col gap-2">
-        {q.answers.map((a, i) => (
-          <div
-            key={`${i}-${a.text}`}
-            className={cn(
-              'flex items-center gap-2.5 rounded-xl px-3.5 py-2.5',
-              a.state === 'correct-selected' &&
-                'border-[1.5px] border-[var(--correct-fg)] bg-[var(--correct-bg)]',
-              a.state === 'wrong-selected' &&
-                'border-[1.5px] border-[var(--wrong-fg)] bg-[var(--wrong-bg)]',
-              a.state === 'correct' &&
-                'border-[1.5px] border-[var(--correct-fg)] bg-[var(--correct-bg)]',
-              a.state === 'neutral' &&
-                'border border-[var(--border)] bg-[var(--page-bg)]',
-            )}
-          >
-            <span
+        {q.answers.map((a, i) => {
+          const answerAlt =
+            a.image?.alt?.trim() || a.text.trim() || `Odpowiedź ${i + 1}`;
+
+          return (
+            <div
+              key={`${i}-${a.text}`}
               className={cn(
-                'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full',
-                a.state === 'correct-selected' && 'bg-[var(--correct-fg)]',
-                a.state === 'wrong-selected' && 'bg-[var(--wrong-fg)]',
-                a.state === 'correct' && 'bg-[var(--correct-fg)]',
+                'rounded-xl px-3.5 py-2.5',
+                a.state === 'correct-selected' &&
+                  'border-[1.5px] border-[var(--correct-fg)] bg-[var(--correct-bg)]',
+                a.state === 'wrong-selected' &&
+                  'border-[1.5px] border-[var(--wrong-fg)] bg-[var(--wrong-bg)]',
+                a.state === 'correct' &&
+                  'border-[1.5px] border-[var(--correct-fg)] bg-[var(--correct-bg)]',
                 a.state === 'neutral' &&
-                  'border-[1.5px] border-[var(--border)] bg-white',
+                  'border border-[var(--border)] bg-[var(--page-bg)]',
               )}
             >
-              {(a.state === 'correct-selected' || a.state === 'correct') && (
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                  <path
-                    d="M1.5 5L4 7.5L8.5 2.5"
-                    stroke="white"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              )}
-              {a.state === 'wrong-selected' && (
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                  <path
-                    d="M2.5 2.5L7.5 7.5M7.5 2.5L2.5 7.5"
-                    stroke="white"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              )}
-            </span>
-            <span
-              className={cn(
-                'text-sm',
-                a.state === 'correct-selected'
-                  ? 'font-semibold text-[var(--correct-fg)]'
-                  : a.state === 'wrong-selected'
-                    ? 'font-semibold text-[var(--wrong-fg)]'
-                    : a.state === 'correct'
-                      ? 'font-semibold text-[var(--correct-fg)]'
-                      : 'font-medium text-[var(--text-dark)]',
-              )}
-            >
-              {a.text}
-            </span>
-            {a.yourAnswer && (
-              <span
-                className={cn(
-                  'ml-auto text-[11px] font-medium',
-                  a.state === 'correct-selected'
-                    ? 'text-[var(--correct-fg)]'
-                    : 'text-[var(--wrong-fg)]',
+              <div className="flex items-center gap-2.5">
+                <span
+                  className={cn(
+                    'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full',
+                    a.state === 'correct-selected' && 'bg-[var(--correct-fg)]',
+                    a.state === 'wrong-selected' && 'bg-[var(--wrong-fg)]',
+                    a.state === 'correct' && 'bg-[var(--correct-fg)]',
+                    a.state === 'neutral' &&
+                      'border-[1.5px] border-[var(--border)] bg-white',
+                  )}
+                >
+                  {(a.state === 'correct-selected' ||
+                    a.state === 'correct') && (
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path
+                        d="M1.5 5L4 7.5L8.5 2.5"
+                        stroke="white"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                  {a.state === 'wrong-selected' && (
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path
+                        d="M2.5 2.5L7.5 7.5M7.5 2.5L2.5 7.5"
+                        stroke="white"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  )}
+                </span>
+                {a.text && (
+                  <span
+                    className={cn(
+                      'text-sm',
+                      a.state === 'correct-selected'
+                        ? 'font-semibold text-[var(--correct-fg)]'
+                        : a.state === 'wrong-selected'
+                          ? 'font-semibold text-[var(--wrong-fg)]'
+                          : a.state === 'correct'
+                            ? 'font-semibold text-[var(--correct-fg)]'
+                            : 'font-medium text-[var(--text-dark)]',
+                    )}
+                  >
+                    {a.text}
+                  </span>
                 )}
-              >
-                Twoja odpowiedź
-              </span>
-            )}
-          </div>
-        ))}
+                {a.yourAnswer && (
+                  <span
+                    className={cn(
+                      'ml-auto text-[11px] font-medium',
+                      a.state === 'correct-selected'
+                        ? 'text-[var(--correct-fg)]'
+                        : 'text-[var(--wrong-fg)]',
+                    )}
+                  >
+                    Twoja odpowiedź
+                  </span>
+                )}
+              </div>
+              {a.image && (
+                <ProgressiveQuizImage
+                  thumbUrl={a.image.thumbUrl}
+                  fullUrl={a.image.url}
+                  width={a.image.width}
+                  height={a.image.height}
+                  alt={answerAlt}
+                  className="mt-2 w-full rounded-xl bg-white object-contain"
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
     </article>
   );
