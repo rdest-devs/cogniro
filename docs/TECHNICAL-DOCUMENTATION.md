@@ -143,8 +143,8 @@ cogniro/
     .python-version   Python 3.14
   frontend/           Next.js app (TypeScript, managed with pnpm)
     app/              App Router pages (/, /play, /admin, /admin/presenter)
+    app/components/   UI components
     lib/              API clients, backend URL + media URL resolution, auth client
-    components/       UI components
     next.config.ts    Static export configuration
     Dockerfile        Multi-stage image (dev / build / runner)
     .env.example      Template for frontend environment variables
@@ -237,19 +237,26 @@ All routes in this router require a valid admin access token (the router declare
 | POST | `/play/{pin}/submit` | Submit the final score (clamped server-side, see 6.4). |
 | GET | `/play/{pin}/leaderboard` | Get the ranked leaderboard. |
 
-Availability gating: `check`, `join`, and `leaderboard` first resolve the PIN to a live
-session and then check the quiz's availability window (`services/admin_quiz.check_availability`).
-A quiz can be force-opened or force-closed (`manual_status`) or scheduled with a start/end
-window. The play endpoints translate the outcome into distinct HTTP codes so the participant
-UI can show the right message: 404 `pin_not_active`, 423 `not_yet` (with the `opens_at`
-time), 410 `expired`, and 403 `manually_closed`. A taken nickname returns 409; a profane
-nickname or a submit from an unknown/blocked nickname returns 400.
+Availability gating: `check` and `join` resolve the PIN to a live session and then check the
+quiz's availability window (`services/admin_quiz.check_availability`). A quiz can be
+force-opened or force-closed (`manual_status`) or scheduled with a start/end window. These two
+endpoints translate the outcome into distinct HTTP codes so the participant UI can show the
+right message: 404 `pin_not_active`, 423 `not_yet` (with the `opens_at` time), 410 `expired`,
+and 403 `manually_closed`. A taken nickname returns 409; a profane nickname or a submit from an
+unknown/blocked nickname returns 400.
+
+`submit` and `leaderboard` do **not** re-check the availability window; they only require the
+PIN to still map to an active session. So once a session is running, scores can be submitted
+and the leaderboard stays readable even if the quiz has been manually closed or has passed its
+`schedule_end`. The window only gates entry (`check` / `join`); the live session itself ends
+only when the admin stops it.
 
 **Media** (`routes/media.py`, public but gated):
 
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/media/{quiz_id}/{file}` | Serve quiz media, but only while that quiz has an active session. |
+| GET | `{MEDIA_PUBLIC_PREFIX}/{asset_path}` | Serve a staged editor asset (default prefix `/media/quiz-assets`). Public, no session required; only `.webp` files are served and the asset id is an unguessable UUID. |
 
 ---
 
@@ -559,9 +566,10 @@ worker**. Never run multiple workers.
 
 ### 6.6 Rate limiting
 
-The two public write endpoints, `POST /play/{pin}/join` and `POST /play/{pin}/submit`, share
-a per-IP sliding-window rate limiter (`services/play_rate_limit.py`). Defaults: enabled, a
-60-second window, and 120 requests per window per IP. When the limit is exceeded the endpoint
+All four public play endpoints (`GET /play/{pin}/check`, `POST /play/{pin}/join`,
+`POST /play/{pin}/submit`, and `GET /play/{pin}/leaderboard`) share a per-IP sliding-window
+rate limiter (`services/play_rate_limit.py`). Defaults: enabled, a 60-second window, and 120
+requests per window per IP. When the limit is exceeded the endpoint
 returns HTTP 429 with a `Retry-After` header. If the backend runs behind a trusted reverse
 proxy, set `PLAY_RATE_LIMIT_TRUST_X_FORWARDED_FOR=true` so the real client IP from
 `X-Forwarded-For` is used instead of the proxy's IP. All values are configurable (section 8).
@@ -606,9 +614,14 @@ production static build.
   `lib/admin-auth/client.ts`); it is never written to localStorage, sessionStorage, or a
   JavaScript-readable cookie. On a page reload it is gone, and the app silently re-acquires
   one via the refresh cookie. This reduces the blast radius of any cross-site-scripting issue.
-- All admin requests attach `Authorization: Bearer {token}` and use `credentials: 'include'`
-  so the refresh cookie is sent to the auth endpoints. On a 401 the client refreshes once and
-  retries.
+- Admin requests attach `Authorization: Bearer {token}`. The auth client
+  (`lib/admin-auth/client.ts`) additionally uses `credentials: 'include'` so the refresh
+  cookie is sent to the auth endpoints, and the admin-quiz client (`lib/admin-quiz/client.ts`)
+  transparently refreshes the access token once when a request fails with `token_expired` and
+  then retries. The other admin clients (sessions, results, import/export) send the Bearer
+  token but do not include the cookie or implement the refresh-and-retry path, so a request
+  there that hits an expired token surfaces the error to the UI rather than refreshing in
+  place.
 - There is **no realtime transport and no polling**: no WebSockets, no server-sent events,
   and no background interval that refetches state. The frontend calls the backend in response
   to user actions and at specific points in the quiz flow (for example checking a PIN,

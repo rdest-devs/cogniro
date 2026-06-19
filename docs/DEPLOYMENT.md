@@ -10,9 +10,9 @@ is useful context.
 
 There are two ways to run the system, and this guide covers both fully:
 
-- **Option A: with Docker** (recommended, fewer moving parts). Jump to section 6.
+- **Option A: with Docker** (recommended, fewer moving parts). Jump to section 5.
 - **Option B: without Docker** (bare metal / VM, install runtimes directly). Jump to
-  section 7.
+  section 6.
 
 Read sections 1 to 5 first regardless of which option you choose, because the prerequisites,
 the secrets, and the environment variables are the same for both.
@@ -56,9 +56,8 @@ That is all. The runtimes (Python, Node) are inside the images.
 
 On the host that runs the **backend**:
 
-- Python **3.14** (this exact minor version is required).
-- `uv`, the Python package manager from Astral (it creates the virtual environment and
-  installs dependencies). Install it from https://docs.astral.sh/uv/ or with
+- Python **3.14**
+- `uv`, the Python package manager from Astral. Install it from https://docs.astral.sh/uv/ or with
   `curl -LsSf https://astral.sh/uv/install.sh | sh`.
 
 On the machine that **builds** the frontend (can be the same host, or a CI runner, or your
@@ -72,32 +71,18 @@ On the host that **serves** the frontend in production:
 - A web server that can serve static files (for example Nginx, Apache, Caddy, or a CDN). No
   Node.js is required to serve the built site. If you only want a quick start without a web
   server, you can serve the static files with the `serve` package (via `pnpm dlx`) instead
-  (section 7.3).
+  (section 6.3).
 
 ---
 
-## 3. Get the code
-
-Clone the repository onto the host (or build machine):
-
-```bash
-git clone <your-repo-url> cogniro
-cd cogniro
-```
-
-The two parts live in `backend/` and `frontend/`. Documentation (including this file) is in
-`docs/`.
-
----
-
-## 4. Create the required secrets
+## 3. Create the required secrets
 
 The backend needs two secrets before it will serve admin login in production:
 
 1. `ADMIN_PASSWORD_HASH` - a bcrypt hash of the admin password (never the plaintext).
 2. `JWT_SECRET` - a long random string used to sign login tokens.
 
-### 4.1 Generate the admin password hash
+### 3.1 Generate the admin password hash
 
 The repository ships a helper script. Run it from the `backend` directory. It will prompt you
 for the password and print the hash.
@@ -113,6 +98,7 @@ Or, on a host that has Python and uv (Option B):
 
 ```bash
 cd backend
+uv sync
 uv run python scripts/hash_admin_password.py
 ```
 
@@ -120,7 +106,7 @@ Copy the printed hash. It looks like `$2b$12$....`. You will paste it into
 `ADMIN_PASSWORD_HASH`. Always keep it **single-quoted** in env files and compose files so the
 shell does not try to expand the `$` characters.
 
-### 4.2 Generate the JWT secret
+### 3.2 Generate the JWT secret
 
 Any long random value works. For example:
 
@@ -135,18 +121,18 @@ Keep both secrets out of version control. Do not commit a real `.env` file (the 
 
 ---
 
-## 5. Environment variables
+## 4. Environment variables
 
 This section lists what you must set. The backend reads its configuration from environment
-variables; a full annotated template is in `backend/.env.example`. The frontend reads a few
+variables. A full annotated template is in `backend/.env.example`. The frontend reads a few
 `NEXT_PUBLIC_*` variables that are baked into the static build at **build time**.
 
-### 5.1 Minimum backend variables for production
+### 4.1 Minimum backend variables for production
 
 | Variable | Set it to |
 | --- | --- |
-| `ADMIN_PASSWORD_HASH` | The bcrypt hash from step 4.1 (single-quoted). |
-| `JWT_SECRET` | The random value from step 4.2. |
+| `ADMIN_PASSWORD_HASH` | The bcrypt hash from step 3.1 (single-quoted). |
+| `JWT_SECRET` | The random value from step 3.2. |
 | `ENVIRONMENT` | `production` (makes the app refuse to start if a secret is missing). |
 | `CORS_ORIGINS` | The exact public origin of your frontend, for example `https://quiz.example.com`. Comma-separate multiple. |
 | `FRONTEND_ORIGIN` | The same public frontend origin (used to build participant join links). No trailing slash. |
@@ -158,35 +144,47 @@ If the frontend is served from a **different site** than the API (for example
 `ADMIN_REFRESH_COOKIE_SAMESITE=none`. If they share the same site (recommended, via one
 reverse proxy), leave it at the `lax` default.
 
-### 5.2 Optional backend variables
+### 4.2 Optional backend variables
 
-These have sensible defaults; override only if needed. See
+These have sensible defaults, override only if needed. See
 [TECHNICAL-DOCUMENTATION.md](TECHNICAL-DOCUMENTATION.md) section 8 for the full table.
 
-- `JWT_EXPIRE_MINUTES` (default 15), `ADMIN_REFRESH_EXPIRE_DAYS` (default 7)
-- `RESULT_RETENTION_DAYS` (default 30), `PURGE_INTERVAL_SECONDS` (default 3600)
-- `MEDIA_PUBLIC_PREFIX` (default `/media/quiz-assets`)
-- `MAX_QUIZ_IMPORT_*` size limits
-- `PLAY_RATE_LIMIT_*` (rate limiting; if you run behind a reverse proxy, set
-  `PLAY_RATE_LIMIT_TRUST_X_FORWARDED_FOR=true` so per-IP limits use the real client IP)
+- `JWT_EXPIRE_MINUTES`: admin access-token lifetime in minutes (default 15, maximum 60).
+- `ADMIN_REFRESH_EXPIRE_DAYS`: refresh-cookie lifetime in days (default 7, maximum 30).
+- `ADMIN_REFRESH_COOKIE_SAMESITE`: `lax` (default), `strict`, or `none`. Use `none` for a
+  separate-site frontend and API (it forces the cookie to be Secure).
+- `RESULT_RETENTION_DAYS`: result files older than this many days are deleted (default 30).
+- `PURGE_INTERVAL_SECONDS`: how often the cleanup job runs, in seconds (default 3600, minimum 60).
+- `MEDIA_PUBLIC_PREFIX`: public URL path prefix for quiz media (default `/media/quiz-assets`).
+  If you change it, set the frontend `NEXT_PUBLIC_MEDIA_PUBLIC_PREFIX` to the same value.
+- `MAX_QUIZ_IMPORT_ZIP_BYTES` (default 100 MiB), `MAX_QUIZ_IMPORT_KQF_BYTES` (default 2 MiB),
+  `MAX_QUIZ_IMPORT_MEMBER_BYTES` (default 100 MiB),
+  `MAX_QUIZ_IMPORT_UNCOMPRESSED_TOTAL_BYTES` (default 300 MiB): upper size limits for the quiz
+  ZIP import.
+- `PLAY_RATE_LIMIT_ENABLED` (default true), `PLAY_RATE_LIMIT_WINDOW_SEC` (default 60),
+  `PLAY_RATE_LIMIT_MAX_REQUESTS` (default 120): per-IP rate limit on the play endpoints (the
+  default allows 120 requests per 60 seconds per IP).
+- `PLAY_RATE_LIMIT_TRUST_X_FORWARDED_FOR` (default false): set to `true` only when the backend
+  is behind a trusted reverse proxy, so per-IP limits use the real client IP from the
+  `X-Forwarded-For` header instead of the proxy's IP.
 
-### 5.3 Frontend build-time variables
+### 4.3 Frontend build-time variables
 
 | Variable | Set it to |
 | --- | --- |
 | `NEXT_PUBLIC_BACKEND_URL` | The public URL the browser uses to reach the backend, for example `https://quiz.example.com` (if proxied under one domain) or `https://api.example.com`. |
-| `NEXT_PUBLIC_MEDIA_PUBLIC_PREFIX` | Only if you changed the backend `MEDIA_PUBLIC_PREFIX`; the two must match. |
+| `NEXT_PUBLIC_MEDIA_PUBLIC_PREFIX` | Only if you changed the backend `MEDIA_PUBLIC_PREFIX`; the two must match. Set it in `frontend/.env` for the non-Docker build (section 6.2), or pass it as a `--build-arg` for the Docker build (section 5.2). |
 
 Important: `NEXT_PUBLIC_BACKEND_URL` is compiled into the static files. If you change it, you
 must rebuild the frontend.
 
 ---
 
-## 6. Option A: Run with Docker
+## 5. Option A: Run with Docker
 
 There are two scenarios here: a quick local development run, and a production run.
 
-### 6.1 Quick local run with docker compose (development only)
+### 5.1 Quick local run with docker compose (development only)
 
 The repository includes `docker-compose.yml`. It is configured for **development** (hot
 reload, source code mounted into the containers, no production secrets). It is the fastest way
@@ -209,7 +207,7 @@ Note: in this development compose file no `ADMIN_PASSWORD_HASH` or `JWT_SECRET` 
 `ENVIRONMENT` is the default `development`, so the app starts but admin login will not work
 until you provide secrets. For real use, follow the production steps below.
 
-### 6.2 Production with Docker: build the images
+### 5.2 Production with Docker: build the images
 
 Both `backend/Dockerfile` and `frontend/Dockerfile` are multi-stage. The production stage in
 each is named `runner`. Build those.
@@ -222,7 +220,7 @@ docker build -f backend/Dockerfile --target runner -t cogniro-backend:latest ./b
 
 The backend build takes no environment variables and no build arguments. All backend
 configuration (secrets, CORS, data directory, and so on) is read at **runtime**, so it is
-supplied when you start the container, not when you build the image. See section 6.3.
+supplied when you start the container, not when you build the image. See section 5.3.
 
 Frontend image: the frontend is the opposite case. `NEXT_PUBLIC_BACKEND_URL` is baked into
 the static files at **build time**, so it must be passed as a build argument here; it cannot
@@ -237,16 +235,27 @@ docker build -f frontend/Dockerfile --target runner \
 
 Replace `https://quiz.example.com` with the URL the browser will use to reach the backend.
 
+If you changed the backend `MEDIA_PUBLIC_PREFIX` away from the default `/media/quiz-assets`,
+pass it as a second build argument so the frontend is built to match (the two must be
+identical):
+
+```bash
+docker build -f frontend/Dockerfile --target runner \
+  --build-arg NEXT_PUBLIC_BACKEND_URL=https://quiz.example.com \
+  --build-arg NEXT_PUBLIC_MEDIA_PUBLIC_PREFIX=/your/custom/prefix \
+  -t cogniro-frontend:latest .
+```
+
 The backend `runner` image runs as a non-root user, creates `/var/lib/cogniro`, sets
 `COGNIRO_DATA_DIR=/var/lib/cogniro`, and starts Uvicorn on port 8000 with a single worker (do
 not add `--workers`). The frontend `runner` image serves the static `out/` directory with the
 `serve` tool on port 3000.
 
-### 6.3 Production with Docker: run the containers
+### 5.3 Production with Docker: run the containers
 
 Create a file `backend.env` (do not commit it) with your real values. The name is arbitrary
 because Docker just reads it and injects the values into the container. This is not the same
-as the `backend/.env` used in the non-Docker setup (section 7.1): with Docker you do not need
+as the `backend/.env` used in the non-Docker setup (section 6.1): with Docker you do not need
 a `.env` inside the image at all.
 
 ```
@@ -282,12 +291,12 @@ docker run -d --name cogniro-frontend \
   cogniro-frontend:latest
 ```
 
-At this point the backend answers on port 8000 and the frontend on port 3000. In production
-you put both behind a reverse proxy with TLS (section 8). The volume mount
+At this point the backend answers on port 8000 and the frontend on port 3000. In production,
+you put both behind a reverse proxy with TLS (section 7). The volume mount
 `-v /srv/cogniro-data:/var/lib/cogniro` is the single most important line: it is where all
-quizzes and results are stored. Back it up (section 9).
+quizzes and results are stored. Back it up (section 8).
 
-### 6.4 A note on workers
+### 5.4 A note on workers
 
 Do not change the backend command to use multiple Uvicorn workers. The application keeps live
 sessions and locks in process memory and is designed to run as a single process. Running
@@ -297,12 +306,12 @@ a bigger host, not more workers.
 
 ---
 
-## 7. Option B: Run without Docker
+## 6. Option B: Run without Docker
 
 Here you install the runtimes directly on the host. You run the backend as a long-lived
 service, build the frontend once into static files, and serve those files with a web server.
 
-### 7.1 Backend: install and run
+### 6.1 Backend: install and run
 
 On the backend host:
 
@@ -330,7 +339,7 @@ ADMIN_REFRESH_COOKIE_SECURE=true
 COGNIRO_DATA_DIR=/var/lib/cogniro
 ```
 
-See section 5 for the full list of variables. `backend/.env.example` is an annotated template
+See section 4 for the full list of variables. `backend/.env.example` is an annotated template
 you can copy.
 
 **Step 4: create the data directory.** It must exist and be writable by the user that runs
@@ -353,10 +362,10 @@ uv run uvicorn main:app --host 0.0.0.0 --port 8000
 That command runs in the foreground. For production, run that same command as a long-lived
 managed process with whatever process manager you already use, so it restarts on failure and
 on boot. Keep it running from the `backend/` directory (so `backend/.env` is still loaded) and
-never add `--workers N`: the backend must run as a single process (section 6.4 and the
+never add `--workers N`: the backend must run as a single process (section 5.4 and the
 technical doc).
 
-### 7.2 Frontend: build the static site
+### 6.2 Frontend: build the static site
 
 On the build machine (Node 22 and pnpm 10.33.0 installed):
 
@@ -401,7 +410,7 @@ If you ever need to serve the site under a sub-path (for example `https://exampl
 rather than at the domain root, you must add a `basePath` to `frontend/next.config.ts` and
 rebuild. Serving at the domain root needs no change.
 
-### 7.3 Frontend: simplest possible serving (optional, no web server)
+### 6.3 Frontend: simplest possible serving (optional, no web server)
 
 If you just want to serve the built files without configuring Nginx, you can use the `serve`
 package on the host. Run it with `pnpm dlx` (no global install needed):
@@ -410,11 +419,11 @@ package on the host. Run it with `pnpm dlx` (no global install needed):
 pnpm dlx serve@14 -s /var/www/cogniro -l 3000
 ```
 
-This listens on port 3000. For production, prefer a real web server with TLS (section 8).
+This listens on port 3000. For production, prefer a real web server with TLS (section 7).
 
 ---
 
-## 8. Reverse proxy and HTTPS (recommended for both options)
+## 7. Reverse proxy and HTTPS (recommended for both options)
 
 In production you should serve everything over HTTPS. The configuration of the reverse proxy
 and the TLS certificate is the responsibility of whoever runs the infrastructure, so this
@@ -450,7 +459,7 @@ Use any standard tool for the TLS certificate (for example Certbot / Let's Encry
 
 ---
 
-## 9. Data, persistence, and backups
+## 8. Data, persistence, and backups
 
 All durable data lives under the backend's data directory (`COGNIRO_DATA_DIR`, for example
 `/var/lib/cogniro` in Docker or `/srv/cogniro-data` on the host). Inside it:
@@ -475,7 +484,7 @@ Notes:
 
 ---
 
-## 10. Verify the deployment
+## 9. Verify the deployment
 
 After starting both parts, confirm they work:
 
@@ -484,7 +493,7 @@ After starting both parts, confirm they work:
 2. **Frontend loads**: open `https://quiz.example.com/` in a browser. It should redirect to
    the participant screen at `/play`.
 3. **Admin login works**: open `https://quiz.example.com/admin`, log in with the password you
-   hashed in step 4.1. If login fails with a server error, the secrets are not set correctly
+   hashed in step 3.1. If login fails with a server error, the secrets are not set correctly
    (check `ADMIN_PASSWORD_HASH` and `JWT_SECRET`); if it returns "invalid password", the hash
    does not match the password you typed.
 4. **End to end**: create a quiz, activate it, open the join link or scan the QR on the
@@ -493,7 +502,7 @@ After starting both parts, confirm they work:
 
 ---
 
-## 11. Operations and maintenance
+## 10. Operations and maintenance
 
 - **Restarts end live sessions.** A backend restart clears all running sessions and loses any
   in-progress (not yet stopped) scores. Restart and deploy when no live session is running.
@@ -510,23 +519,23 @@ After starting both parts, confirm they work:
 
 ---
 
-## 12. Troubleshooting
+## 11. Troubleshooting
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
-| Backend refuses to start with an error about missing env vars | `ENVIRONMENT` is `production` and `ADMIN_PASSWORD_HASH` or `JWT_SECRET` is not set | Set both secrets (section 4). |
+| Backend refuses to start with an error about missing env vars | `ENVIRONMENT` is `production` and `ADMIN_PASSWORD_HASH` or `JWT_SECRET` is not set | Set both secrets (section 3). |
 | Admin login returns a 503 | `JWT_SECRET` not configured | Set `JWT_SECRET` and restart. |
-| Admin login returns "invalid password" | The hash does not match the password typed | Regenerate the hash for the correct password (step 4.1). |
+| Admin login returns "invalid password" | The hash does not match the password typed | Regenerate the hash for the correct password (step 3.1). |
 | Browser shows CORS errors in the console | `CORS_ORIGINS` does not include the frontend origin | Set `CORS_ORIGINS` to the exact public frontend origin and restart. |
 | Admin stays logged out after refresh / cookie not stored | Cookie blocked over HTTP, or cross-site without correct flags | Use HTTPS, set `ADMIN_REFRESH_COOKIE_SECURE=true`; for separate-site setups set `ADMIN_REFRESH_COOKIE_SAMESITE=none`. |
 | Frontend calls the wrong backend URL | `NEXT_PUBLIC_BACKEND_URL` was wrong at build time | Rebuild the frontend with the correct value (it is baked in at build). |
 | Quiz images do not load during a game | `MEDIA_PUBLIC_PREFIX` mismatch, or media accessed outside an active session | Ensure frontend and backend prefixes match; media is only served while a session is active. |
 | All participants share one IP and hit the rate limit | Behind a proxy without forwarded-IP trust | Set `PLAY_RATE_LIMIT_TRUST_X_FORWARDED_FOR=true` (only behind a trusted proxy), or raise `PLAY_RATE_LIMIT_MAX_REQUESTS`. |
-| Data disappeared after a container rebuild | No volume mounted for the data directory | Always run the backend with the data volume mounted (section 6.3). |
+| Data disappeared after a container rebuild | No volume mounted for the data directory | Always run the backend with the data volume mounted (section 5.3). |
 
 ---
 
-## 13. Production checklist
+## 12. Production checklist
 
 Before going live, confirm:
 

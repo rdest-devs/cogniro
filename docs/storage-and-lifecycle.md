@@ -23,8 +23,6 @@ Under that directory:
 
 KQF on disk is the **source of truth**; `meta.json` is a cache for listing and UI.
 
-**Upgrade note:** editor staging used to live at `{data_dir}/uploads/quiz-assets/`. It now lives at `{data_dir}/storage/uploads/quiz-assets/`. Move any in-flight staged `asset_*` folders into the new path (or re-upload) before relying on unsaved editor previews.
-
 ## In-memory sessions
 
 Live runs are tracked only in memory: PIN → session and quiz id → session indices in [backend/services/sessions.py](../backend/services/sessions.py). Restarting the process clears all active sessions.
