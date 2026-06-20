@@ -8,7 +8,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ### Prerequisites
 
-- **Node.js 24** — With nvm: `nvm use` (run `nvm install` if needed)
+- **Node.js 22** — With nvm: `nvm install 22 && nvm use 22`
 - **pnpm 10+** — `corepack enable` then `corepack prepare pnpm@latest --activate`
 - **GitHub CLI** — optional, for skills; `brew install gh` then `gh auth login`
 - **CodeRabbit CLI** — optional, for skills; `brew install coderabbit` then `coderabbit auth login`
