@@ -64,7 +64,7 @@ export default function Ordering({
     return null;
   };
 
-  const startDrag = (i: number) => (e: React.PointerEvent<HTMLDivElement>) => {
+  const startDrag = (i: number) => (e: React.PointerEvent<HTMLSpanElement>) => {
     if (draggingRef.current !== null) return;
     if (e.button !== 0) return;
     e.preventDefault();
@@ -73,7 +73,7 @@ export default function Ordering({
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
-  const onDragMove = (e: React.PointerEvent<HTMLDivElement>) => {
+  const onDragMove = (e: React.PointerEvent<HTMLSpanElement>) => {
     const from = draggingRef.current;
     if (from === null) return;
     const to = rowUnderPointer(e.clientY);
@@ -84,7 +84,7 @@ export default function Ordering({
     }
   };
 
-  const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+  const endDrag = (e: React.PointerEvent<HTMLSpanElement>) => {
     if (draggingRef.current === null) return;
     draggingRef.current = null;
     setDragging(null);
@@ -110,10 +110,6 @@ export default function Ordering({
               role="button"
               tabIndex={0}
               aria-label={`Pozycja ${i + 1} z ${ordered.length}: ${text}. Użyj strzałek w górę i w dół, aby zmienić kolejność.`}
-              onPointerDown={startDrag(i)}
-              onPointerMove={onDragMove}
-              onPointerUp={endDrag}
-              onPointerCancel={endDrag}
               onKeyDown={(e) => {
                 if (e.key === 'ArrowUp') {
                   e.preventDefault();
@@ -124,20 +120,29 @@ export default function Ordering({
                 }
               }}
               className={cn(
-                'flex w-full cursor-grab touch-none items-center gap-3 rounded-2xl px-4 py-3.5 transition-all outline-none select-none [-webkit-touch-callout:none] focus-visible:ring-2 focus-visible:ring-[var(--orange)] active:cursor-grabbing',
+                'flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 transition-all outline-none select-none focus-visible:ring-2 focus-visible:ring-[var(--orange)]',
                 isDragging
                   ? 'border-2 border-[var(--selected-border)] bg-[var(--selected-bg)] shadow-[0_4px_12px_rgba(246,162,0,0.25)]'
                   : 'border-[1.5px] border-[var(--border)] bg-[var(--card-bg)]',
               )}
             >
-              <GripVertical
-                size={18}
-                className={cn(
-                  isDragging
-                    ? 'text-[var(--orange)]'
-                    : 'text-[var(--text-muted)]',
-                )}
-              />
+              <span
+                aria-hidden="true"
+                onPointerDown={startDrag(i)}
+                onPointerMove={onDragMove}
+                onPointerUp={endDrag}
+                onPointerCancel={endDrag}
+                className="-m-2 flex cursor-grab touch-none p-2 [-webkit-touch-callout:none] active:cursor-grabbing"
+              >
+                <GripVertical
+                  size={18}
+                  className={cn(
+                    isDragging
+                      ? 'text-[var(--orange)]'
+                      : 'text-[var(--text-muted)]',
+                  )}
+                />
+              </span>
               <span className="flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-full bg-[var(--orange)] text-xs font-bold text-white">
                 {i + 1}
               </span>
