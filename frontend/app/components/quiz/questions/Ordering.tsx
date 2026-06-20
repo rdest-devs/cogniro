@@ -1,7 +1,7 @@
 'use client';
 
 import { GripVertical } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import SubmitButton from '@/app/components/common/SubmitButton';
 import { cn } from '@/lib/cn';
@@ -32,12 +32,60 @@ export default function Ordering({
     items.map((text, origIdx) => ({ text, origIdx })),
   );
   const [dragging, setDragging] = useState<number | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  // Authoritative current index of the dragged row. Kept in a ref (not just
+  // state) so consecutive pointermove events read a fresh value instead of a
+  // stale closure between renders.
+  const draggingRef = useRef<number | null>(null);
 
   const moveItem = (from: number, to: number) => {
-    const next = [...ordered];
-    const [item] = next.splice(from, 1);
-    next.splice(to, 0, item);
-    setOrdered(next);
+    setOrdered((prev) => {
+      const next = [...prev];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
+  };
+
+  /** Index of the row whose bounds contain clientY, or null between/outside rows. */
+  const rowUnderPointer = (clientY: number): number | null => {
+    const rows = listRef.current?.children;
+    if (!rows) return null;
+    for (let k = 0; k < rows.length; k++) {
+      const r = rows[k].getBoundingClientRect();
+      if (clientY >= r.top && clientY <= r.bottom) return k;
+    }
+    return null;
+  };
+
+  const startDrag = (i: number) => (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return; // ignore non-primary mouse buttons
+    e.preventDefault(); // suppress text selection / native image drag
+    draggingRef.current = i;
+    setDragging(i);
+    // Capture keeps pointermove/up firing on this row even as the finger moves
+    // over its siblings - this is what makes the drag track on touch.
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onDragMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const from = draggingRef.current;
+    if (from === null) return;
+    const to = rowUnderPointer(e.clientY);
+    if (to !== null && to !== from) {
+      moveItem(from, to);
+      draggingRef.current = to;
+      setDragging(to);
+    }
+  };
+
+  const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (draggingRef.current === null) return;
+    draggingRef.current = null;
+    setDragging(null);
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
   };
 
   return (
@@ -48,24 +96,18 @@ export default function Ordering({
     >
       <QuestionCard question={question} hint={hint} />
 
-      <div className="flex flex-col gap-2.5">
+      <div ref={listRef} className="flex flex-col gap-2.5">
         {ordered.map(({ text, origIdx }, i) => {
           const isDragging = dragging === i;
           return (
             <div
               key={origIdx}
-              draggable
-              onDragStart={() => setDragging(i)}
-              onDragOver={(e) => {
-                e.preventDefault();
-                if (dragging !== null && dragging !== i) {
-                  moveItem(dragging, i);
-                  setDragging(i);
-                }
-              }}
-              onDragEnd={() => setDragging(null)}
+              onPointerDown={startDrag(i)}
+              onPointerMove={onDragMove}
+              onPointerUp={endDrag}
+              onPointerCancel={endDrag}
               className={cn(
-                'flex w-full cursor-grab items-center gap-3 rounded-2xl px-4 py-3.5 transition-all',
+                'flex w-full cursor-grab touch-none items-center gap-3 rounded-2xl px-4 py-3.5 transition-all select-none [-webkit-touch-callout:none] active:cursor-grabbing',
                 isDragging
                   ? 'border-2 border-[var(--selected-border)] bg-[var(--selected-bg)] shadow-[0_4px_12px_rgba(246,162,0,0.25)]'
                   : 'border-[1.5px] border-[var(--border)] bg-[var(--card-bg)]',
