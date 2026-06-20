@@ -59,6 +59,7 @@ export default function Ordering({
   };
 
   const startDrag = (i: number) => (e: React.PointerEvent<HTMLDivElement>) => {
+    if (draggingRef.current !== null) return; // ignore extra fingers mid-drag
     if (e.button !== 0) return; // ignore non-primary mouse buttons
     e.preventDefault(); // suppress text selection / native image drag
     draggingRef.current = i;
