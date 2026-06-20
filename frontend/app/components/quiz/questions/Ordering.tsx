@@ -33,11 +33,7 @@ export default function Ordering({
   );
   const [dragging, setDragging] = useState<number | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  // Authoritative current index of the dragged row. Kept in a ref (not just
-  // state) so consecutive pointermove events read a fresh value instead of a
-  // stale closure between renders.
   const draggingRef = useRef<number | null>(null);
-  // Screen-reader announcement for keyboard-driven reordering.
   const [announcement, setAnnouncement] = useState('');
 
   const moveItem = (from: number, to: number) => {
@@ -49,8 +45,6 @@ export default function Ordering({
     });
   };
 
-  // Keyboard reordering: move the focused row up/down one slot. Focus follows
-  // the row's stable key, so repeated arrow presses keep moving the same item.
   const moveByKeyboard = (i: number, dir: -1 | 1) => {
     const to = i + dir;
     if (to < 0 || to >= ordered.length) return;
@@ -60,7 +54,6 @@ export default function Ordering({
     );
   };
 
-  /** Index of the row whose bounds contain clientY, or null between/outside rows. */
   const rowUnderPointer = (clientY: number): number | null => {
     const rows = listRef.current?.children;
     if (!rows) return null;
@@ -72,13 +65,11 @@ export default function Ordering({
   };
 
   const startDrag = (i: number) => (e: React.PointerEvent<HTMLDivElement>) => {
-    if (draggingRef.current !== null) return; // ignore extra fingers mid-drag
-    if (e.button !== 0) return; // ignore non-primary mouse buttons
-    e.preventDefault(); // suppress text selection / native image drag
+    if (draggingRef.current !== null) return;
+    if (e.button !== 0) return;
+    e.preventDefault();
     draggingRef.current = i;
     setDragging(i);
-    // Capture keeps pointermove/up firing on this row even as the finger moves
-    // over its siblings - this is what makes the drag track on touch.
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
