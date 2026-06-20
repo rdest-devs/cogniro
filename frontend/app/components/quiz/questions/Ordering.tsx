@@ -37,6 +37,8 @@ export default function Ordering({
   // state) so consecutive pointermove events read a fresh value instead of a
   // stale closure between renders.
   const draggingRef = useRef<number | null>(null);
+  // Screen-reader announcement for keyboard-driven reordering.
+  const [announcement, setAnnouncement] = useState('');
 
   const moveItem = (from: number, to: number) => {
     setOrdered((prev) => {
@@ -45,6 +47,17 @@ export default function Ordering({
       next.splice(to, 0, item);
       return next;
     });
+  };
+
+  // Keyboard reordering: move the focused row up/down one slot. Focus follows
+  // the row's stable key, so repeated arrow presses keep moving the same item.
+  const moveByKeyboard = (i: number, dir: -1 | 1) => {
+    const to = i + dir;
+    if (to < 0 || to >= ordered.length) return;
+    moveItem(i, to);
+    setAnnouncement(
+      `${ordered[i].text}: pozycja ${to + 1} z ${ordered.length}`,
+    );
   };
 
   /** Index of the row whose bounds contain clientY, or null between/outside rows. */
@@ -103,12 +116,24 @@ export default function Ordering({
           return (
             <div
               key={origIdx}
+              role="button"
+              tabIndex={0}
+              aria-label={`Pozycja ${i + 1} z ${ordered.length}: ${text}. Użyj strzałek w górę i w dół, aby zmienić kolejność.`}
               onPointerDown={startDrag(i)}
               onPointerMove={onDragMove}
               onPointerUp={endDrag}
               onPointerCancel={endDrag}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  moveByKeyboard(i, -1);
+                } else if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  moveByKeyboard(i, 1);
+                }
+              }}
               className={cn(
-                'flex w-full cursor-grab touch-none items-center gap-3 rounded-2xl px-4 py-3.5 transition-all select-none [-webkit-touch-callout:none] active:cursor-grabbing',
+                'flex w-full cursor-grab touch-none items-center gap-3 rounded-2xl px-4 py-3.5 transition-all outline-none select-none [-webkit-touch-callout:none] focus-visible:ring-2 focus-visible:ring-[var(--orange)] active:cursor-grabbing',
                 isDragging
                   ? 'border-2 border-[var(--selected-border)] bg-[var(--selected-bg)] shadow-[0_4px_12px_rgba(246,162,0,0.25)]'
                   : 'border-[1.5px] border-[var(--border)] bg-[var(--card-bg)]',
@@ -136,6 +161,10 @@ export default function Ordering({
             </div>
           );
         })}
+      </div>
+
+      <div aria-live="polite" className="sr-only">
+        {announcement}
       </div>
 
       <SubmitButton
